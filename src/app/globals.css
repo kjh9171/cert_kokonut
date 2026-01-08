@@ -48,8 +48,8 @@
 
 :root {
   --radius: 0.625rem;
-  --background: 0 0% 100%;
-  --foreground: 222.2 84% 4.9%;
+  --background: 210 20% 98%; /* very light gray */
+  --foreground: 222.2 14% 12%; /* softer dark text */
 
   --card: 0 0% 100%;
   --card-foreground: 222.2 84% 4.9%;
@@ -57,14 +57,14 @@
   --popover: 0 0% 100%;
   --popover-foreground: 222.2 84% 4.9%;
 
-  --primary: 221.2 83.2% 53.3%; /* Deep Blue */
+  --primary: 162 72% 45%; /* soft mint/teal like Toss */
   --primary-foreground: 210 40% 98%;
 
   --secondary: 210 40% 96.1%;
   --secondary-foreground: 222.2 47.4% 11.2%;
 
-  --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
+  --muted: 210 20% 94%;
+  --muted-foreground: 215 12% 48%;
 
   --accent: 210 40% 96.1%;
   --accent-foreground: 222.2 47.4% 11.2%;
@@ -72,9 +72,9 @@
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 214.3 31.8% 91.4%;
-  --input: 214.3 31.8% 91.4%;
-  --ring: 221.2 83.2% 53.3%;
+  --border: 220 14% 90%;
+  --input: 220 14% 96%;
+  --ring: 162 72% 45%;
   
   --chart-1: 221.2 83.2% 53.3%;
   --chart-2: 173 58% 39%;
@@ -84,8 +84,8 @@
 }
 
 .dark {
-  --background: 222.2 84% 4.9%;
-  --foreground: 210 40% 98%;
+  --background: 220 14% 8%; /* dark navy but softer */
+  --foreground: 210 20% 96%;
 
   --card: 222.2 84% 4.9%;
   --card-foreground: 210 40% 98%;
@@ -93,7 +93,7 @@
   --popover: 222.2 84% 4.9%;
   --popover-foreground: 210 40% 98%;
 
-  --primary: 217.2 91.2% 59.8%;
+  --primary: 162 60% 56%; /* softer mint in dark */
   --primary-foreground: 222.2 47.4% 11.2%;
 
   --secondary: 217.2 32.6% 17.5%;
@@ -108,9 +108,9 @@
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 210 40% 98%;
 
-  --border: 217.2 32.6% 17.5%;
-  --input: 217.2 32.6% 17.5%;
-  --ring: 224.3 76.3% 48%;
+  --border: 220 12% 18%;
+  --input: 220 12% 14%;
+  --ring: 162 60% 56%;
   
   --chart-1: 220 70% 50%;
   --chart-2: 160 60% 45%;
@@ -120,10 +120,36 @@
 }
 
 @layer base {
-  * {
-    @apply border-border outline-ring/50;
+  *, *::before, *::after {
+    box-sizing: border-box;
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-synthesis: none;
+    /* give a little breathing room so headers or sticky bars don't overlap content */
+    --site-header-height: 3.5rem;
+  }
+
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    backdrop-filter: blur(6px);
+    background-color: hsl(var(--card) / 0.95);
+  }
+
+  main {
+    /* ensure main content doesn't collide with sticky header */
+    padding-top: calc(var(--site-header-height) + 0.5rem);
+  }
+
+  .container {
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }
