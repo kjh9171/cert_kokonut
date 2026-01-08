@@ -24,6 +24,14 @@ export default function LoginPage() {
         // In real app, we might verify credentials on server first
         const isValid = login(email, password)
         if (isValid) {
+            // If this is the test account, bypass OTP and sign in immediately
+            const pending = useAuthStore.getState().pendingUser
+            if (pending?.email === 'test@test.com') {
+                useAuthStore.getState().verifyOtp('000000')
+                router.push('/financial/dashboard')
+                return
+            }
+
             setStep(2)
             setError("")
         } else {
