@@ -25,7 +25,19 @@ export const useAuthStore = create<AuthState>()(
         (set, get) => ({
             user: null,
             pendingUser: null,
-            users: [],
+            users: [
+                {
+                    id: 'test-user-1',
+                    email: 'test@test.com',
+                    passwordHash: '1111',
+                    adminName: '테스트 계정',
+                    companyName: 'Test Company',
+                    businessRegistrationNumber: '000-00-00000',
+                    isVerified: true,
+                    role: 'COMPANY_USER',
+                    status: 'ACTIVE'
+                }
+            ],
             isAuthenticated: false,
             _hasHydrated: false,
             setHasHydrated: (state) => set({ _hasHydrated: state }),
