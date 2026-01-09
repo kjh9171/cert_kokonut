@@ -49,18 +49,18 @@ export function SecureVault() {
     }
 
     return (
-        <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-purple-500" />
-                        Secure Document Upload
+        <div className="grid gap-8 lg:grid-cols-2">
+            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white/80 backdrop-blur-md">
+                <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+                    <CardTitle className="flex items-center gap-2 text-slate-800">
+                        <Lock className="h-5 w-5 text-indigo-600" />
+                        보안 문서 업로드
                     </CardTitle>
                     <CardDescription>
-                        Documents are encrypted with AES-256 before storage. We cannot read them.
+                        문서는 저장 전 브라우저에서 AES-256으로 암호화됩니다.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-6 pt-6">
                     <div className="grid w-full max-w-sm items-center gap-1.5">
                         <Label htmlFor="doc-name">Document Name</Label>
                         <Input
@@ -79,48 +79,50 @@ export function SecureVault() {
                             onChange={handleFileChange}
                         />
                     </div>
-                    <Button onClick={handleUpload} disabled={!name || !fileContent}>
-                        <Lock className="mr-2 h-4 w-4" /> Encrypt & Upload
+                    <Button onClick={handleUpload} disabled={!name || !fileContent} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 shadow-lg shadow-indigo-200">
+                        <Shield className="mr-2 h-4 w-4" /> 암호화 및 업로드
                     </Button>
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Encrypted Vault</CardTitle>
+            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
+                <CardHeader className="bg-slate-900 border-b border-slate-800">
+                    <CardTitle className="text-white flex items-center gap-2">
+                        <Lock className="h-5 w-5 text-indigo-400" />
+                        암호화된 문서 보관함
+                    </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                     <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Uploaded</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                        <TableHeader className="bg-slate-800/50">
+                            <TableRow className="hover:bg-transparent border-slate-800">
+                                <TableHead className="text-slate-300 font-medium">문서명</TableHead>
+                                <TableHead className="text-slate-300 font-medium">업로드 날짜</TableHead>
+                                <TableHead className="text-slate-300 font-medium text-right">관리</TableHead>
                             </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        <TableBody className="bg-slate-900">
                             {userDocuments.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="text-center h-24 text-muted-foreground">
-                                        Vault is empty.
+                                    <TableCell colSpan={3} className="text-center h-40 text-slate-500">
+                                        보관함이 비어 있습니다.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 userDocuments.map((doc) => (
-                                    <TableRow key={doc.id}>
-                                        <TableCell className="font-medium">{doc.name}</TableCell>
-                                        <TableCell>{format(new Date(doc.uploadedAt), 'MMM d, yyyy')}</TableCell>
-                                        <TableCell>
-                                            <span className="flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded w-fit">
-                                                <Lock className="h-3 w-3" /> Encrypted
-                                            </span>
+                                    <TableRow key={doc.id} className="hover:bg-slate-800/30 border-slate-800 transition-colors">
+                                        <TableCell className="font-medium text-slate-200 flex items-center gap-2 py-4">
+                                            <Shield className="h-4 w-4 text-indigo-400" />
+                                            {doc.name}
                                         </TableCell>
-                                        <TableCell className="text-right space-x-2">
-                                            <Button size="sm" variant="outline" onClick={() => handleView(doc.id)}>
-                                                <Eye className="h-4 w-4 mr-1" /> View
+                                        <TableCell className="text-slate-400 text-sm">
+                                            {format(new Date(doc.uploadedAt), 'yyyy년 MM월 dd일')}
+                                        </TableCell>
+                                        <TableCell className="text-right space-x-2 pr-6">
+                                            <Button size="sm" variant="ghost" className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/50 rounded-lg" onClick={() => handleView(doc.id)}>
+                                                <Eye className="h-4 w-4 mr-1" /> 열람
                                             </Button>
-                                            <Button size="sm" variant="destructive" onClick={() => removeDocument(doc.id)}>
+                                            <Button size="sm" variant="ghost" className="text-slate-500 hover:text-red-400 hover:bg-red-900/30 rounded-lg" onClick={() => removeDocument(doc.id)}>
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </TableCell>

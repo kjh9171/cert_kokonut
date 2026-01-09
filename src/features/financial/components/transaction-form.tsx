@@ -14,6 +14,7 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { PlusCircle, ArrowUpCircle, ArrowDownCircle } from "lucide-react"
 
 export function TransactionForm() {
     const { categories, addTransaction } = useFinancialStore()
@@ -43,28 +44,34 @@ export function TransactionForm() {
     const filteredCategories = categories.filter(c => c.type === type)
 
     return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Add Transaction</CardTitle>
+    return (
+        <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white/80 backdrop-blur-md">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+                <CardTitle className="flex items-center gap-2 text-slate-800">
+                    <PlusCircle className="h-5 w-5 text-blue-600" />
+                    내역 추가
+                </CardTitle>
             </CardHeader>
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="flex gap-4">
+                    <div className="flex gap-3 bg-slate-100 p-1 rounded-xl">
                         <Button
                             type="button"
-                            variant={type === 'INCOME' ? 'default' : 'outline'}
+                            variant={type === 'INCOME' ? 'default' : 'ghost'}
                             onClick={() => setType('INCOME')}
-                            className="flex-1"
+                            className={`flex-1 rounded-lg transition-all ${type === 'INCOME' ? 'bg-white text-blue-600 shadow-sm hover:bg-white' : 'text-slate-500'}`}
                         >
-                            Income
+                            <ArrowUpCircle className="mr-2 h-4 w-4" />
+                            수입
                         </Button>
                         <Button
                             type="button"
-                            variant={type === 'EXPENSE' ? 'default' : 'outline'}
+                            variant={type === 'EXPENSE' ? 'default' : 'ghost'}
                             onClick={() => setType('EXPENSE')}
-                            className="flex-1"
+                            className={`flex-1 rounded-lg transition-all ${type === 'EXPENSE' ? 'bg-white text-red-600 shadow-sm hover:bg-white' : 'text-slate-500'}`}
                         >
-                            Expense
+                            <ArrowDownCircle className="mr-2 h-4 w-4" />
+                            지출
                         </Button>
                     </div>
 
@@ -103,7 +110,9 @@ export function TransactionForm() {
                         />
                     </div>
 
-                    <Button type="submit" className="w-full">Add Transaction</Button>
+                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-xl h-11 shadow-lg shadow-blue-200">
+                        기록하기
+                    </Button>
                 </form>
             </CardContent>
         </Card>

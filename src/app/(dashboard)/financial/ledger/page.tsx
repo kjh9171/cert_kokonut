@@ -6,15 +6,15 @@ import { Separator } from "@/components/ui/separator"
 
 export default function LedgerPage() {
     return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="text-lg font-medium">Ledger</h3>
-                <p className="text-sm text-muted-foreground">
-                    Record your income and expenses manually.
+        <div className="space-y-8 animate-in fade-in duration-700">
+            <div className="flex flex-col gap-2">
+                <h2 className="text-3xl font-bold tracking-tight text-slate-900">재무 장부 (Ledger)</h2>
+                <p className="text-slate-500 text-lg">
+                    수입과 지출 내역을 안전하게 기록하고 관리하세요.
                 </p>
             </div>
-            <Separator />
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+
+            <div className="grid gap-8 lg:grid-cols-7">
                 <div className="lg:col-span-2">
                     <TransactionForm />
                 </div>

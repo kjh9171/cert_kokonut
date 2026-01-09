@@ -310,20 +310,25 @@ ${formData.cctv ? `## 15. 영상정보처리기기 운영·관리
     }
 
     return (
-        <Tabs defaultValue="wizard" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="wizard">기본 생성 마법사 (Wizard)</TabsTrigger>
-                <TabsTrigger value="ai-helper">AI 프롬프트 도우미 (AI Helper)</TabsTrigger>
+        <Tabs defaultValue="wizard" className="w-full space-y-6">
+            <TabsList className="bg-slate-100 p-1.5 rounded-2xl h-14">
+                <TabsTrigger value="wizard" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md px-8 py-2.5 transition-all text-slate-500 text-base font-semibold">
+                    기본 생성 마법사
+                </TabsTrigger>
+                <TabsTrigger value="ai-helper" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md px-8 py-2.5 transition-all text-slate-500 text-base font-semibold flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    AI 프롬프트 도우미
+                </TabsTrigger>
             </TabsList>
 
             {/* Standard Wizard Tab */}
-            <TabsContent value="wizard" className="grid gap-6 md:grid-cols-2 mt-4">
-                <Card className="h-fit">
-                    <CardHeader>
-                        <CardTitle>방침 생성 (단계 {step}/6)</CardTitle>
-                        <CardDescription>개인정보보호위원회 가이드에 따른 15개 필수 항목 포함</CardDescription>
+            <TabsContent value="wizard" className="grid gap-8 md:grid-cols-2">
+                <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white/80 backdrop-blur-md h-fit">
+                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-6">
+                        <CardTitle className="text-xl font-bold text-slate-800">방침 생성 (단계 {step}/6)</CardTitle>
+                        <CardDescription>개인정보보호위원회 15개 필수 항목</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
+                    <CardContent className="space-y-6 pt-8 pb-8">
                         {step === 1 && (
                             <div className="space-y-4">
                                 <Label className="text-base font-semibold">1단계: 기본 정보</Label>
@@ -532,16 +537,16 @@ ${formData.cctv ? `## 15. 영상정보처리기기 운영·관리
                             </div>
                         )}
 
-                        <div className="flex justify-between mt-6 pt-4 border-t">
-                            <Button variant="outline" onClick={handleBack} disabled={step === 1}>
+                        <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
+                            <Button variant="ghost" onClick={handleBack} disabled={step === 1} className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl">
                                 <ChevronLeft className="mr-2 h-4 w-4" /> 이전
                             </Button>
                             {step < 6 ? (
-                                <Button onClick={handleNext}>
+                                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 h-11">
                                     다음 <ChevronRight className="ml-2 h-4 w-4" />
                                 </Button>
                             ) : (
-                                <Button className="bg-green-600 hover:bg-green-700">
+                                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 h-11">
                                     완료 ✓
                                 </Button>
                             )}
@@ -549,64 +554,70 @@ ${formData.cctv ? `## 15. 영상정보처리기기 운영·관리
                     </CardContent>
                 </Card>
 
-                <Card className="h-full min-h-[600px]">
-                    <CardHeader>
-                        <CardTitle>미리보기 (Preview)</CardTitle>
-                        <CardDescription>생성된 개인정보처리방침 - 15개 필수 항목 포함</CardDescription>
+                <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-slate-900 h-full min-h-[700px]">
+                    <CardHeader className="bg-slate-800/50 border-b border-slate-700 pb-6 pt-8 px-8">
+                        <CardTitle className="text-white text-2xl font-bold flex items-center gap-3">
+                            <div className="bg-blue-500/20 p-2 rounded-xl">
+                                <FileText className="h-6 w-6 text-blue-400" />
+                            </div>
+                            미리보기
+                        </CardTitle>
+                        <CardDescription className="text-slate-400">규제 준수가 확인된 자동 생성 방침입니다.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="bg-gray-50 p-4 rounded-md h-[500px] overflow-auto whitespace-pre-wrap text-sm border">
+                    <CardContent className="px-8 pt-8 flex flex-col h-[calc(100%-180px)]">
+                        <div className="bg-slate-800/80 p-6 rounded-2xl flex-grow overflow-auto whitespace-pre-wrap text-sm text-slate-300 border border-slate-700/50 leading-relaxed font-mono custom-scrollbar">
                             {generatePolicy()}
                         </div>
-                        <div className="mt-4">
-                            <Button className="w-full" onClick={() => navigator.clipboard.writeText(generatePolicy())}>
-                                <Copy className="mr-2 h-4 w-4" /> 복사하기 (Copy)
+                        <div className="mt-8">
+                            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl h-14 text-lg font-bold shadow-xl shadow-blue-500/20" onClick={() => navigator.clipboard.writeText(generatePolicy())}>
+                                <Copy className="mr-3 h-5 w-5" /> 내용 복사하기
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
             </TabsContent>
 
-            {/* AI Helper Tab */}
-            <TabsContent value="ai-helper" className="grid gap-6 md:grid-cols-2 mt-4">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-purple-500" />
+            <TabsContent value="ai-helper" className="grid gap-8 md:grid-cols-2">
+                <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
+                    <CardHeader className="bg-purple-50/50 border-b border-purple-100 pb-6 pt-8">
+                        <CardTitle className="flex items-center gap-3 text-slate-800">
+                            <div className="bg-purple-100 p-2 rounded-xl">
+                                <Sparkles className="h-5 w-5 text-purple-600" />
+                            </div>
                             AI 프롬프트 생성기
                         </CardTitle>
                         <CardDescription>
-                            특수한 상황에 맞는 방침 조항을 만들기 위해, AI(ChatGPT 등)에게 질문할 최적의 프롬프트를 만들어드립니다.
+                            특수 상황에 맞는 최적의 질문 프롬프트를 생성합니다.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>상황 설명 (Situation)</Label>
+                    <CardContent className="space-y-6 pt-8 pb-8">
+                        <div className="space-y-3">
+                            <Label className="text-slate-700 font-semibold">상황 설명 (Situation)</Label>
                             <Textarea
                                 placeholder="예: 저희는 카페를 운영하며, 방범용 CCTV를 설치했고, 영상을 30일간 보관합니다."
-                                rows={5}
+                                className="min-h-[150px] rounded-2xl border-slate-200 focus:ring-purple-500"
                                 value={aiInput}
                                 onChange={(e) => setAiInput(e.target.value)}
                             />
                         </div>
-                        <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={generateAiPrompt} disabled={!aiInput}>
-                            <Sparkles className="mr-2 h-4 w-4" /> 프롬프트 생성 (Generate Prompt)
+                        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-2xl h-14 text-lg font-bold shadow-lg shadow-purple-200" onClick={generateAiPrompt} disabled={!aiInput}>
+                            <Sparkles className="mr-3 h-5 w-5" /> 프롬프트 생성
                         </Button>
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>생성된 프롬프트 (Result)</CardTitle>
-                        <CardDescription>아래 내용을 복사하여 AI 모델에게 질문하세요.</CardDescription>
+                <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-slate-900 border border-purple-500/20">
+                    <CardHeader className="bg-slate-800/50 border-b border-slate-700 pb-6 pt-8 px-8">
+                        <CardTitle className="text-white text-xl font-bold">생성된 프롬프트</CardTitle>
+                        <CardDescription className="text-slate-400 text-sm">LLM 모델(ChatGPT 등)에 붙여넣으세요.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="bg-gray-50 p-4 rounded-md h-[300px] overflow-auto whitespace-pre-wrap text-sm border border-purple-200">
+                    <CardContent className="px-8 pt-8 pb-8">
+                        <div className="bg-slate-800/60 p-6 rounded-2xl h-[300px] overflow-auto whitespace-pre-wrap text-sm text-purple-200/80 border border-purple-500/10 font-mono leading-relaxed">
                             {aiPromptResult || "왼쪽에서 상황을 입력하고 생성 버튼을 눌러주세요."}
                         </div>
-                        <div className="mt-4">
-                            <Button className="w-full" variant="outline" onClick={() => navigator.clipboard.writeText(aiPromptResult)} disabled={!aiPromptResult}>
-                                <Copy className="mr-2 h-4 w-4" /> 프롬프트 복사 (Copy Prompt)
+                        <div className="mt-8">
+                            <Button className="w-full border-2 border-purple-500/30 text-purple-400 hover:bg-purple-500 hover:text-white rounded-2xl h-14 text-lg font-bold transition-all" onClick={() => navigator.clipboard.writeText(aiPromptResult)} disabled={!aiPromptResult}>
+                                <Copy className="mr-3 h-5 w-5" /> 프롬프트 복사
                             </Button>
                         </div>
                     </CardContent>

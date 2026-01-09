@@ -47,53 +47,62 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.75rem;
+  /* 기본 라운딩 상향 */
 
-  /* 밝고 깨끗한 배경 */
-  --background: 0 0% 100%;
-  --foreground: 222 47% 6%;
-  /* 더 진한 검정색에 가까운 파란색으로 가독성 향상 */
+  /* 프리미엄 밝고 깨끗한 배경 */
+  --background: 210 40% 98%;
+  /* 아주 미세한 푸른빛이 도는 밝은 배경 */
+  --foreground: 222 47% 11%;
 
-  /* 카드 - 약간의 그림자감 */
+  /* 카드 - 부드러운 화이트 및 선명한 그림자용 */
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 6%;
+  --card-foreground: 222 47% 11%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 6%;
+  --popover-foreground: 222 47% 11%;
 
-  /* Primary - 더 선명하고 깊이 있는 신뢰감의 파란색 */
+  /* Primary - 브랜드 아이덴티티를 살린 선명한 블루 */
   --primary: 221 83% 53%;
-  --primary-foreground: 0 0% 100%;
+  --primary-foreground: 210 40% 98%;
 
-  /* Secondary - 부드럽고 차분한 회색 */
-  --secondary: 210 40% 96%;
-  --secondary-foreground: 222 47% 11%;
+  /* Secondary - 부드러운 중립 톤 */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222 47% 11.2%;
 
-  /* Muted - 가독성을 위해 더 진한 회색 적용 */
-  --muted: 210 40% 96%;
-  --muted-foreground: 215 25% 40%;
-  /* 더 진한 회색으로 가독성 개선 */
+  /* Muted - 가독성 중심의 저대비 텍스트용 */
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
 
-  /* Accent - 안전함을 나타내는 선명한 녹색 */
-  --accent: 142 71% 45%;
-  /* 더 생동감 있는 녹색 */
-  --accent-foreground: 0 0% 100%;
+  /* Accent - 세련된 하이라이트 */
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222 47% 11.2%;
 
-  /* Destructive - 명확한 경고용 빨간색 */
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
+  /* Destructive */
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
 
-  /* Border & Input */
-  --border: 214 32% 91%;
-  --input: 214 32% 91%;
-  --ring: 221 83% 53%;
+  /* Border & Input - 더 연하고 부드럽게 */
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
 
-  /* Chart colors - 높은 대비를 가진 색상 */
-  --chart-1: 221 83% 53%;
-  --chart-2: 142 71% 45%;
-  --chart-3: 38 92% 50%;
-  --chart-4: 262 83% 58%;
-  --chart-5: 346 84% 61%;
+  /* Sidebar - 화이트 테마 최적화 */
+  --sidebar: 0 0% 100%;
+  --sidebar-foreground: 240 5.3% 26.1%;
+  --sidebar-primary: 221.2 83.2% 53.3%;
+  --sidebar-primary-foreground: 0 0% 98%;
+  --sidebar-accent: 210 40% 96.1%;
+  --sidebar-accent-foreground: 221.2 83.2% 53.3%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 217.2 91.2% 59.8%;
+
+  /* Chart colors */
+  --chart-1: 221.2 83.2% 53.3%;
+  --chart-2: 142.1 76.2% 36.3%;
+  --chart-3: 197 37% 24%;
+  --chart-4: 43 74% 66%;
+  --chart-5: 27 87% 67%;
 }
 
 @layer base {
