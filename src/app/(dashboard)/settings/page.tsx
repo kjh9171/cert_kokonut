@@ -27,8 +27,8 @@ export default function SettingsPage() {
     }
 
     const handleInviteMember = () => {
-        if (!teamMemberEmail) return
-        if (user?.role !== 'COMPANY_ADMIN') {
+        if (!teamMemberEmail || !user) return
+        if (user.role !== 'COMPANY_ADMIN') {
             alert("팀원 초대는 슈퍼 관리자(Company Admin)만 가능합니다.")
             return
         }
@@ -36,6 +36,10 @@ export default function SettingsPage() {
         addTeamMember(user.email, teamMemberEmail)
         alert(`${teamMemberEmail} 님을 팀원으로 등록했습니다.\n(초기 비밀번호: password)`)
         setTeamMemberEmail("")
+    }
+
+    if (!user) {
+        return <div className="p-6 text-center text-slate-500 font-bold">사용자 정보를 불러올 수 없습니다. 로그인 상태를 확인하세요.</div>
     }
 
     return (
@@ -237,7 +241,5 @@ export default function SettingsPage() {
                 </TabsContent>
             </Tabs>
         </div>
-    )
-}
     )
 }

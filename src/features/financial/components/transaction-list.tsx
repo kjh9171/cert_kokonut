@@ -60,8 +60,8 @@ export function TransactionList() {
                                     </TableCell>
                                     <TableCell>
                                         <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${t.type === 'INCOME'
-                                                ? 'bg-secondary/10 text-secondary border-secondary/20'
-                                                : 'bg-primary/10 text-primary border-primary/20'
+                                            ? 'bg-secondary/10 text-secondary border-secondary/20'
+                                            : 'bg-primary/10 text-primary border-primary/20'
                                             }`}>
                                             {t.type === 'INCOME' ? '수입' : '지출'}
                                         </span>
@@ -92,7 +92,5 @@ export function TransactionList() {
                 </Table>
             </CardContent>
         </Card>
-    )
-}
     )
 }

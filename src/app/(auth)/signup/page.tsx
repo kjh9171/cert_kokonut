@@ -10,6 +10,7 @@ import { authenticator } from 'otplib'
 import QRCode from 'qrcode'
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { ShieldCheck } from "lucide-react"
 
 export default function SignupPage() {
     const router = useRouter()

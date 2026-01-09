@@ -4,7 +4,6 @@ import { SecureVault } from "@/features/privacy/components/secure-vault"
 
 export default function VaultPage() {
     return (
-    return (
         <div className="space-y-6 p-6 min-h-full bg-[#F5F7FA]">
             <header className="flex flex-col gap-4 mb-4">
                 <div className="flex items-center justify-between border-b border-slate-200 pb-4">
@@ -18,7 +17,5 @@ export default function VaultPage() {
             </header>
             <SecureVault />
         </div>
-    )
-}
     )
 }

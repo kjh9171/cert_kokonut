@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { authenticator } from 'otplib'
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { ShieldCheck } from "lucide-react"
 
 export default function LoginPage() {
     const router = useRouter()
