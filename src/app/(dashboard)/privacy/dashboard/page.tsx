@@ -7,146 +7,138 @@ import { Button } from "@/components/ui/button"
 
 export default function PrivacyDashboard() {
     return (
-        <div className="space-y-8 p-4 md:p-8 min-h-full bg-gradient-to-b from-background to-slate-50">
-            <header className="flex flex-col gap-3 mb-2 p-0 bg-transparent">
-                <div className="inline-flex items-center gap-2 w-fit">
-                    <span className="px-4 py-2 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-wider">🔒 보안 & 컴플라이언스</span>
-                </div>
-                <div>
-                    <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 mb-2">개인정보 보호 현황</h1>
-                    <p className="text-lg text-slate-600 font-medium">서비스 내 모든 데이터 처리 과정의 <span className="text-emerald-600 font-bold">보안 및 법적 준수 상태</span>를 확인하세요.</p>
+        <div className="space-y-6 p-6 min-h-full bg-[#F5F7FA]">
+            <header className="flex flex-col gap-4 mb-4">
+                <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">개인정보 보호 현황</h1>
+                        <p className="text-sm text-slate-500 font-medium mt-1">사내 개인정보 관리 체계 및 보안 컴플라이언스 준수 레포트입니다.</p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button variant="outline" size="sm" className="bg-white text-xs font-bold border-slate-200 rounded-lg h-9">
+                            보고서 다운로드
+                        </Button>
+                    </div>
                 </div>
             </header>
 
-            {/* Compliance Scores - Premium Cards */}
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                <Card className="border-2 border-blue-200 shadow-md bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all">
-                    <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-25 pb-3 px-5 pt-5 border-b border-blue-100">
-                        <CardTitle className="text-sm font-bold text-blue-700 flex items-center gap-2">
-                            <ShieldCheck className="h-4 w-4" />
+            {/* Compliance Scores - ERP Grid */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <Card className="border border-slate-200 shadow-sm bg-white rounded-lg overflow-hidden">
+                    <CardHeader className="pb-2 px-5 pt-5">
+                        <CardTitle className="text-xs font-bold text-slate-500 flex items-center gap-2 uppercase tracking-wider">
+                            <ShieldCheck className="h-3.5 w-3.5 text-secondary" />
                             종합 준수율
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-5 pb-5 pt-4">
+                    <CardContent className="px-5 pb-5 pt-2">
                         <div className="flex items-end justify-between mb-4">
-                            <span className="text-4xl font-black text-blue-600">85%</span>
-                            <div className="flex items-center gap-1 text-emerald-600 font-bold text-xs bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-200">
+                            <span className="text-3xl font-black text-secondary">85.4%</span>
+                            <div className="flex items-center gap-1 text-secondary font-black text-[10px] bg-secondary/10 px-2 py-0.5 rounded">
                                 <TrendingUp className="size-3" />
-                                +5% pt
+                                +5.2%
                             </div>
                         </div>
-                        <Progress value={85} className="h-3 bg-slate-100 rounded-full [&>div]:bg-gradient-to-r [&>div]:from-blue-600 [&>div]:to-blue-500" />
-                        <p className="text-xs text-slate-500 font-medium mt-3">지난달 대비 3.2% 개선됨</p>
+                        <Progress value={85} className="h-2 bg-slate-100 rounded-full [&>div]:bg-secondary" />
+                        <p className="text-[10px] text-slate-400 font-bold mt-3">정보보호 공시 기준 이행도 양호</p>
                     </CardContent>
                 </Card>
-                <Card className="border-2 border-slate-200 shadow-md bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all">
-                    <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-25 pb-3 px-5 pt-5 border-b border-slate-100">
-                        <CardTitle className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                            <Users className="h-4 w-4" />
-                            개인정보 보유량
+                <Card className="border border-slate-200 shadow-sm bg-white rounded-lg overflow-hidden">
+                    <CardHeader className="pb-2 px-5 pt-5">
+                        <CardTitle className="text-xs font-bold text-slate-500 flex items-center gap-2 uppercase tracking-wider">
+                            <Users className="h-3.5 w-3.5 text-secondary" />
+                            보유 데이터량
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-5 pb-5 pt-4">
+                    <CardContent className="px-5 pb-5 pt-2">
                         <div className="flex items-end justify-between mb-4">
-                            <span className="text-4xl font-black text-slate-900">1,240건</span>
-                            <div className="flex items-center gap-1 text-emerald-600 font-bold text-xs bg-emerald-100 px-2.5 py-1 rounded-full border border-emerald-200">
-                                <TrendingUp className="size-3" />
-                                12.5% ↑
-                            </div>
+                            <span className="text-3xl font-black text-slate-900">1,240건</span>
+                            <div className="text-[10px] font-black text-slate-400">전월 대비 12.5% 증가</div>
                         </div>
-                        <p className="text-xs text-slate-500 font-medium">지난달: 1,100건 기준</p>
+                        <p className="text-[10px] text-slate-400 font-bold">민감정보 240건 포함</p>
                     </CardContent>
                 </Card>
-                <Card className="border-2 border-rose-200 shadow-md bg-rose-50 rounded-2xl overflow-hidden hover:shadow-lg transition-all">
-                    <CardHeader className="bg-rose-100 pb-3 px-5 pt-5 border-b border-rose-200">
-                        <CardTitle className="text-sm font-bold text-rose-700 flex items-center gap-2">
-                            <ShieldAlert className="h-4 w-4" />
-                            보안 취약점
+                <Card className="border border-primary/30 shadow-sm bg-white rounded-lg overflow-hidden">
+                    <CardHeader className="pb-2 px-5 pt-5">
+                        <CardTitle className="text-xs font-bold text-primary flex items-center gap-2 uppercase tracking-wider">
+                            <ShieldAlert className="h-3.5 w-3.5" />
+                            위험 요소
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="px-5 pb-5 pt-4">
+                    <CardContent className="px-5 pb-5 pt-2">
                         <div className="flex items-end justify-between mb-4">
-                            <span className="text-4xl font-black text-rose-600">2건</span>
-                            <span className="text-xs font-bold text-rose-700 bg-rose-200 px-2.5 py-1 rounded-full">긴급</span>
+                            <span className="text-3xl font-black text-primary">02건</span>
+                            <span className="text-[10px] font-black text-primary bg-primary/10 px-2 py-0.5 rounded border border-primary/20">고위험</span>
                         </div>
-                        <p className="text-xs text-rose-600 font-medium">즉시 조치가 필요합니다 ⚠️</p>
+                        <p className="text-[10px] text-primary font-bold">기술적 보호조치 미흡 사항 발견됨</p>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Detailed Status Grid - Wide Premium */}
+            {/* Detailed Status Grid - Wide ERP Layout */}
             <div className="grid gap-6 lg:grid-cols-7">
-                <Card className="lg:col-span-4 border-2 border-slate-200 shadow-md bg-white rounded-2xl overflow-hidden hover:shadow-lg transition-all">
-                    <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-25 px-6 pt-6 pb-4 border-b border-slate-100">
-                        <CardTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-slate-600" />
-                            분야별 세부 보안 현황
+                <Card className="lg:col-span-4 border border-slate-200 shadow-sm bg-white rounded-lg overflow-hidden">
+                    <CardHeader className="px-6 py-4 border-b border-slate-100">
+                        <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-secondary" />
+                            상세 진단 항목 리스트
                         </CardTitle>
-                        <CardDescription className="text-slate-600 font-medium text-sm mt-1">주요 관리 항목별 정밀 진단 결과</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-3 pt-6 px-6 pb-6">
-                        {[
-                            { label: "개인정보 처리방침 최신성", status: "PASS", color: "emerald", desc: "✓ 법령 개정 사항 반영 완료" },
-                            { label: "제3자 제공 동의 수집 현황", status: "CHECK", color: "amber", desc: "⚠ 일부 마케팅 동의 누락" },
-                            { label: "접속 기록 관리 (Audit)", status: "PASS", color: "emerald", desc: "✓ 무결성 보장 및 보관 이행" },
-                            { label: "개인정보 파기 주기 준수", status: "FAIL", color: "rose", desc: "✗ 보유 기간 경과 데이터 존재" },
-                            { label: "관리자 2단계 인증 활성화", status: "PASS", color: "emerald", desc: "✓ 전체 관리자 설정 완료" },
-                        ].map((item, idx) => {
-                            const colorMap = {
-                                emerald: "border-emerald-200 bg-emerald-50 hover:bg-emerald-100",
-                                amber: "border-amber-200 bg-amber-50 hover:bg-amber-100",
-                                rose: "border-rose-200 bg-rose-50 hover:bg-rose-100",
-                            }
-                            const statusColorMap = {
-                                PASS: "bg-emerald-100 text-emerald-700 border-emerald-200",
-                                CHECK: "bg-amber-100 text-amber-700 border-amber-200",
-                                FAIL: "bg-rose-100 text-rose-700 border-rose-200",
-                            }
-                            return (
-                                <div key={idx} className={`flex items-center justify-between p-4 rounded-xl border-2 ${colorMap[item.color as keyof typeof colorMap]} transition-all cursor-pointer`}>
-                                    <div className="space-y-1">
+                    <CardContent className="p-0">
+                        <div className="divide-y divide-slate-100">
+                            {[
+                                { label: "개인정보 처리방침 최신성", status: "적합", color: "blue", desc: "법령 개정 사항 반영 완료" },
+                                { label: "제3자 제공 동의 수집 현황", status: "확인", color: "amber", desc: "일부 마케팅 동의 누락" },
+                                { label: "접속 기록 관리 (Audit)", status: "적합", color: "blue", desc: "무결성 보장 및 보관 이행" },
+                                { label: "개인정보 파기 주기 준수", status: "부적합", color: "red", desc: "보유 기간 경과 데이터 존재" },
+                                { label: "관리자 2단계 인증 활성화", status: "적합", color: "blue", desc: "전체 관리자 설정 완료" },
+                            ].map((item, idx) => (
+                                <div key={idx} className="flex items-center justify-between px-6 py-4 hover:bg-slate-50/50 transition-colors">
+                                    <div className="space-y-0.5">
                                         <div className="text-sm font-bold text-slate-800">{item.label}</div>
-                                        <div className="text-xs text-slate-600 font-medium">{item.desc}</div>
+                                        <div className="text-[11px] text-slate-400 font-medium">{item.desc}</div>
                                     </div>
-                                    <span className={`text-xs font-bold px-3 py-1.5 rounded-lg border ${statusColorMap[item.status as keyof typeof statusColorMap]} whitespace-nowrap ml-2`}>
+                                    <span className={`text-[10px] font-black px-2 py-1 rounded border ${item.color === 'blue' ? 'bg-secondary/10 text-secondary border-secondary/20' :
+                                        item.color === 'red' ? 'bg-primary/10 text-primary border-primary/20' :
+                                            'bg-amber-100 text-amber-700 border-amber-200'
+                                        }`}>
                                         {item.status}
                                     </span>
                                 </div>
-                            )
-                        })}
+                            ))}
+                        </div>
                     </CardContent>
                 </Card>
 
-                <Card className="lg:col-span-3 border-2 border-slate-800 shadow-lg bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl overflow-hidden hover:shadow-xl transition-all text-white relative">
-                    <div className="absolute top-0 right-0 p-8 opacity-20 pointer-events-none">
-                        <Lock className="size-32" />
-                    </div>
-                    <CardHeader className="px-6 pt-6 pb-4 relative z-10">
-                        <CardTitle className="text-xl font-bold text-white flex items-center gap-2">
-                            🔐 보안 이벤트 스트림
+                <Card className="lg:col-span-3 border border-slate-200 shadow-sm bg-white rounded-lg overflow-hidden">
+                    <CardHeader className="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                            <Shield className="h-4 w-4 text-secondary" />
+                            최근 보안 로그
                         </CardTitle>
-                        <CardDescription className="text-slate-300 font-medium text-sm">실시간 보안 및 감시 활동</CardDescription>
                     </CardHeader>
-                    <CardContent className="pt-4 px-6 pb-6 relative z-10 space-y-4">
-                        {[
-                            { user: "admin@kokonut.io", action: "처리방침 버전 업데이트", time: "2시간 전", icon: "📋" },
-                            { user: "user01@company.com", action: "2단계 인증 신규 등록", time: "5시간 전", icon: "🔑" },
-                            { user: "admin@kokonut.io", action: "제3자 제공 리스트 조회", time: "어제", icon: "👥" },
-                            { user: "BIZGUARD AI", action: "비활성 계정 12건 격리", time: "어제", icon: "⚡" },
-                        ].map((log, idx) => (
-                            <div key={idx} className="flex gap-3 items-start group pb-4 border-b border-slate-700 last:border-0 last:pb-0">
-                                <div className="text-xl mt-0.5">{log.icon}</div>
-                                <div className="flex flex-col gap-1 flex-1 min-w-0">
-                                    <div className="flex justify-between items-center w-full gap-2">
-                                        <span className="text-xs font-bold text-slate-300 truncate">{log.user}</span>
-                                        <span className="text-xs text-slate-500 font-medium shrink-0">{log.time}</span>
+                    <CardContent className="p-6">
+                        <div className="space-y-6">
+                            {[
+                                { user: "admin@kokonut.io", action: "처리방침 버전 업데이트", time: "2시간 전", icon: "📋" },
+                                { user: "user01@company.com", action: "2단계 인증 신규 등록", time: "5시간 전", icon: "🔑" },
+                                { user: "admin@kokonut.io", action: "제3자 제공 리스트 조회", time: "어제", icon: "👥" },
+                                { user: "BIZGUARD AI", action: "비활성 계정 12건 격리", time: "어제", icon: "⚡" },
+                            ].map((log, idx) => (
+                                <div key={idx} className="flex gap-4 items-start group">
+                                    <div className="text-xl shrink-0">{log.icon}</div>
+                                    <div className="min-w-0 flex-1 border-b border-slate-50 pb-4 group-last:border-0 group-last:pb-0">
+                                        <div className="flex justify-between items-center gap-2 mb-1">
+                                            <span className="text-[10px] font-black text-slate-400 truncate">{log.user}</span>
+                                            <span className="text-[10px] text-slate-300 font-bold">{log.time}</span>
+                                        </div>
+                                        <p className="text-xs text-slate-700 font-bold leading-relaxed">{log.action}</p>
                                     </div>
-                                    <p className="text-sm text-slate-200 font-medium leading-normal">{log.action}</p>
                                 </div>
-                            </div>
-                        ))}
-                        <Button className="w-full mt-4 bg-blue-600 hover:bg-blue-700 border-0 text-white rounded-lg py-5 font-bold text-sm transition-all">
-                            전체 보안 로그 보기→
+                            ))}
+                        </div>
+                        <Button variant="ghost" className="w-full mt-6 text-xs font-black text-secondary hover:bg-secondary/5 rounded-lg border border-secondary/20">
+                            로그 상세 보기
                         </Button>
                     </CardContent>
                 </Card>

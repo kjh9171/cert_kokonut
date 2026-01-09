@@ -47,62 +47,67 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  /* 기본 라운딩 상향 */
+  --radius: 0.5rem;
+  /* 이카운트 스타일: 표준 8px 라운딩 */
 
-  /* Bright & Safe - 밝고 명확한 배경 */
-  --background: 200 50% 97%;
-  /* 진하고 신뢰감 있는 텍스트 */
-  --foreground: 200 50% 10%;
+  /* ECOUNT Style - 전문적이고 안정적인 배경 */
+  --background: 224 33% 97%;
+  /* #F5F7FA */
+  --foreground: 224 50% 10%;
 
-  /* 카드 - 깨끗한 화이트 및 선명한 그림자 */
+  /* 카드 - 깔끔한 화이트 및 절제된 그림자 */
   --card: 0 0% 100%;
-  --card-foreground: 200 50% 10%;
+  --card-foreground: 224 50% 10%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 200 50% 10%;
+  --popover-foreground: 224 50% 10%;
 
-  /* Primary - 신뢰감 있는 프리미엄 블루 */
-  --primary: 217 91% 60%;
+  /* Primary - 이카운트 시그니처 레드 */
+  --primary: 355 85% 43%;
+  /* #CC1020 */
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary - 따뜻하고 안정적인 톤 */
-  --secondary: 210 40% 92%;
-  --secondary-foreground: 200 50% 10%;
+  /* Secondary - 신뢰감 있는 이카운트 블루 */
+  --secondary: 211 100% 35%;
+  /* #0056B3 */
+  --secondary-foreground: 0 0% 100%;
 
-  /* Muted - 높은 가독성의 중성톤 */
-  --muted: 210 20% 90%;
-  --muted-foreground: 200 10% 45%;
+  /* Muted - ERP 스타일의 차분한 그레이 */
+  --muted: 220 15% 92%;
+  --muted-foreground: 220 10% 40%;
 
-  /* Accent - 생동감 있는 하이라이트 */
-  --accent: 34 97% 56%;
-  --accent-foreground: 200 50% 10%;
+  /* Accent - 기능적 하이라이트 (기존 유지하되 톤 조정) */
+  --accent: 211 100% 95%;
+  --accent-foreground: 211 100% 35%;
 
   /* Destructive */
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 100%;
 
-  /* Border & Input - 명확한 구분 */
-  --border: 210 30% 85%;
-  --input: 210 30% 95%;
-  --ring: 217 91% 60%;
+  /* Border & Input - 명확한 실선 구분 */
+  --border: 220 15% 85%;
+  --input: 220 15% 95%;
+  --ring: 355 85% 43%;
 
-  /* Sidebar - 밝고 현대적인 스타일 */
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 200 50% 10%;
-  --sidebar-primary: 217 91% 60%;
+  /* Sidebar - 전문적인 네이비/화이트 조합 */
+  --sidebar: 211 100% 15%;
+  /* 어두운 네이비 계열로 변경하여 ERP 전문성 강조 */
+  --sidebar-foreground: 211 100% 95%;
+  --sidebar-primary: 355 85% 43%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 34 97% 56%;
-  --sidebar-accent-foreground: 200 50% 10%;
-  --sidebar-border: 210 30% 88%;
-  --sidebar-ring: 217 91% 60%;
+  --sidebar-accent: 211 100% 25%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 211 100% 20%;
+  --sidebar-ring: 355 85% 43%;
 
-  /* Chart colors */
-  --chart-1: 221.2 83.2% 53.3%;
-  --chart-2: 142.1 76.2% 36.3%;
-  --chart-3: 197 37% 24%;
-  --chart-4: 43 74% 66%;
-  --chart-5: 27 87% 67%;
+  /* Chart colors - 이카운트 팔레트와 조화로운 색상 */
+  --chart-1: 355 85% 43%;
+  /* 레드 */
+  --chart-2: 211 100% 35%;
+  /* 블루 */
+  --chart-3: 200 100% 25%;
+  --chart-4: 180 50% 40%;
+  --chart-5: 20 80% 50%;
 }
 
 @layer base {

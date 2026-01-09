@@ -26,60 +26,63 @@ export function TransactionList() {
     const getCategoryName = (id: string) => categories.find(c => c.id === id)?.name || 'Unknown'
 
     return (
-        <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-                <CardTitle className="flex items-center gap-2 text-slate-800">
-                    <Wallet className="h-5 w-5 text-blue-600" />
-                    거래 내역
+        <Card className="border border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6">
+                <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-800">
+                    <Wallet className="h-4 w-4 text-secondary" />
+                    거래 내역 상세
                 </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
                 <Table>
-                    <TableHeader className="bg-slate-50/30">
+                    <TableHeader className="bg-slate-50/50">
                         <TableRow className="hover:bg-transparent border-slate-100">
-                            <TableHead className="font-semibold text-slate-600 py-4"><div className="flex items-center gap-2"><Calendar className="h-4 w-4" /> 날짜</div></TableHead>
-                            <TableHead className="font-semibold text-slate-600"><div className="flex items-center gap-2"><Tag className="h-4 w-4" /> 구분</div></TableHead>
-                            <TableHead className="font-semibold text-slate-600">카테고리</TableHead>
-                            <TableHead className="font-semibold text-slate-600"><div className="flex items-center gap-2"><FileText className="h-4 w-4" /> 내용</div></TableHead>
-                            <TableHead className="text-right font-semibold text-slate-600"><div className="flex items-center justify-end gap-2"><DollarSign className="h-4 w-4" /> 금액</div></TableHead>
-                            <TableHead className="w-[80px]"></TableHead>
+                            <TableHead className="text-xs font-black text-slate-500 py-3 pl-6 uppercase tracking-wider">일자</TableHead>
+                            <TableHead className="text-xs font-black text-slate-500 uppercase tracking-wider">구분</TableHead>
+                            <TableHead className="text-xs font-black text-slate-500 uppercase tracking-wider">카테고리</TableHead>
+                            <TableHead className="text-xs font-black text-slate-500 uppercase tracking-wider">거래 내용</TableHead>
+                            <TableHead className="text-right text-xs font-black text-slate-500 uppercase tracking-wider pr-6">금액 (₩)</TableHead>
+                            <TableHead className="w-[60px]"></TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {sortedTransactions.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center h-40 text-slate-400">
-                                    거래 내역이 없습니다.
+                                <TableCell colSpan={6} className="text-center h-32 text-slate-400 text-xs font-bold">
+                                    등록된 거래 내역이 없습니다.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             sortedTransactions.map((t) => (
                                 <TableRow key={t.id} className="hover:bg-slate-50/50 transition-colors border-slate-50">
-                                    <TableCell className="py-4 text-slate-600">
-                                        {format(new Date(t.date), 'yyyy년 MM월 dd일')}
+                                    <TableCell className="py-3 pl-6 text-[12px] font-bold text-slate-500">
+                                        {format(new Date(t.date), 'yyyy.MM.dd')}
                                     </TableCell>
                                     <TableCell>
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${t.type === 'INCOME' ? 'bg-blue-50 text-blue-600' : 'bg-red-50 text-red-600'}`}>
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${t.type === 'INCOME'
+                                                ? 'bg-secondary/10 text-secondary border-secondary/20'
+                                                : 'bg-primary/10 text-primary border-primary/20'
+                                            }`}>
                                             {t.type === 'INCOME' ? '수입' : '지출'}
                                         </span>
                                     </TableCell>
-                                    <TableCell className="text-slate-600 font-medium">
+                                    <TableCell className="text-[12px] font-bold text-slate-700">
                                         {getCategoryName(t.categoryId)}
                                     </TableCell>
-                                    <TableCell className="text-slate-800">
+                                    <TableCell className="text-[12px] font-bold text-slate-900">
                                         {t.description}
                                     </TableCell>
-                                    <TableCell className={`text-right font-bold text-lg ${t.type === 'INCOME' ? 'text-blue-600' : 'text-red-600'}`}>
-                                        {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString()}원
+                                    <TableCell className={`text-right font-black text-[14px] pr-6 ${t.type === 'INCOME' ? 'text-secondary' : 'text-primary'}`}>
+                                        {t.type === 'INCOME' ? '+' : '-'}{t.amount.toLocaleString()}
                                     </TableCell>
-                                    <TableCell className="text-right pr-6">
+                                    <TableCell className="text-right pr-4">
                                         <Button
                                             variant="ghost"
                                             size="icon"
                                             onClick={() => removeTransaction(t.id)}
-                                            className="h-9 w-9 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                            className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-md transition-colors"
                                         >
-                                            <Trash2 className="h-4.5 w-4.5" />
+                                            <Trash2 className="h-3.5 w-3.5" />
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -89,5 +92,7 @@ export function TransactionList() {
                 </Table>
             </CardContent>
         </Card>
+    )
+}
     )
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Sparkles, Copy, ChevronRight, ChevronLeft } from "lucide-react"
+import { Sparkles, Copy, ChevronRight, ChevronLeft, FileText } from "lucide-react"
 
 export function PolicyGenerator() {
     const [step, setStep] = useState(1)
@@ -310,96 +311,101 @@ ${formData.cctv ? `## 15. 영상정보처리기기 운영·관리
     }
 
     return (
-        <Tabs defaultValue="wizard" className="w-full space-y-6">
-            <TabsList className="bg-slate-100 p-1.5 rounded-2xl h-14">
-                <TabsTrigger value="wizard" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-md px-8 py-2.5 transition-all text-slate-500 text-base font-semibold">
+        <Tabs defaultValue="wizard" className="w-full space-y-4">
+            <TabsList className="bg-slate-50 p-1 rounded-lg border border-slate-200 h-10 w-fit">
+                <TabsTrigger value="wizard" className="rounded-md data-[state=active]:bg-white data-[state=active]:text-secondary data-[state=active]:shadow-sm px-6 h-8 transition-all text-slate-500 text-[12px] font-black">
                     기본 생성 마법사
                 </TabsTrigger>
-                <TabsTrigger value="ai-helper" className="rounded-xl data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-md px-8 py-2.5 transition-all text-slate-500 text-base font-semibold flex items-center gap-2">
-                    <Sparkles className="h-4 w-4" />
+                <TabsTrigger value="ai-helper" className="rounded-md data-[state=active]:bg-white data-[state=active]:text-purple-600 data-[state=active]:shadow-sm px-6 h-8 transition-all text-slate-500 text-[12px] font-black flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5" />
                     AI 프롬프트 도우미
                 </TabsTrigger>
             </TabsList>
 
             {/* Standard Wizard Tab */}
-            <TabsContent value="wizard" className="grid gap-8 md:grid-cols-2">
-                <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white/80 backdrop-blur-md h-fit">
-                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-6">
-                        <CardTitle className="text-xl font-bold text-slate-800">방침 생성 (단계 {step}/6)</CardTitle>
-                        <CardDescription>개인정보보호위원회 15개 필수 항목</CardDescription>
+            <TabsContent value="wizard" className="grid gap-6 md:grid-cols-2">
+                <Card className="border border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white h-fit">
+                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-sm font-bold text-slate-800">방침 생성 (단계 {step}/6)</CardTitle>
+                            <span className="text-[10px] font-black text-slate-400 bg-white border border-slate-200 px-2 py-0.5 rounded">
+                                PIPA 규정 준수
+                            </span>
+                        </div>
                     </CardHeader>
-                    <CardContent className="space-y-6 pt-8 pb-8">
+                    <CardContent className="space-y-5 p-6 pb-6">
                         {step === 1 && (
                             <div className="space-y-4">
-                                <Label className="text-base font-semibold">1단계: 기본 정보</Label>
-                                <Input
-                                    placeholder="회사명 (Company Name)"
-                                    value={formData.companyName}
-                                    onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                                />
-                                <Input
-                                    placeholder="담당자 이메일 (Contact Email)"
-                                    value={formData.contactEmail}
-                                    onChange={(e) => setFormData({ ...formData, contactEmail: e.target.value })}
-                                />
-                                <Input
-                                    placeholder="웹사이트 주소 (Website URL)"
-                                    value={formData.websiteUrl}
-                                    onChange={(e) => setFormData({ ...formData, websiteUrl: e.target.value })}
-                                />
-                                <Input
-                                    placeholder="개인정보 보호책임자 성명"
-                                    value={formData.responsiblePerson}
-                                    onChange={(e) => setFormData({ ...formData, responsiblePerson: e.target.value })}
-                                />
-                                <Input
-                                    placeholder="담당 부서명"
-                                    value={formData.responsibleDept}
-                                    onChange={(e) => setFormData({ ...formData, responsibleDept: e.target.value })}
-                                />
-                                <Input
-                                    placeholder="담당자 연락처"
-                                    value={formData.responsiblePhone}
-                                    onChange={(e) => setFormData({ ...formData, responsiblePhone: e.target.value })}
-                                />
+                                <Label className="text-[11px] font-black text-slate-500 uppercase tracking-wider underline underline-offset-4 decoration-secondary/30 decoration-2">1단계: 기본 정보</Label>
+                                <div className="grid gap-3">
+                                    <Input
+                                        placeholder="회사명 (Company Name)"
+                                        value={formData.companyName}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, companyName: e.target.value })}
+                                        className="rounded-lg border-slate-200 h-9 text-xs font-bold focus-visible:ring-secondary"
+                                    />
+                                    <Input
+                                        placeholder="담당자 이메일 (Contact Email)"
+                                        value={formData.contactEmail}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, contactEmail: e.target.value })}
+                                        className="rounded-lg border-slate-200 h-9 text-xs font-bold focus-visible:ring-secondary"
+                                    />
+                                    <Input
+                                        placeholder="웹사이트 주소 (Website URL)"
+                                        value={formData.websiteUrl}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, websiteUrl: e.target.value })}
+                                        className="rounded-lg border-slate-200 h-9 text-xs font-bold focus-visible:ring-secondary"
+                                    />
+                                    <Input
+                                        placeholder="개인정보 보호책임자 성명"
+                                        value={formData.responsiblePerson}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, responsiblePerson: e.target.value })}
+                                        className="rounded-lg border-slate-200 h-9 text-xs font-bold focus-visible:ring-secondary"
+                                    />
+                                    <Input
+                                        placeholder="담당 부서명"
+                                        value={formData.responsibleDept}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, responsibleDept: e.target.value })}
+                                        className="rounded-lg border-slate-200 h-9 text-xs font-bold focus-visible:ring-secondary"
+                                    />
+                                    <Input
+                                        placeholder="담당자 연락처"
+                                        value={formData.responsiblePhone}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, responsiblePhone: e.target.value })}
+                                        className="rounded-lg border-slate-200 h-9 text-xs font-bold focus-visible:ring-secondary"
+                                    />
+                                </div>
                             </div>
                         )}
 
                         {step === 2 && (
                             <div className="space-y-4">
-                                <Label className="text-base font-semibold">2단계: 수집 항목 및 목적</Label>
+                                <Label className="text-[11px] font-black text-slate-500 uppercase tracking-wider underline underline-offset-4 decoration-secondary/30 decoration-2">2단계: 수집 항목 및 목적</Label>
                                 <div className="space-y-3">
-                                    <Label>수집하는 개인정보 항목</Label>
-                                    <div className="space-y-2">
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="c-name" checked={formData.collectsName} onCheckedChange={(c) => setFormData({ ...formData, collectsName: !!c })} />
-                                            <Label htmlFor="c-name">성명 (Name)</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="c-email" checked={formData.collectsEmail} onCheckedChange={(c) => setFormData({ ...formData, collectsEmail: !!c })} />
-                                            <Label htmlFor="c-email">이메일 (Email)</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="c-phone" checked={formData.collectsPhone} onCheckedChange={(c) => setFormData({ ...formData, collectsPhone: !!c })} />
-                                            <Label htmlFor="c-phone">전화번호 (Phone)</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="c-pay" checked={formData.collectsPayment} onCheckedChange={(c) => setFormData({ ...formData, collectsPayment: !!c })} />
-                                            <Label htmlFor="c-pay">결제 정보 (Payment Info)</Label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <Checkbox id="c-addr" checked={formData.collectsAddress} onCheckedChange={(c) => setFormData({ ...formData, collectsAddress: !!c })} />
-                                            <Label htmlFor="c-addr">주소 (Address)</Label>
-                                        </div>
+                                    <Label className="text-[11px] font-black text-slate-400">수집하는 개인정보 항목</Label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {[
+                                            { id: "c-name", label: "성명", key: "collectsName" },
+                                            { id: "c-email", label: "이메일", key: "collectsEmail" },
+                                            { id: "c-phone", label: "전화번호", key: "collectsPhone" },
+                                            { id: "c-pay", label: "결제 정보", key: "collectsPayment" },
+                                            { id: "c-addr", label: "주소", key: "collectsAddress" },
+                                        ].map((item) => (
+                                            <div key={item.id} className="flex items-center space-x-2 bg-slate-50 p-2 rounded border border-slate-100">
+                                                <Checkbox id={item.id} checked={(formData as any)[item.key]} onCheckedChange={(c: boolean | 'indeterminate') => setFormData({ ...formData, [item.key]: !!c })} className="rounded-sm border-slate-300 data-[state=checked]:bg-secondary data-[state=checked]:border-secondary" />
+                                                <Label htmlFor={item.id} className="text-xs font-bold text-slate-600 cursor-pointer">{item.label}</Label>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                                <div>
-                                    <Label>처리 목적</Label>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[11px] font-black text-slate-400">처리 목적</Label>
                                     <Textarea
                                         placeholder="예: 서비스 제공, 고객 지원, 마케팅 활용 등"
                                         value={formData.purpose}
-                                        onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, purpose: e.target.value })}
                                         rows={3}
+                                        className="rounded-lg border-slate-200 text-xs font-bold focus-visible:ring-secondary resize-none"
                                     />
                                 </div>
                             </div>
@@ -407,36 +413,40 @@ ${formData.cctv ? `## 15. 영상정보처리기기 운영·관리
 
                         {step === 3 && (
                             <div className="space-y-4">
-                                <Label className="text-base font-semibold">3단계: 보유기간 및 제3자 제공</Label>
-                                <div>
-                                    <Label>보유 및 이용 기간</Label>
+                                <Label className="text-[11px] font-black text-slate-500 uppercase tracking-wider underline underline-offset-4 decoration-secondary/30 decoration-2">3단계: 보유기간 및 제3자 제공</Label>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[11px] font-black text-slate-400">보유 및 이용 기간</Label>
                                     <Input
                                         placeholder="예: 회원 탈퇴 시까지, 1년"
                                         value={formData.retention}
-                                        onChange={(e) => setFormData({ ...formData, retention: e.target.value })}
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, retention: e.target.value })}
+                                        className="rounded-lg border-slate-200 h-9 text-xs font-bold focus-visible:ring-secondary"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="has-3rd" checked={formData.hasThirdParty} onCheckedChange={(c) => setFormData({ ...formData, hasThirdParty: !!c })} />
-                                        <Label htmlFor="has-3rd">제3자에게 개인정보 제공</Label>
+                                <div className="space-y-3 pt-2">
+                                    <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                        <Checkbox id="has-3rd" checked={formData.hasThirdParty} onCheckedChange={(c: boolean | 'indeterminate') => setFormData({ ...formData, hasThirdParty: !!c })} className="rounded-sm border-slate-300 data-[state=checked]:bg-secondary data-[state=checked]:border-secondary" />
+                                        <Label htmlFor="has-3rd" className="text-xs font-black text-slate-700 cursor-pointer">제3자에게 개인정보 제공</Label>
                                     </div>
                                     {formData.hasThirdParty && (
-                                        <div className="space-y-2 pl-6">
+                                        <div className="space-y-2 pl-6 animate-in slide-in-from-top-2 duration-300">
                                             <Input
                                                 placeholder="제공받는 자"
                                                 value={formData.thirdPartyName}
-                                                onChange={(e) => setFormData({ ...formData, thirdPartyName: e.target.value })}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, thirdPartyName: e.target.value })}
+                                                className="rounded-lg border-slate-200 h-9 text-xs font-bold"
                                             />
                                             <Input
                                                 placeholder="제공 목적"
                                                 value={formData.thirdPartyPurpose}
-                                                onChange={(e) => setFormData({ ...formData, thirdPartyPurpose: e.target.value })}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, thirdPartyPurpose: e.target.value })}
+                                                className="rounded-lg border-slate-200 h-9 text-xs font-bold"
                                             />
                                             <Input
                                                 placeholder="제공 항목"
                                                 value={formData.thirdPartyItems}
-                                                onChange={(e) => setFormData({ ...formData, thirdPartyItems: e.target.value })}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, thirdPartyItems: e.target.value })}
+                                                className="rounded-lg border-slate-200 h-9 text-xs font-bold"
                                             />
                                         </div>
                                     )}
@@ -446,33 +456,36 @@ ${formData.cctv ? `## 15. 영상정보처리기기 운영·관리
 
                         {step === 4 && (
                             <div className="space-y-4">
-                                <Label className="text-base font-semibold">4단계: 위탁 및 파기</Label>
-                                <div className="space-y-2">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="has-out" checked={formData.hasOutsourcing} onCheckedChange={(c) => setFormData({ ...formData, hasOutsourcing: !!c })} />
-                                        <Label htmlFor="has-out">개인정보 처리 위탁</Label>
+                                <Label className="text-[11px] font-black text-slate-500 uppercase tracking-wider underline underline-offset-4 decoration-secondary/30 decoration-2">4단계: 위탁 및 파기</Label>
+                                <div className="space-y-3">
+                                    <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                        <Checkbox id="has-out" checked={formData.hasOutsourcing} onCheckedChange={(c: boolean | 'indeterminate') => setFormData({ ...formData, hasOutsourcing: !!c })} className="rounded-sm border-slate-300 data-[state=checked]:bg-secondary data-[state=checked]:border-secondary" />
+                                        <Label htmlFor="has-out" className="text-xs font-black text-slate-700 cursor-pointer">개인정보 처리 위탁</Label>
                                     </div>
                                     {formData.hasOutsourcing && (
-                                        <div className="space-y-2 pl-6">
+                                        <div className="space-y-2 pl-6 animate-in slide-in-from-top-2 duration-300">
                                             <Input
                                                 placeholder="수탁업체명"
                                                 value={formData.outsourcingCompany}
-                                                onChange={(e) => setFormData({ ...formData, outsourcingCompany: e.target.value })}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, outsourcingCompany: e.target.value })}
+                                                className="rounded-lg border-slate-200 h-9 text-xs font-bold"
                                             />
                                             <Input
                                                 placeholder="위탁업무 내용"
                                                 value={formData.outsourcingTask}
-                                                onChange={(e) => setFormData({ ...formData, outsourcingTask: e.target.value })}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, outsourcingTask: e.target.value })}
+                                                className="rounded-lg border-slate-200 h-9 text-xs font-bold"
                                             />
                                         </div>
                                     )}
                                 </div>
-                                <div>
-                                    <Label>파기 방법</Label>
+                                <div className="space-y-1.5 pt-2">
+                                    <Label className="text-[11px] font-black text-slate-400">파기 방법</Label>
                                     <Textarea
                                         value={formData.destructionMethod}
-                                        onChange={(e) => setFormData({ ...formData, destructionMethod: e.target.value })}
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, destructionMethod: e.target.value })}
                                         rows={3}
+                                        className="rounded-lg border-slate-200 text-xs font-bold focus-visible:ring-secondary resize-none"
                                     />
                                 </div>
                             </div>
@@ -480,27 +493,28 @@ ${formData.cctv ? `## 15. 영상정보처리기기 운영·관리
 
                         {step === 5 && (
                             <div className="space-y-4">
-                                <Label className="text-base font-semibold">5단계: 안전성 확보조치</Label>
-                                <div>
-                                    <Label>안전성 확보조치</Label>
+                                <Label className="text-[11px] font-black text-slate-500 uppercase tracking-wider underline underline-offset-4 decoration-secondary/30 decoration-2">5단계: 안전성 확보조치</Label>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[11px] font-black text-slate-400">안전성 확보조치</Label>
                                     <Textarea
                                         placeholder="예: 암호화, 접근 통제, 보안 프로그램 설치"
                                         value={formData.securityMeasures}
-                                        onChange={(e) => setFormData({ ...formData, securityMeasures: e.target.value })}
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setFormData({ ...formData, securityMeasures: e.target.value })}
                                         rows={3}
+                                        className="rounded-lg border-slate-200 text-xs font-bold focus-visible:ring-secondary resize-none"
                                     />
                                 </div>
-                                <div className="space-y-2">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="cookies" checked={formData.usesCookies} onCheckedChange={(c) => setFormData({ ...formData, usesCookies: !!c })} />
-                                        <Label htmlFor="cookies">쿠키 사용</Label>
+                                <div className="space-y-3 pt-2">
+                                    <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                        <Checkbox id="cookies" checked={formData.usesCookies} onCheckedChange={(c: boolean | 'indeterminate') => setFormData({ ...formData, usesCookies: !!c })} className="rounded-sm border-slate-300 data-[state=checked]:bg-secondary data-[state=checked]:border-secondary" />
+                                        <Label htmlFor="cookies" className="text-xs font-black text-slate-700 cursor-pointer">쿠키 사용</Label>
                                     </div>
                                     {formData.usesCookies && (
                                         <Input
-                                            className="pl-6"
+                                            className="ml-6 rounded-lg border-slate-200 h-9 text-xs font-bold animate-in slide-in-from-top-2 duration-300"
                                             placeholder="쿠키 사용 목적"
                                             value={formData.cookiesPurpose}
-                                            onChange={(e) => setFormData({ ...formData, cookiesPurpose: e.target.value })}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, cookiesPurpose: e.target.value })}
                                         />
                                     )}
                                 </div>
@@ -509,115 +523,118 @@ ${formData.cctv ? `## 15. 영상정보처리기기 운영·관리
 
                         {step === 6 && (
                             <div className="space-y-4">
-                                <Label className="text-base font-semibold">6단계: CCTV 및 기타</Label>
-                                <div className="space-y-2">
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="c-cctv" checked={formData.cctv} onCheckedChange={(c) => setFormData({ ...formData, cctv: !!c })} />
-                                        <Label htmlFor="c-cctv">CCTV 운영</Label>
+                                <Label className="text-[11px] font-black text-slate-500 uppercase tracking-wider underline underline-offset-4 decoration-secondary/30 decoration-2">6단계: CCTV 및 기타</Label>
+                                <div className="space-y-3">
+                                    <div className="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200">
+                                        <Checkbox id="c-cctv" checked={formData.cctv} onCheckedChange={(c: boolean | 'indeterminate') => setFormData({ ...formData, cctv: !!c })} className="rounded-sm border-slate-300 data-[state=checked]:bg-secondary data-[state=checked]:border-secondary" />
+                                        <Label htmlFor="c-cctv" className="text-xs font-black text-slate-700 cursor-pointer">CCTV 운영</Label>
                                     </div>
                                     {formData.cctv && (
-                                        <div className="space-y-2 pl-6">
+                                        <div className="space-y-2 pl-6 animate-in slide-in-from-top-2 duration-300">
                                             <Input
                                                 placeholder="설치 위치 (예: 출입구, 주차장)"
                                                 value={formData.cctvLocation}
-                                                onChange={(e) => setFormData({ ...formData, cctvLocation: e.target.value })}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, cctvLocation: e.target.value })}
+                                                className="rounded-lg border-slate-200 h-9 text-xs font-bold"
                                             />
                                             <Input
                                                 placeholder="보관 기간 (예: 30일)"
                                                 value={formData.cctvRetention}
-                                                onChange={(e) => setFormData({ ...formData, cctvRetention: e.target.value })}
+                                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, cctvRetention: e.target.value })}
+                                                className="rounded-lg border-slate-200 h-9 text-xs font-bold"
                                             />
                                         </div>
                                     )}
                                 </div>
-                                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                                    <p className="text-sm text-green-800 font-medium">✓ 모든 필수 항목이 포함됩니다</p>
-                                    <p className="text-xs text-green-700 mt-1">개인정보보호위원회 가이드 준수</p>
+                                <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-emerald-600 font-black text-[10px]">VERIFIED</span>
+                                        <p className="text-xs font-bold text-emerald-800">모든 필수 항목이 포함되었습니다.</p>
+                                    </div>
+                                    <p className="text-[10px] text-emerald-600 mt-1 font-bold">개인정보보호위원회 처리방침 작성 가이드를 100% 준수합니다.</p>
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex justify-between mt-8 pt-6 border-t border-slate-100">
-                            <Button variant="ghost" onClick={handleBack} disabled={step === 1} className="text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl">
-                                <ChevronLeft className="mr-2 h-4 w-4" /> 이전
+                        <div className="flex justify-between mt-4 pt-4 border-t border-slate-100">
+                            <Button variant="ghost" onClick={handleBack} disabled={step === 1} className="h-9 px-4 text-xs font-bold text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-lg disabled:opacity-30">
+                                <ChevronLeft className="mr-1.5 h-3.5 w-3.5" /> 이전
                             </Button>
                             {step < 6 ? (
-                                <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 h-11">
-                                    다음 <ChevronRight className="ml-2 h-4 w-4" />
+                                <Button onClick={handleNext} className="h-9 px-6 bg-secondary hover:bg-secondary/90 text-white rounded-lg text-xs font-black shadow-sm">
+                                    다음 <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
                                 </Button>
                             ) : (
-                                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 h-11">
-                                    완료 ✓
+                                <Button className="h-9 px-6 bg-secondary hover:bg-secondary/90 text-white rounded-lg text-xs font-black shadow-sm">
+                                    생성 완료 ✓
                                 </Button>
                             )}
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-slate-900 h-full min-h-[700px]">
-                    <CardHeader className="bg-slate-800/50 border-b border-slate-700 pb-6 pt-8 px-8">
-                        <CardTitle className="text-white text-2xl font-bold flex items-center gap-3">
-                            <div className="bg-blue-500/20 p-2 rounded-xl">
-                                <FileText className="h-6 w-6 text-blue-400" />
-                            </div>
-                            미리보기
-                        </CardTitle>
-                        <CardDescription className="text-slate-400">규제 준수가 확인된 자동 생성 방침입니다.</CardDescription>
+                <Card className="border border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white flex flex-col">
+                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6">
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-secondary text-sm font-black flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                처리방침 미리보기
+                            </CardTitle>
+                            <span className="text-[10px] font-black text-slate-400">MD FORMAT</span>
+                        </div>
                     </CardHeader>
-                    <CardContent className="px-8 pt-8 flex flex-col h-[calc(100%-180px)]">
-                        <div className="bg-slate-800/80 p-6 rounded-2xl flex-grow overflow-auto whitespace-pre-wrap text-sm text-slate-300 border border-slate-700/50 leading-relaxed font-mono custom-scrollbar">
+                    <CardContent className="p-6 flex flex-col flex-grow">
+                        <div className="bg-slate-50 p-6 rounded-lg flex-grow overflow-auto whitespace-pre-wrap text-[12px] text-slate-600 border border-slate-200 leading-relaxed font-mono custom-scrollbar max-h-[500px]">
                             {generatePolicy()}
                         </div>
-                        <div className="mt-8">
-                            <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl h-14 text-lg font-bold shadow-xl shadow-blue-500/20" onClick={() => navigator.clipboard.writeText(generatePolicy())}>
-                                <Copy className="mr-3 h-5 w-5" /> 내용 복사하기
+                        <div className="mt-6 flex gap-2">
+                            <Button className="flex-grow bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 rounded-lg h-10 text-xs font-black shadow-sm" onClick={() => navigator.clipboard.writeText(generatePolicy())}>
+                                <Copy className="mr-2 h-3.5 w-3.5 text-slate-400" /> 방침 내용 복사
+                            </Button>
+                            <Button className="bg-secondary hover:bg-secondary/90 text-white rounded-lg h-10 px-4 text-xs font-black shadow-sm">
+                                파일 다운로드
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
             </TabsContent>
 
-            <TabsContent value="ai-helper" className="grid gap-8 md:grid-cols-2">
-                <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
-                    <CardHeader className="bg-purple-50/50 border-b border-purple-100 pb-6 pt-8">
-                        <CardTitle className="flex items-center gap-3 text-slate-800">
-                            <div className="bg-purple-100 p-2 rounded-xl">
-                                <Sparkles className="h-5 w-5 text-purple-600" />
-                            </div>
+            <TabsContent value="ai-helper" className="grid gap-6 md:grid-cols-2">
+                <Card className="border border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white">
+                    <CardHeader className="bg-purple-50/50 border-b border-purple-100 py-4 px-6">
+                        <CardTitle className="flex items-center gap-2 text-sm font-bold text-slate-800">
+                            <Sparkles className="h-4 w-4 text-purple-600" />
                             AI 프롬프트 생성기
                         </CardTitle>
-                        <CardDescription>
-                            특수 상황에 맞는 최적의 질문 프롬프트를 생성합니다.
-                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-6 pt-8 pb-8">
-                        <div className="space-y-3">
-                            <Label className="text-slate-700 font-semibold">상황 설명 (Situation)</Label>
+                    <CardContent className="space-y-4 p-6">
+                        <div className="space-y-1.5">
+                            <Label className="text-[11px] font-black text-slate-400 uppercase tracking-wider">특수 상황 설명</Label>
                             <Textarea
                                 placeholder="예: 저희는 카페를 운영하며, 방범용 CCTV를 설치했고, 영상을 30일간 보관합니다."
-                                className="min-h-[150px] rounded-2xl border-slate-200 focus:ring-purple-500"
+                                className="min-h-[150px] rounded-lg border-slate-200 focus-visible:ring-purple-500 text-xs font-bold resize-none"
                                 value={aiInput}
-                                onChange={(e) => setAiInput(e.target.value)}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAiInput(e.target.value)}
                             />
                         </div>
-                        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-2xl h-14 text-lg font-bold shadow-lg shadow-purple-200" onClick={generateAiPrompt} disabled={!aiInput}>
-                            <Sparkles className="mr-3 h-5 w-5" /> 프롬프트 생성
+                        <Button className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg h-10 font-black text-xs shadow-sm" onClick={generateAiPrompt} disabled={!aiInput}>
+                            <Sparkles className="mr-2 h-3.5 w-3.5" /> 프롬프트 생성하기
                         </Button>
                     </CardContent>
                 </Card>
 
-                <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-slate-900 border border-purple-500/20">
-                    <CardHeader className="bg-slate-800/50 border-b border-slate-700 pb-6 pt-8 px-8">
-                        <CardTitle className="text-white text-xl font-bold">생성된 프롬프트</CardTitle>
-                        <CardDescription className="text-slate-400 text-sm">LLM 모델(ChatGPT 등)에 붙여넣으세요.</CardDescription>
+                <Card className="border border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white flex flex-col">
+                    <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6">
+                        <CardTitle className="text-sm font-bold text-slate-800">생성된 질문 프롬프트</CardTitle>
+                        <CardDescription className="text-[11px] font-bold text-slate-400">복사하여 ChatGPT 등 AI 모델에 전달하세요.</CardDescription>
                     </CardHeader>
-                    <CardContent className="px-8 pt-8 pb-8">
-                        <div className="bg-slate-800/60 p-6 rounded-2xl h-[300px] overflow-auto whitespace-pre-wrap text-sm text-purple-200/80 border border-purple-500/10 font-mono leading-relaxed">
+                    <CardContent className="p-6 flex flex-col flex-grow">
+                        <div className="bg-purple-50/50 p-6 rounded-lg h-[241px] overflow-auto whitespace-pre-wrap text-[12px] text-purple-900 border border-purple-100 font-mono leading-relaxed custom-scrollbar">
                             {aiPromptResult || "왼쪽에서 상황을 입력하고 생성 버튼을 눌러주세요."}
                         </div>
-                        <div className="mt-8">
-                            <Button className="w-full border-2 border-purple-500/30 text-purple-400 hover:bg-purple-500 hover:text-white rounded-2xl h-14 text-lg font-bold transition-all" onClick={() => navigator.clipboard.writeText(aiPromptResult)} disabled={!aiPromptResult}>
-                                <Copy className="mr-3 h-5 w-5" /> 프롬프트 복사
+                        <div className="mt-6">
+                            <Button className="w-full border border-purple-200 bg-white text-purple-600 hover:bg-purple-50 rounded-lg h-10 font-black text-xs shadow-sm" onClick={() => navigator.clipboard.writeText(aiPromptResult)} disabled={!aiPromptResult}>
+                                <Copy className="mr-2 h-3.5 w-3.5" /> 프롬프트 복사
                             </Button>
                         </div>
                     </CardContent>

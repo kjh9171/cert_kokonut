@@ -1,5 +1,6 @@
 "use client"
 
+import * as React from "react"
 import { useState, useRef } from "react"
 import { usePrivacyStore } from "@/store/privacy-store"
 import { useAuthStore } from "@/store/auth-store"
@@ -21,7 +22,7 @@ export function SecureVault() {
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     // Filter documents for current user
-    const userDocuments = documents.filter(doc => doc.userId === user?.id)
+    const userDocuments = documents.filter((doc) => doc.userId === user?.id)
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -49,81 +50,94 @@ export function SecureVault() {
     }
 
     return (
-        <div className="grid gap-8 lg:grid-cols-2">
-            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white/80 backdrop-blur-md">
-                <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-                    <CardTitle className="flex items-center gap-2 text-slate-800">
-                        <Lock className="h-5 w-5 text-indigo-600" />
+        <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="border border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white">
+                <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6">
+                    <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-800">
+                        <Lock className="h-4 w-4 text-secondary" />
                         보안 문서 업로드
                     </CardTitle>
-                    <CardDescription>
+                    <CardDescription className="text-[11px] font-bold text-slate-400">
                         문서는 저장 전 브라우저에서 AES-256으로 암호화됩니다.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                        <Label htmlFor="doc-name">Document Name</Label>
+                <CardContent className="space-y-5 p-6">
+                    <div className="space-y-1.5">
+                        <Label htmlFor="doc-name" className="text-[11px] font-black text-slate-500 uppercase tracking-wider">문서 명칭</Label>
                         <Input
                             id="doc-name"
-                            placeholder="e.g. Employee Contract"
+                            placeholder="예: 2024년 근로계약서"
                             value={name}
-                            onChange={(e) => setName(e.target.value)}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
+                            className="rounded-lg border-slate-200 h-9 text-sm font-bold focus-visible:ring-secondary"
                         />
                     </div>
-                    <div className="grid w-full max-w-sm items-center gap-1.5">
-                        <Label htmlFor="file">File (Text/HTML/JSON)</Label>
-                        <Input
-                            id="file"
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                        />
+                    <div className="space-y-1.5">
+                        <Label htmlFor="file" className="text-[11px] font-black text-slate-500 uppercase tracking-wider">파일 선택 (CSV, TXT, JSON)</Label>
+                        <div className="relative group/file">
+                            <Input
+                                id="file"
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                className="rounded-lg border-slate-200 h-10 text-xs font-bold focus-visible:ring-secondary file:mr-4 file:py-1 file:px-4 file:rounded-md file:border-0 file:text-[10px] file:font-black file:bg-slate-100 file:text-slate-600 hover:file:bg-slate-200 cursor-pointer"
+                            />
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none group-hover/file:scale-110 transition-transform">
+                                <Upload className="h-4 w-4 text-slate-300" />
+                            </div>
+                        </div>
                     </div>
-                    <Button onClick={handleUpload} disabled={!name || !fileContent} className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-11 shadow-lg shadow-indigo-200">
-                        <Shield className="mr-2 h-4 w-4" /> 암호화 및 업로드
+                    <Button
+                        onClick={handleUpload}
+                        disabled={!name || !fileContent}
+                        className="w-full bg-secondary hover:bg-secondary/90 text-white rounded-lg h-10 font-black text-xs shadow-sm"
+                    >
+                        <Shield className="mr-2 h-3.5 w-3.5" /> 암호화 및 안전 저장
                     </Button>
                 </CardContent>
             </Card>
 
-            <Card className="border-none shadow-xl rounded-3xl overflow-hidden bg-white">
-                <CardHeader className="bg-slate-900 border-b border-slate-800">
-                    <CardTitle className="text-white flex items-center gap-2">
-                        <Lock className="h-5 w-5 text-indigo-400" />
+            <Card className="border border-slate-200 shadow-sm rounded-lg overflow-hidden bg-white">
+                <CardHeader className="bg-slate-50/50 border-b border-slate-100 py-4 px-6">
+                    <CardTitle className="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <Shield className="h-4 w-4 text-secondary" />
                         암호화된 문서 보관함
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0">
                     <Table>
-                        <TableHeader className="bg-slate-800/50">
-                            <TableRow className="hover:bg-transparent border-slate-800">
-                                <TableHead className="text-slate-300 font-medium">문서명</TableHead>
-                                <TableHead className="text-slate-300 font-medium">업로드 날짜</TableHead>
-                                <TableHead className="text-slate-300 font-medium text-right">관리</TableHead>
+                        <TableHeader className="bg-slate-50/50">
+                            <TableRow className="hover:bg-transparent border-slate-100">
+                                <TableHead className="text-xs font-black text-slate-500 py-3 pl-6 uppercase tracking-wider">문서 내역</TableHead>
+                                <TableHead className="text-xs font-black text-slate-500 uppercase tracking-wider">업로드 일자</TableHead>
+                                <TableHead className="text-right text-xs font-black text-slate-500 uppercase tracking-wider pr-6">관리</TableHead>
                             </TableRow>
                         </TableHeader>
-                        <TableBody className="bg-slate-900">
+                        <TableBody>
                             {userDocuments.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={3} className="text-center h-40 text-slate-500">
+                                    <TableCell colSpan={3} className="text-center h-32 text-slate-400 text-xs font-bold">
                                         보관함이 비어 있습니다.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 userDocuments.map((doc) => (
-                                    <TableRow key={doc.id} className="hover:bg-slate-800/30 border-slate-800 transition-colors">
-                                        <TableCell className="font-medium text-slate-200 flex items-center gap-2 py-4">
-                                            <Shield className="h-4 w-4 text-indigo-400" />
-                                            {doc.name}
+                                    <TableRow key={doc.id} className="hover:bg-slate-50/50 border-slate-50 transition-colors">
+                                        <TableCell className="font-bold text-slate-900 flex items-center gap-2 py-3 pl-6">
+                                            <div className="bg-secondary/10 p-1.5 rounded-md">
+                                                <Lock className="h-3.5 w-3.5 text-secondary" />
+                                            </div>
+                                            <span className="text-[12px]">{doc.name}</span>
                                         </TableCell>
-                                        <TableCell className="text-slate-400 text-sm">
-                                            {format(new Date(doc.uploadedAt), 'yyyy년 MM월 dd일')}
+                                        <TableCell className="text-slate-500 text-[11px] font-bold">
+                                            {format(new Date(doc.uploadedAt), 'yyyy.MM.dd')}
                                         </TableCell>
-                                        <TableCell className="text-right space-x-2 pr-6">
-                                            <Button size="sm" variant="ghost" className="text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900/50 rounded-lg" onClick={() => handleView(doc.id)}>
-                                                <Eye className="h-4 w-4 mr-1" /> 열람
+                                        <TableCell className="text-right pr-4 space-x-1">
+                                            <Button size="sm" variant="ghost" className="h-8 text-[11px] font-black text-secondary hover:text-secondary hover:bg-secondary/5 rounded-md" onClick={() => handleView(doc.id)}>
+                                                <Eye className="h-3.5 w-3.5 mr-1" /> 열람
                                             </Button>
-                                            <Button size="sm" variant="ghost" className="text-slate-500 hover:text-red-400 hover:bg-red-900/30 rounded-lg" onClick={() => removeDocument(doc.id)}>
-                                                <Trash2 className="h-4 w-4" />
+                                            <Button size="sm" variant="ghost" className="h-8 w-8 text-slate-300 hover:text-primary hover:bg-primary/5 rounded-md" onClick={() => removeDocument(doc.id)}>
+                                                <Trash2 className="h-3.5 w-3.5" />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
