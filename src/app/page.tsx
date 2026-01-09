@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, ShieldCheck, TrendingUp } from "lucide-react"
+import { ArrowRight, ShieldCheck, TrendingUp, Lock } from "lucide-react"
 
 export default function Home() {
   return (
@@ -16,10 +16,10 @@ export default function Home() {
           <Link className="text-sm font-bold text-slate-700 hover:text-primary transition-colors" href="/login">
             대시보드
           </Link>
-          <Link className="text-sm font-bold text-slate-700 hover:text-primary transition-colors" href="#">
+          <Link className="text-sm font-bold text-slate-700 hover:text-primary transition-colors" href="/demo">
             기능 소개
           </Link>
-          <Link className="text-sm font-bold text-slate-700 hover:text-primary transition-colors" href="#">
+          <Link className="text-sm font-bold text-slate-700 hover:text-primary transition-colors" href="/support">
             고객센터
           </Link>
         </nav>
@@ -57,56 +57,64 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-              <div className="relative animate-in slide-in-from-right duration-700">
-                <div className="absolute -inset-4 bg-gradient-to-tr from-primary/10 to-secondary/10 rounded-xl blur-2xl"></div>
-                <div className="relative bg-white p-2 rounded-xl border border-slate-200 shadow-2xl overflow-hidden">
-                  <img src="/erp_dashboard_premium_illustration.png" alt="BizGuard Dashboard" className="rounded-lg w-full h-auto" />
+              <div className="relative animate-in slide-in-from-right zoom-in duration-1000">
+                <div className="absolute -inset-10 bg-gradient-to-tr from-primary/20 via-secondary/20 to-cyan-400/20 rounded-full blur-[100px] opacity-60 animate-pulse"></div>
+                <div className="relative bg-white/40 backdrop-blur-xl p-3 rounded-2xl border border-white/40 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                  <img src="/erp_premium_3d_isometric_dashboard.png" alt="BizGuard Premium Dashboard" className="rounded-xl w-full h-auto transition-transform duration-700 group-hover:scale-[1.02]" />
+                  <div className="absolute top-4 right-4 p-2 bg-white/80 backdrop-blur-md rounded-lg border border-white/50 shadow-sm animate-bounce">
+                    <ShieldCheck className="h-5 w-5 text-primary" />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Feature Grid: Clean & Functional */}
-        <section className="w-full py-20 bg-[#F5F7FA]">
-          <div className="container px-4 md:px-6">
-            <div className="text-center mb-16 space-y-4">
-              <h2 className="text-3xl md:text-4xl font-black text-slate-900">
+        {/* Feature Grid: Ultra Premium */}
+        <section className="w-full py-24 bg-white relative overflow-hidden">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-[120px]"></div>
+          <div className="container px-4 md:px-6 relative">
+            <div className="text-center mb-20 space-y-4">
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight">
                 비즈니스가 필요한 모든 기능을 하나로
               </h2>
-              <p className="text-lg text-slate-500 font-medium">관리 효율은 높이고, 보안 리스크는 0으로 만듭니다.</p>
+              <p className="text-xl text-slate-500 font-medium">관리 효율은 높이고, 보안 리스크는 0으로 만듭니다.</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-10">
               {/* Feature 1 */}
-              <div className="bg-white p-10 rounded-lg border border-slate-200 hover:border-primary/30 hover:shadow-xl transition-all group">
-                <div className="p-4 w-fit rounded-lg bg-primary text-white mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-primary/20">
-                  <TrendingUp className="h-7 w-7" />
+              <div className="bg-white p-12 rounded-2xl border border-slate-100 hover:border-primary/20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-500 group relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="p-4 w-fit rounded-xl bg-primary text-white mb-8 group-hover:rotate-6 transition-transform shadow-xl shadow-primary/20">
+                  <TrendingUp className="h-8 w-8" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4">재무 관리 표준</h3>
-                <p className="text-slate-600 leading-relaxed font-medium">
+                <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">재무 관리 표준</h3>
+                <p className="text-slate-500 leading-relaxed font-medium">
                   수입/지출 내역 자동 분석 및 엑셀 연동을 통해 수작업 없는 완벽한 장부 관리를 실현합니다.
                 </p>
               </div>
 
               {/* Feature 2 */}
-              <div className="bg-white p-10 rounded-lg border border-slate-200 hover:border-secondary/30 hover:shadow-xl transition-all group">
-                <div className="p-4 w-fit rounded-lg bg-secondary text-white mb-6 group-hover:scale-110 transition-transform shadow-lg shadow-secondary/20">
-                  <ShieldCheck className="h-7 w-7" />
+              <div className="bg-white p-12 rounded-2xl border border-slate-100 hover:border-secondary/20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-500 group relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="p-4 w-fit rounded-xl bg-secondary text-white mb-8 group-hover:rotate-6 transition-transform shadow-xl shadow-secondary/20">
+                  <ShieldCheck className="h-8 w-8" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4">개인정보 통합 보호</h3>
-                <p className="text-slate-600 leading-relaxed font-medium">
+                <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">개인정보 통합 보호</h3>
+                <p className="text-slate-500 leading-relaxed font-medium">
                   ISMS/ISO 규격에 맞춘 개인정보 보호 체계 구축부터 정책 자동 생성까지 원스톱으로 제공합니다.
                 </p>
               </div>
 
               {/* Feature 3 */}
-              <div className="bg-white p-10 rounded-lg border border-slate-200 hover:border-slate-900/10 hover:shadow-xl transition-all group">
-                <div className="p-4 w-fit rounded-lg bg-slate-900 text-white mb-6 group-hover:scale-110 transition-transform shadow-lg">
-                  <ArrowRight className="h-7 w-7" />
+              <div className="bg-white p-12 rounded-2xl border border-slate-100 hover:border-slate-900/10 hover:shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-500 group relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <div className="p-4 w-fit rounded-xl bg-slate-900 text-white mb-8 group-hover:rotate-6 transition-transform shadow-xl shadow-slate-900/10">
+                  <Lock className="h-8 w-8" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-4">강력한 시큐어 금고</h3>
-                <p className="text-slate-600 leading-relaxed font-medium">
+                <h3 className="text-2xl font-bold text-slate-900 mb-4 tracking-tight">강력한 시큐어 금고</h3>
+                <p className="text-slate-500 leading-relaxed font-medium">
                   어떠한 침입도 허용하지 않는 군사 등급 암호화 금고로 기업의 핵심 기술 문서를 안전하게 지킵니다.
                 </p>
               </div>
