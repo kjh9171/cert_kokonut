@@ -48,55 +48,62 @@
 
 :root {
   --radius: 0.5rem;
-  
+
   /* 밝고 깨끗한 배경 */
   --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+  --foreground: 222 47% 6%;
+  /* 더 진한 검정색에 가까운 파란색으로 가독성 향상 */
 
   /* 카드 - 약간의 그림자감 */
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
+  --card-foreground: 222 47% 6%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
+  --popover-foreground: 222 47% 6%;
 
-  /* Primary - 신뢰감 있는 파란색 */
-  --primary: 217 91% 60%;
+  /* Primary - 더 선명하고 깊이 있는 신뢰감의 파란색 */
+  --primary: 221 83% 53%;
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary - 부드러운 회색 */
-  --secondary: 214 32% 91%;
+  /* Secondary - 부드럽고 차분한 회색 */
+  --secondary: 210 40% 96%;
   --secondary-foreground: 222 47% 11%;
 
-  /* Muted - 배경 강조용 */
+  /* Muted - 가독성을 위해 더 진한 회색 적용 */
   --muted: 210 40% 96%;
-  --muted-foreground: 215 16% 47%;
+  --muted-foreground: 215 25% 40%;
+  /* 더 진한 회색으로 가독성 개선 */
 
-  /* Accent - 안전함을 나타내는 녹색 */
-  --accent: 142 76% 36%;
+  /* Accent - 안전함을 나타내는 선명한 녹색 */
+  --accent: 142 71% 45%;
+  /* 더 생동감 있는 녹색 */
   --accent-foreground: 0 0% 100%;
 
-  /* Destructive - 경고용 빨간색 */
+  /* Destructive - 명확한 경고용 빨간색 */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
 
   /* Border & Input */
   --border: 214 32% 91%;
   --input: 214 32% 91%;
-  --ring: 217 91% 60%;
-  
-  /* Chart colors - 밝고 구분되는 색상 */
-  --chart-1: 217 91% 60%;
-  --chart-2: 142 76% 36%;
-  --chart-3: 45 93% 47%;
-  --chart-4: 280 67% 55%;
-  --chart-5: 340 82% 52%;
+  --ring: 221 83% 53%;
+
+  /* Chart colors - 높은 대비를 가진 색상 */
+  --chart-1: 221 83% 53%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 262 83% 58%;
+  --chart-5: 346 84% 61%;
 }
 
 @layer base {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
   }
+
   body {
     @apply bg-background text-foreground;
     -webkit-font-smoothing: antialiased;
