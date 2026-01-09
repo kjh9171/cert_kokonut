@@ -50,15 +50,17 @@ export default function Home() {
                       지금 바로 시작하기 <ArrowRight className="ml-2 h-5 w-5" />
                     </Button>
                   </Link>
-                  <Button variant="outline" className="h-14 px-10 text-lg font-bold border-2 border-slate-200 hover:bg-slate-50 transition-all">
-                    체험 ID 신청
-                  </Button>
+                  <Link href="/demo">
+                    <Button variant="outline" className="h-14 px-10 text-lg font-bold border-2 border-slate-200 hover:bg-slate-50 transition-all text-slate-700">
+                      체험 ID 신청
+                    </Button>
+                  </Link>
                 </div>
               </div>
               <div className="relative animate-in slide-in-from-right duration-700">
                 <div className="absolute -inset-4 bg-gradient-to-tr from-primary/10 to-secondary/10 rounded-xl blur-2xl"></div>
                 <div className="relative bg-white p-2 rounded-xl border border-slate-200 shadow-2xl overflow-hidden">
-                  <img src="/ecount_style_dashboard_illustration.png" alt="BizGuard Dashboard" className="rounded-lg w-full h-auto" />
+                  <img src="/erp_dashboard_premium_illustration.png" alt="BizGuard Dashboard" className="rounded-lg w-full h-auto" />
                 </div>
               </div>
             </div>
@@ -226,9 +228,9 @@ export default function Home() {
                 <div>
                   <h4 className="text-white font-bold mb-6">정책/약관</h4>
                   <ul className="space-y-3 text-sm font-medium">
-                    <li><Link href="#" className="hover:text-primary transition">이용약관</Link></li>
+                    <li><Link href="/search/google" className="hover:text-primary transition">이용약관</Link></li>
                     <li><Link href="/privacy-policy" className="hover:text-primary transition">개인정보처리방침</Link></li>
-                    <li><Link href="#" className="hover:text-primary transition">CSR 리포트</Link></li>
+                    <li><Link href="/search/ai" className="hover:text-primary transition">CSR 리포트</Link></li>
                   </ul>
                 </div>
               </div>
