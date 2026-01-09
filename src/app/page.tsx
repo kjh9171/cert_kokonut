@@ -7,7 +7,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 items-center px-4 lg:px-6 border-b">
         <div className="flex items-center gap-2 font-semibold">
-          <ShieldCheck className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <ShieldCheck className="h-6 w-6 text-blue-600" />
           <span>비즈가드 (BizGuard)</span>
         </div>
         <nav className="ml-auto flex gap-4 sm:gap-6">
@@ -30,8 +30,8 @@ export default function Home() {
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl/none">
                   개인 및 소상공인을 위한 <br /> 통합 경영 관리 & 보안 파트너
                 </h1>
-                <p className="mx-auto max-w-[700px] text-gray-500 md:text-xl dark:text-gray-400">
-                  <span className="font-semibold text-blue-600 dark:text-blue-400">비즈가드(BizGuard)</span>와 함께라면 복잡한 장부 정리부터 까다로운 개인정보 보호까지 한 번에 해결됩니다.
+                <p className="mx-auto max-w-[700px] text-gray-600 md:text-xl">
+                  <span className="font-semibold text-blue-600">비즈가드(BizGuard)</span>와 함께라면 복잡한 장부 정리부터 까다로운 개인정보 보호까지 한 번에 해결됩니다.
                 </p>
               </div>
               <div className="space-x-4">
@@ -49,30 +49,30 @@ export default function Home() {
         </section>
 
         {/* Service Summary Section */}
-        <section className="w-full py-12 md:py-24 bg-white dark:bg-black border-b">
+        <section className="w-full py-12 md:py-24 bg-gray-50 border-b">
           <div className="container px-4 md:px-6">
             <div className="mx-auto max-w-4xl text-center space-y-6">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
                 비즈가드는 어떤 서비스인가요?
               </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">
+              <p className="text-lg text-gray-600 leading-relaxed">
                 <strong>비즈가드(BizGuard)</strong>는 소규모 비즈니스를 운영하는 사장님과 프리랜서분들을 위해 탄생했습니다.<br />
                 매출/지출 관리와 같은 <strong>재무 업무</strong>부터, 중요 계약서 보관 및 개인정보 처리방침 생성과 같은 <strong>보안 업무</strong>까지.<br />
                 이제 복잡한 도구 없이 비즈가드 하나로 안전하고 똑똑하게 관리하세요.
               </p>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 text-left">
-                <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-lg">
+                <div className="bg-blue-50 p-6 rounded-lg border border-blue-100">
                   <h3 className="flex items-center text-xl font-bold mb-3 text-blue-600">
                     <TrendingUp className="mr-2 h-5 w-5" /> 재무 관리 (Finance)
                   </h3>
-                  <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-2">
+                  <ul className="list-disc list-inside text-gray-600 space-y-2">
                     <li>간편한 수입/지출 장부 작성</li>
                     <li>엑셀 파일 업로드 및 자동 분석</li>
                     <li>AI 기반의 다음 달 매출 예측 리포트</li>
                   </ul>
                 </div>
-                <div className="bg-slate-50 dark:bg-slate-900 p-6 rounded-lg">
-                  <h3 className="flex items-center text-xl font-bold mb-3 text-purple-600">
+                <div className="bg-green-50 p-6 rounded-lg border border-green-100">
+                  <h3 className="flex items-center text-xl font-bold mb-3 text-green-700">
                     <ShieldCheck className="mr-2 h-5 w-5" /> 보안/프라이버시 (Security)
                   </h3>
                   <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-2">
@@ -86,24 +86,24 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-100 dark:bg-gray-800">
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50">
           <div className="container px-4 md:px-6">
             <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
               <div className="flex flex-col items-center space-y-4 text-center">
-                <div className="p-4 bg-white dark:bg-gray-900 rounded-full">
+                <div className="p-4 bg-white rounded-full shadow-sm">
                   <TrendingUp className="h-10 w-10 text-blue-500" />
                 </div>
                 <h2 className="text-xl font-bold">스마트한 재무 관리</h2>
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-gray-600">
                   자동 장부 정리와 AI 기반 예측으로 비즈니스 수익성을 유지하세요.
                 </p>
               </div>
               <div className="flex flex-col items-center space-y-4 text-center">
-                <div className="p-4 bg-white dark:bg-gray-900 rounded-full">
+                <div className="p-4 bg-white rounded-full shadow-sm">
                   <ShieldCheck className="h-10 w-10 text-green-500" />
                 </div>
                 <h2 className="text-xl font-bold">개인정보 지킴이</h2>
-                <p className="text-gray-500 dark:text-gray-400">
+                <p className="text-gray-600">
                   금융권 수준의 암호화와 규정 준수 도구로 민감한 데이터를 보호합니다.
                 </p>
               </div>
@@ -123,7 +123,7 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <h2 className="text-3xl font-bold text-center mb-12">투명하고 합리적인 요금제</h2>
             <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="flex flex-col p-6 bg-white dark:bg-gray-900 rounded-lg border shadow-sm">
+              <div className="flex flex-col p-6 bg-white rounded-lg border shadow-sm">
                 <h3 className="text-lg font-bold">스타터 (Starter)</h3>
                 <div className="mt-4 text-4xl font-bold">0원</div>
                 <p className="text-sm text-gray-500">평생 무료</p>
@@ -134,8 +134,8 @@ export default function Home() {
                 </ul>
                 <Button className="mt-8">시작하기</Button>
               </div>
-              <div className="flex flex-col p-6 bg-white dark:bg-gray-900 rounded-lg border border-purple-500 shadow-md relative overflow-hidden">
-                <div className="absolute top-0 right-0 bg-purple-500 text-white text-xs px-2 py-1">인기</div>
+              <div className="flex flex-col p-6 bg-white rounded-lg border border-blue-500 shadow-md relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-blue-600 text-white text-xs px-2 py-1">인기</div>
                 <h3 className="text-lg font-bold">프로 (Pro)</h3>
                 <div className="mt-4 text-4xl font-bold">15,000원<span className="text-base font-normal text-gray-500">/월</span></div>
                 <p className="text-sm text-gray-500">성장하는 비즈니스용</p>
@@ -162,7 +162,7 @@ export default function Home() {
         </section>
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-gray-500 dark:text-gray-400">© 2024 BizGuard. All rights reserved. | 대표자: 김종환</p>
+        <p className="text-xs text-gray-600">© 2024 BizGuard. All rights reserved. | 대표자: 김종환</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <Link className="text-xs hover:underline underline-offset-4" href="#">
             서비스 이용약관
