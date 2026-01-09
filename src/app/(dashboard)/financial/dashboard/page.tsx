@@ -26,99 +26,102 @@ export default function FinancialDashboard() {
     const balance = totalIncome - totalExpense
 
     return (
-        <div className="space-y-8 p-8 min-h-full">
-            <header className="flex flex-col gap-2 mb-2 p-0 bg-transparent relative outline-none border-none">
-                <div className="flex items-center gap-2">
-                    <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold uppercase tracking-wider">Financial Overview</span>
+        <div className="space-y-8 p-4 md:p-8 min-h-full bg-gradient-to-b from-background to-slate-50">
+            <header className="flex flex-col gap-3 mb-2 p-0 bg-transparent">
+                <div className="inline-flex items-center gap-2 w-fit">
+                    <span className="px-4 py-2 rounded-full bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">💰 재무 분석</span>
                 </div>
-                <h2 className="text-4xl font-extrabold tracking-tight text-slate-900">금융 대시보드</h2>
-                <p className="text-slate-500 text-base font-medium">안녕 하세요, <span className="text-blue-600 font-bold">{user?.adminName || '사용자'}</span>님! 실시간 재무 분석 결과입니다.</p>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 mb-2">재무 대시보드</h1>
+                        <p className="text-lg text-slate-600 font-medium">안녕하세요, <span className="text-blue-600 font-bold">{user?.adminName || '사용자'}</span>님! 👋</p>
+                    </div>
+                </div>
             </header>
 
-            {/* Excel Upload Section - Premium Glassmorphism style */}
-            <Card className="border-none shadow-xl shadow-slate-200/50 bg-white/80 backdrop-blur-md rounded-3xl overflow-hidden group border-t border-slate-50">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 py-6 px-8">
+            {/* Summary Metrics - Premium Layout */}
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                    { title: "총 잔액", value: balance, label: "현재 가용 자산", icon: DollarSign, color: "blue", trend: "+2.4%" },
+                    { title: "총 수입", value: totalIncome, label: "이번 달 누적 수입", icon: TrendingUp, color: "emerald", trend: "+12.5%" },
+                    { title: "총 지출", value: totalExpense, label: "이번 달 누적 지출", icon: TrendingDown, color: "rose", trend: "-3.2%" },
+                ].map((item, idx) => {
+                    const colorMap = {
+                        blue: { bg: "bg-blue-50", icon: "text-blue-600", border: "border-blue-200", badge: "bg-blue-100 text-blue-700", light: "bg-blue-600" },
+                        emerald: { bg: "bg-emerald-50", icon: "text-emerald-600", border: "border-emerald-200", badge: "bg-emerald-100 text-emerald-700", light: "bg-emerald-600" },
+                        rose: { bg: "bg-rose-50", icon: "text-rose-600", border: "border-rose-200", badge: "bg-rose-100 text-rose-700", light: "bg-rose-600" },
+                    }
+                    const c = colorMap[item.color as keyof typeof colorMap]
+                    return (
+                        <Card key={idx} className={`border-2 ${c.border} shadow-md hover:shadow-lg transition-all bg-white rounded-2xl overflow-hidden group cursor-pointer`}>
+                            <CardHeader className={`${c.bg} flex flex-row items-center justify-between space-y-0 pb-3 px-5 pt-5`}>
+                                <CardTitle className="text-sm font-bold text-slate-600">
+                                    {item.title}
+                                </CardTitle>
+                                <div className={`h-10 w-10 rounded-xl ${c.light} text-white flex items-center justify-center shadow-lg`}>
+                                    <item.icon className="h-5 w-5" />
+                                </div>
+                            </CardHeader>
+                            <CardContent className="px-5 pb-5 pt-4">
+                                <div className="text-3xl font-black text-slate-900 mb-2">₩{item.value.toLocaleString()}</div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${c.badge}`}>{item.trend}</span>
+                                    <span className="text-xs text-slate-500 font-medium">{item.label}</span>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )
+                })}
+
+                {/* Projected Sales Card - Highlighted Premium */}
+                <Card className="border-none shadow-lg hover:shadow-xl transition-all bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 text-white rounded-2xl overflow-hidden relative col-span-full lg:col-span-1 group">
+                    <div className="absolute top-0 right-0 p-6 opacity-20 group-hover:opacity-30 transition-opacity">
+                        <TrendingUp className="size-20" />
+                    </div>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-5 pt-5 relative z-10">
+                        <CardTitle className="text-sm font-bold text-blue-100 uppercase tracking-wide">
+                            예상 매출
+                        </CardTitle>
+                        <div className="h-9 w-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <TrendingUp className="h-5 w-5 text-white" />
+                        </div>
+                    </CardHeader>
+                    <CardContent className="px-5 pb-5 pt-3 relative z-10">
+                        <div className="text-3xl font-black mb-2">₩{(totalIncome * 1.1).toLocaleString()}</div>
+                        <p className="text-sm text-blue-100/90">지난달 대비 <span className="text-white font-bold">+10% 📈</span></p>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Excel Upload Section - Premium Card */}
+            <Card className="border-2 border-blue-200 shadow-lg bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all group">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-25 border-b border-blue-100 py-5 px-6">
                     <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                            <CardTitle className="text-xl font-bold flex items-center gap-3 text-slate-800">
-                                <div className="p-2 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-200">
+                            <CardTitle className="text-lg font-bold flex items-center gap-3 text-slate-900">
+                                <div className="p-2.5 rounded-lg bg-blue-600 text-white shadow-lg">
                                     <CreditCard className="h-5 w-5" />
                                 </div>
-                                데이터 인텔리전스 (Excel Import)
+                                데이터 분석 (Excel 업로드)
                             </CardTitle>
-                            <CardDescription className="text-slate-500 font-medium ml-13">정산 파일을 업로드하여 AI 기반 재무 분석을 시작하세요.</CardDescription>
-                        </div>
-                        <div className="hidden md:block">
-                            <div className="flex -space-x-2">
-                                {[1, 2, 3].map(i => (
-                                    <div key={i} className="size-8 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
-                                        AI
-                                    </div>
-                                ))}
-                            </div>
+                            <CardDescription className="text-slate-600 font-medium text-sm">정산 파일을 업로드하여 AI 기반 재무 분석을 시작하세요.</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="p-8">
-                    <div className="relative rounded-2xl border-2 border-dashed border-slate-100 bg-slate-50/50 p-4 transition-colors group-hover:border-blue-200 group-hover:bg-blue-50/30">
+                <CardContent className="p-6">
+                    <div className="relative rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-6 transition-all group-hover:border-blue-300 group-hover:bg-blue-50/30">
                         <ExcelUpload />
                     </div>
                 </CardContent>
             </Card>
 
-            {/* Summary Metrics - Premium Layout */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                {[
-                    { title: "총 잔액", value: balance, label: "현재 가용 자산", icon: DollarSign, color: "blue", trend: "+2.4%" },
-                    { title: "총 수입", value: totalIncome, label: "이번 달 누적 수입", icon: TrendingUp, color: "emerald", trend: "+12.5%" },
-                    { title: "총 지출", value: totalExpense, label: "이번 달 누적 지출", icon: TrendingDown, color: "rose", trend: "-3.2%" },
-                ].map((item, idx) => (
-                    <Card key={idx} className="border-none shadow-lg shadow-slate-200/40 bg-white rounded-3xl p-1 transition-transform hover:-translate-y-1 duration-300">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-6">
-                            <CardTitle className="text-sm font-bold text-slate-500 mb-0">
-                                {item.title}
-                            </CardTitle>
-                            <div className={`h-11 w-11 rounded-2xl bg-${item.color}-50 flex items-center justify-center shadow-inner border border-${item.color}-100`}>
-                                <item.icon className={`h-5 w-5 text-${item.color}-600`} />
-                            </div>
-                        </CardHeader>
-                        <CardContent className="px-6 pb-6">
-                            <div className="text-3xl font-black text-slate-900 mb-1">₩{item.value.toLocaleString()}</div>
-                            <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-${item.color}-50 text-${item.color}-600`}>{item.trend}</span>
-                                <span className="text-xs text-slate-400 font-medium">{item.label}</span>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-
-                {/* Projected Sales Card - Highlighted Premium */}
-                <Card className="border-none shadow-xl shadow-blue-200/40 bg-gradient-to-br from-blue-600 to-blue-700 text-white rounded-3xl overflow-hidden relative">
-                    <div className="absolute top-0 right-0 p-4 opacity-10">
-                        <TrendingUp className="size-24" />
-                    </div>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 px-6 pt-6 relative z-10">
-                        <CardTitle className="text-sm font-bold text-blue-100">
-                            예상 매출 (Forecast)
-                        </CardTitle>
-                        <div className="h-8 w-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                            <TrendingUp className="h-4 w-4 text-white" />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-6 relative z-10">
-                        <div className="text-3xl font-black mb-1">₩{(totalIncome * 1.1).toLocaleString()}</div>
-                        <p className="text-xs text-blue-100/80 font-medium">지난달 대비 <span className="text-white font-bold">+10% 성장이 기대됩니다</span></p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Charts Section - Wide Premium Card */}
-            <Card className="border-none shadow-xl shadow-slate-200/50 bg-white rounded-[2rem] p-2">
-                <div className="px-6 pt-6 pb-2">
-                    <h3 className="text-xl font-bold text-slate-800">데이터 시각화</h3>
-                    <p className="text-sm text-slate-400">카테고리별 지출 및 수입 트렌드 분석</p>
+            {/* Charts Section - Premium Card */}
+            <Card className="border-2 border-slate-200 shadow-lg bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-all">
+                <div className="px-6 pt-6 pb-3 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100">
+                    <h3 className="text-xl font-bold text-slate-900">📊 데이터 시각화</h3>
+                    <p className="text-sm text-slate-500 font-medium mt-1">카테고리별 지출 및 수입 트렌드 분석</p>
                 </div>
-                <CardContent className="p-4">
+                <CardContent className="p-6">
                     <DashboardCharts />
                 </CardContent>
             </Card>

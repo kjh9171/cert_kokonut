@@ -32,83 +32,112 @@ export default function SupportPage() {
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in duration-700">
-            <div className="flex flex-col gap-2">
-                <h2 className="text-3xl font-bold tracking-tight text-slate-900">고객 지원 (Support)</h2>
-                <p className="text-slate-500 text-lg">
-                    서비스 이용 중 궁금한 점이나 불편한 점이 있다면 언제든 문의해주세요.
-                </p>
-            </div>
+        <div className="max-w-3xl mx-auto space-y-8 min-h-full bg-gradient-to-b from-background to-slate-50 p-4 md:p-8">
+            <header className="flex flex-col gap-3">
+                <div className="inline-flex items-center gap-2 w-fit">
+                    <span className="px-4 py-2 rounded-full bg-blue-100 border border-blue-200 text-blue-700 text-xs font-bold uppercase tracking-wider">💬 고객 지원</span>
+                </div>
+                <div>
+                    <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-slate-900 mb-2">고객 지원 센터</h1>
+                    <p className="text-lg text-slate-600 font-medium">
+                        서비스 이용 중 궁금한 점이나 불편한 점이 있다면 언제든 연락주세요. 24시간 내에 답변해드립니다.
+                    </p>
+                </div>
+            </header>
 
-            <Card className="border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white/80 backdrop-blur-md">
-                <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-8 pt-10 px-10">
-                    <CardTitle className="flex items-center gap-3 text-2xl font-bold text-slate-800">
-                        <div className="bg-blue-600 p-2.5 rounded-2xl text-white shadow-lg shadow-blue-200">
+            <Card className="border-2 border-blue-200 shadow-lg rounded-2xl overflow-hidden hover:shadow-xl transition-all">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-25 border-b border-blue-100 pb-6 pt-6 px-6 md:px-8">
+                    <CardTitle className="flex items-center gap-3 text-xl md:text-2xl font-bold text-slate-900">
+                        <div className="bg-blue-600 p-2.5 rounded-lg text-white shadow-lg">
                             <Mail className="h-6 w-6" />
                         </div>
                         문의 작성
                     </CardTitle>
-                    <CardDescription className="text-slate-500 text-base">
+                    <CardDescription className="text-slate-600 font-medium text-sm md:text-base mt-1">
                         작성하신 내용은 플랫폼 관리자에게 즉시 전달됩니다.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="p-10">
-                    <form onSubmit={handleSubmit} className="space-y-8">
-                        <div className="space-y-3">
-                            <Label className="text-slate-700 font-bold px-1">문의 유형</Label>
+                <CardContent className="p-6 md:p-8">
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="space-y-2">
+                            <Label className="text-slate-700 font-bold">문의 유형</Label>
                             <Select
                                 value={formData.category}
                                 onValueChange={(val) => setFormData({ ...formData, category: val })}
                             >
-                                <SelectTrigger className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 focus:ring-blue-500 text-base">
-                                    <SelectValue placeholder="유형 선택" />
+                                <SelectTrigger className="h-12 rounded-lg border-slate-300 bg-white focus:ring-blue-500 text-base font-medium">
+                                    <SelectValue placeholder="유형을 선택하세요" />
                                 </SelectTrigger>
-                                <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
-                                    <SelectItem value="general" className="rounded-xl">일반 문의</SelectItem>
-                                    <SelectItem value="billing" className="rounded-xl">결제/요금 문의</SelectItem>
-                                    <SelectItem value="technical" className="rounded-xl">기술/오류 문의</SelectItem>
-                                    <SelectItem value="feature" className="rounded-xl">기능 제안</SelectItem>
+                                <SelectContent className="rounded-lg border-slate-200 shadow-lg">
+                                    <SelectItem value="general">📋 일반 문의</SelectItem>
+                                    <SelectItem value="billing">💳 결제/요금 문의</SelectItem>
+                                    <SelectItem value="technical">🔧 기술/오류 문의</SelectItem>
+                                    <SelectItem value="feature">💡 기능 제안</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        <div className="space-y-3">
-                            <Label className="text-slate-700 font-bold px-1">제목</Label>
+                        <div className="space-y-2">
+                            <Label className="text-slate-700 font-bold">제목 *</Label>
                             <Input
-                                placeholder="제목을 입력해주세요"
-                                className="h-14 rounded-2xl border-slate-200 bg-slate-50/50 focus:ring-blue-500 text-base"
+                                placeholder="문의 제목을 간단히 입력해주세요"
+                                className="h-12 rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-base"
                                 value={formData.subject}
                                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                             />
                         </div>
 
-                        <div className="space-y-3">
-                            <Label className="text-slate-700 font-bold px-1">문의 내용</Label>
+                        <div className="space-y-2">
+                            <Label className="text-slate-700 font-bold">문의 내용 *</Label>
                             <Textarea
-                                placeholder="문의하실 상세 내용을 상세히 작성해주세요. 재무나 개인정보 관련 구체적인 상담이 필요하신 경우 내용을 자세히 적어주시면 더 정확한 답변이 가능합니다."
-                                className="min-h-[200px] rounded-[1.5rem] border-slate-200 bg-slate-50/50 focus:ring-blue-500 text-base p-5 leading-relaxed"
+                                placeholder="상세한 내용을 작성해주세요. 더 자세할수록 빠른 답변이 가능합니다."
+                                className="min-h-48 rounded-lg border-slate-300 focus:border-blue-500 focus:ring-blue-500 text-base p-4 resize-none"
                                 value={formData.message}
                                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                             />
                         </div>
 
-                        <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-2xl h-16 text-xl font-bold shadow-xl shadow-blue-500/30 transition-all hover:-translate-y-1 active:scale-95 disabled:hover:translate-y-0" type="submit" disabled={isSending || !formData.subject || !formData.message}>
+                        <Button 
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-lg h-12 text-lg font-bold shadow-lg hover:shadow-xl transition-all disabled:opacity-50" 
+                            type="submit" 
+                            disabled={isSending || !formData.subject || !formData.message}
+                        >
                             {isSending ? (
-                                <span className="flex items-center gap-3">
-                                    <svg className="animate-spin h-6 w-6 text-white" viewBox="0 0 24 24">
+                                <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                     </svg>
                                     발송 중...
                                 </span>
                             ) : (
-                                <span className="flex items-center gap-3">
-                                    <Send className="h-6 w-6" />
+                                <span className="flex items-center gap-2">
+                                    <Send className="h-5 w-5" />
                                     문의하기
                                 </span>
                             )}
                         </Button>
                     </form>
+                </CardContent>
+            </Card>
+
+            <Card className="border-2 border-slate-200 shadow-lg rounded-2xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-25 border-b border-slate-100 pb-5 pt-5 px-6 md:px-8">
+                    <CardTitle className="text-lg font-bold text-slate-900">❓ 자주 묻는 질문</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 md:p-8">
+                    <div className="space-y-4">
+                        {[
+                            { q: "구독을 취소하려면 어떻게 해야 하나요?", a: "계정 설정 > 결제 정보에서 언제든 구독을 취소할 수 있습니다." },
+                            { q: "데이터는 얼마나 안전한가요?", a: "AES-256 군사 등급 암호화를 사용하여 최고 수준의 보안을 제공합니다." },
+                            { q: "팀원 초대는 어떻게 하나요?", a: "설정 > 팀 관리에서 팀원의 이메일을 입력하여 초대할 수 있습니다." },
+                        ].map((faq, idx) => (
+                            <div key={idx} className="p-4 rounded-lg border border-slate-200 hover:bg-blue-50/30 transition-colors cursor-pointer">
+                                <p className="font-bold text-slate-900 mb-1">{faq.q}</p>
+                                <p className="text-slate-600 text-sm">{faq.a}</p>
+                            </div>
+                        ))}
+                    </div>
                 </CardContent>
             </Card>
         </div>
