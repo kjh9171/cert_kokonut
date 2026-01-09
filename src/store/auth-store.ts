@@ -9,7 +9,9 @@ interface AuthState {
     users: User[]
     isAuthenticated: boolean
     login: (email: string, passwordHash: string) => boolean
-    signup: (user: Omit<User, 'id' | 'isVerified' | 'role' | 'status'>, role?: 'PLATFORM_ADMIN' | 'COMPANY_ADMIN') => void
+    signup: (user: Omit<User, 'id' | 'isVerified' | 'role' | 'status' | 'emailVerified' | 'twoFactorEnabled'>, role?: 'PLATFORM_ADMIN' | 'COMPANY_ADMIN') => void
+    sendVerificationEmail: (email: string) => string // Returns mock token
+    verifyEmail: (email: string, token: string) => boolean
     addTeamMember: (adminEmail: string, newMemberEmail: string) => void
     logout: () => void
     verifyOtp: (token: string) => boolean
@@ -34,6 +36,9 @@ export const useAuthStore = create<AuthState>()(
                     companyName: 'Test Company',
                     businessRegistrationNumber: '000-00-00000',
                     isVerified: true,
+                    emailVerified: true,
+                    twoFactorEnabled: true,
+                    twoFactorSecret: 'JBSWY3DPEHPK3PXP', // Example secret
                     role: 'COMPANY_USER',
                     status: 'ACTIVE'
                 }
@@ -44,8 +49,13 @@ export const useAuthStore = create<AuthState>()(
             login: (email, passwordHash) => {
                 const user = get().users.find(u => u.email === email && u.passwordHash === passwordHash)
                 if (user) {
-                    set({ pendingUser: user })
-                    return true
+                    if (user.twoFactorEnabled) {
+                        set({ pendingUser: user })
+                        return true
+                    } else {
+                        set({ user, isAuthenticated: true })
+                        return true
+                    }
                 }
                 return false
             },
@@ -54,10 +64,45 @@ export const useAuthStore = create<AuthState>()(
                     ...userData,
                     id: crypto.randomUUID(),
                     isVerified: false,
+                    emailVerified: false,
+                    twoFactorEnabled: false,
                     role: role,
-                    status: 'ACTIVE' // Default to Active
+                    status: 'PENDING' // Default to Pending for new signups
                 }
                 set((state) => ({ users: [...state.users, newUser] }))
+            },
+            sendVerificationEmail: (email) => {
+                const mockToken = Math.floor(100000 + Math.random() * 900000).toString()
+                const expiry = new Date(Date.now() + 3 * 60 * 1000) // 3 mins
+
+                set((state) => ({
+                    users: state.users.map(u =>
+                        u.email === email
+                            ? { ...u, emailVerificationToken: mockToken, emailVerificationExpiry: expiry }
+                            : u
+                    )
+                }))
+                console.log(`[Mock Email] Verification code for ${email}: ${mockToken}`)
+                return mockToken
+            },
+            verifyEmail: (email, token) => {
+                const users = get().users
+                const user = users.find(u => u.email === email)
+
+                if (user && user.emailVerificationToken === token) {
+                    const now = new Date()
+                    if (user.emailVerificationExpiry && user.emailVerificationExpiry > now) {
+                        set((state) => ({
+                            users: state.users.map(u =>
+                                u.email === email
+                                    ? { ...u, emailVerified: true, status: 'ACTIVE' as const }
+                                    : u
+                            )
+                        }))
+                        return true
+                    }
+                }
+                return false
             },
             addTeamMember: (adminEmail, newMemberEmail) => {
                 const users = get().users
@@ -71,7 +116,9 @@ export const useAuthStore = create<AuthState>()(
                     adminName: "팀원",
                     companyName: admin.companyName, // Inherit company
                     businessRegistrationNumber: admin.businessRegistrationNumber,
-                    isVerified: true, // Auto verify internal members for now
+                    isVerified: true,
+                    emailVerified: true,
+                    twoFactorEnabled: false,
                     role: 'COMPANY_USER',
                     status: 'ACTIVE'
                 }
@@ -80,13 +127,10 @@ export const useAuthStore = create<AuthState>()(
             logout: () => set({ user: null, isAuthenticated: false, pendingUser: null }),
             verifyOtp: (token) => {
                 const pending = get().pendingUser
-                if (!pending) return false
+                if (!pending || !pending.twoFactorSecret) return false
 
-                // In a real app, verify token with otplib using pending.twoFactorSecret
-                // const isValid = authenticator.check(token, pending.twoFactorSecret)
-
-                // For Mock: Accept any token for now as we don't effectively sync secrets in client-mock
-                const isValid = true
+                // Real verification with otplib (token check against stored secret)
+                const isValid = authenticator.check(token, pending.twoFactorSecret)
 
                 if (isValid) {
                     set({ user: pending, isAuthenticated: true, pendingUser: null })
@@ -95,7 +139,10 @@ export const useAuthStore = create<AuthState>()(
                 return false
             },
             generateOtpSecret: (email) => {
-                return authenticator.generateSecret()
+                const secret = authenticator.generateSecret()
+                // Store the secret for the pending signup user if needed, 
+                // but usually handled during actual registration flow
+                return secret
             },
             updateUserStatus: (userId, status) => {
                 set((state) => ({

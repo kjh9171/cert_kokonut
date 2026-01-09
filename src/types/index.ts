@@ -4,11 +4,15 @@ export type RecurringInterval = 'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'
 export interface User {
     id: string
     email: string
-    passwordHash: string // In real app, never store plain password
+    passwordHash: string
     adminName: string
     companyName: string
     businessRegistrationNumber: string
-    isVerified: boolean
+    isVerified: boolean // 전반적인 승인 상태
+    emailVerified: boolean // 이메일 인증 여부
+    emailVerificationToken?: string
+    emailVerificationExpiry?: Date
+    twoFactorEnabled: boolean // OTP 2단계 인증 활성화 여부
     twoFactorSecret?: string // Secret for Google OTP
     role: 'PLATFORM_ADMIN' | 'COMPANY_ADMIN' | 'COMPANY_USER'
     status?: 'PENDING' | 'ACTIVE' | 'SUSPENDED'

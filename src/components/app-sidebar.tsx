@@ -56,6 +56,10 @@ const data = {
             icon: ShieldCheck,
             items: [
                 {
+                    title: "관리 대시보드 (Dashboard)",
+                    url: "/privacy/dashboard",
+                },
+                {
                     title: "보안 금고 (Vault)",
                     url: "/privacy/vault",
                 },
