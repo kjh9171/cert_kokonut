@@ -78,15 +78,16 @@ export default function AdminDashboardPage() {
                                         <TableCell className="text-right space-x-2">
                                             <Button variant="outline" size="sm" onClick={() => handleResetPassword(u.email)}>
                                                 PW초기화
-                                                {u.role !== 'PLATFORM_ADMIN' && (
-                                                    <Button
-                                                        variant={u.status === 'SUSPENDED' ? 'default' : 'ghost'}
-                                                        size="sm"
-                                                        onClick={() => handleToggleStatus(u.id, u.status)}
-                                                    >
-                                                        {u.status === 'SUSPENDED' ? '활성화' : '중지'}
-                                                    </Button>
-                                                )}
+                                            </Button>
+                                            {u.role !== 'PLATFORM_ADMIN' && (
+                                                <Button
+                                                    variant={u.status === 'SUSPENDED' ? 'default' : 'ghost'}
+                                                    size="sm"
+                                                    onClick={() => handleToggleStatus(u.id, u.status)}
+                                                >
+                                                    {u.status === 'SUSPENDED' ? '활성화' : '중지'}
+                                                </Button>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))

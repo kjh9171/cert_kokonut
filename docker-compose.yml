@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  cert-kokonut:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cert-kokonut-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - cert-network
+
+networks:
+  cert-network:
+    driver: bridge

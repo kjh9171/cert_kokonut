@@ -44,8 +44,6 @@ export default function AdminSignupPage() {
                 adminName: formData.adminName,
                 companyName: formData.companyName,
                 businessRegistrationNumber: formData.businessRegistrationNumber,
-                companyName: formData.companyName,
-                businessRegistrationNumber: formData.businessRegistrationNumber,
             }, 'PLATFORM_ADMIN')
 
             alert("관리자 등록이 완료되었습니다. 로그인해주세요.")

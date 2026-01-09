@@ -10,9 +10,7 @@ export interface User {
     businessRegistrationNumber: string
     isVerified: boolean
     twoFactorSecret?: string // Secret for Google OTP
-    twoFactorSecret?: string // Secret for Google OTP
     role: 'PLATFORM_ADMIN' | 'COMPANY_ADMIN' | 'COMPANY_USER'
-    status?: 'PENDING' | 'ACTIVE' | 'SUSPENDED'
     status?: 'PENDING' | 'ACTIVE' | 'SUSPENDED'
 }
 
