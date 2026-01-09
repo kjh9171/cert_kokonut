@@ -83,6 +83,10 @@ const data = {
                     url: "/settings",
                 },
                 {
+                    title: "결제 및 구독 관리",
+                    url: "/settings/billing",
+                },
+                {
                     title: "문의하기 (Support)",
                     url: "/support",
                 },
