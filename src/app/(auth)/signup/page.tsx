@@ -94,19 +94,20 @@ export default function SignupPage() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-slate-50/50">
-            <Card className="w-[450px] shadow-lg border-none">
-                <CardHeader className="space-y-1">
-                    <CardTitle className="text-2xl font-bold text-slate-900">회원가입 (Signup)</CardTitle>
-                    <CardDescription>
-                        {step === 1 ? "관리자 및 회사 정보를 입력해주세요." : "보안을 위해 Google OTP를 설정해주세요."}
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 p-4">
+            <Card className="w-full max-w-[500px] shadow-2xl border-2 border-blue-100 overflow-hidden">
+                <div className="h-3 bg-gradient-to-r from-blue-600 to-blue-500 w-full" />
+                <CardHeader className="pt-8 pb-6 px-8 bg-gradient-to-br from-white to-blue-50/30">
+                    <CardTitle className="text-3xl font-black text-slate-900 mb-2">회원가입</CardTitle>
+                    <CardDescription className="text-base text-slate-600 font-medium">
+                        {step === 1 ? "📝 관리자 및 회사 정보를 입력해주세요." : "🔐 보안을 위해 OTP를 설정해주세요."}
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-8 bg-white space-y-6">
                     {step === 1 && (
-                        <div className="space-y-4">
+                        <div className="space-y-5">
                             <div className="space-y-2">
-                                <Label className="text-slate-700">이메일 (회사계정)</Label>
+                                <Label className="text-slate-800 font-bold text-sm">📧 이메일</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         type="email"
@@ -114,14 +115,14 @@ export default function SignupPage() {
                                         value={formData.email}
                                         disabled={isEmailVerified}
                                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="flex-1"
+                                        className="flex-1 h-12 border-2 border-slate-200 focus:border-blue-500 text-base font-medium"
                                     />
                                     {!isEmailVerified && (
                                         <Button
                                             variant="outline"
                                             onClick={handleSendCode}
                                             disabled={isEmailSent && timer > 0}
-                                            className="whitespace-nowrap"
+                                            className="h-12 px-4 font-bold border-2 hover:bg-blue-50"
                                         >
                                             {isEmailSent ? "재발송" : "인증요청"}
                                         </Button>
@@ -130,78 +131,83 @@ export default function SignupPage() {
                             </div>
 
                             {isEmailSent && !isEmailVerified && (
-                                <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                                    <Label className="text-blue-900 text-xs">인증번호 입력</Label>
+                                <div className="space-y-3 p-4 bg-blue-50 rounded-xl border-2 border-blue-200">
+                                    <Label className="text-blue-900 font-bold text-sm">인증번호 입력</Label>
                                     <div className="flex gap-2">
                                         <div className="relative flex-1">
                                             <Input
-                                                placeholder="6자리 숫자"
+                                                placeholder="000000"
                                                 value={verificationCode}
                                                 onChange={(e) => setVerificationCode(e.target.value)}
-                                                className="pr-12"
+                                                className="h-12 border-2 border-blue-300 focus:border-blue-500 pr-12 text-base font-medium"
                                             />
-                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-blue-600">
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm font-bold text-blue-700 bg-white px-2 py-1 rounded">
                                                 {formatTime(timer)}
                                             </span>
                                         </div>
-                                        <Button onClick={handleVerifyEmail} className="bg-blue-600 hover:bg-blue-700">
+                                        <Button onClick={handleVerifyEmail} className="h-12 px-6 bg-blue-600 hover:bg-blue-700 font-bold">
                                             확인
                                         </Button>
                                     </div>
-                                    {timer === 0 && <p className="text-xs text-rose-500">인증 시간이 만료되었습니다. 다시 시도해주세요.</p>}
+                                    {timer === 0 && <p className="text-sm text-rose-700 font-semibold bg-rose-100 p-2 rounded">⚠️ 인증 시간이 만료되었습니다.</p>}
                                 </div>
                             )}
 
                             {isEmailVerified && (
-                                <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 p-2 rounded-md border border-emerald-100 text-sm font-medium">
-                                    <div className="h-4 w-4 rounded-full bg-emerald-500 flex items-center justify-center text-[10px] text-white">✓</div>
-                                    이메일 인증이 완료되었습니다.
+                                <div className="flex items-center gap-2 text-emerald-700 bg-emerald-100 p-3 rounded-lg border-2 border-emerald-200 text-sm font-bold">
+                                    <div className="h-5 w-5 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs">✓</div>
+                                    ✓ 이메일 인증이 완료되었습니다.
                                 </div>
                             )}
 
                             <div className="space-y-2">
-                                <Label className="text-slate-700">비밀번호</Label>
+                                <Label className="text-slate-800 font-bold text-sm">🔐 비밀번호</Label>
                                 <Input
                                     type="password"
+                                    placeholder="••••••••"
                                     value={formData.password}
                                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                    className="h-12 border-2 border-slate-200 focus:border-blue-500 text-base font-medium"
                                 />
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-2">
-                                    <Label className="text-slate-700">관리자 이름</Label>
+                                    <Label className="text-slate-800 font-bold text-sm">👤 관리자 이름</Label>
                                     <Input
                                         placeholder="홍길동"
                                         value={formData.adminName}
                                         onChange={(e) => setFormData({ ...formData, adminName: e.target.value })}
+                                        className="h-11 border-2 border-slate-200 focus:border-blue-500 text-sm"
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label className="text-slate-700">회사명</Label>
+                                    <Label className="text-slate-800 font-bold text-sm">🏢 회사명</Label>
                                     <Input
                                         placeholder="(주)Kokonut"
                                         value={formData.companyName}
                                         onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                                        className="h-11 border-2 border-slate-200 focus:border-blue-500 text-sm"
                                     />
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-slate-700">사업자등록번호</Label>
+                                <Label className="text-slate-800 font-bold text-sm">📋 사업자등록번호</Label>
                                 <Input
-                                    placeholder="000-00-00000"
+                                    placeholder="123-45-67890"
                                     value={formData.bizId}
                                     onChange={(e) => setFormData({ ...formData, bizId: e.target.value })}
+                                    className="h-12 border-2 border-slate-200 focus:border-blue-500 text-base font-medium"
                                 />
                             </div>
 
-                            {error && <p className="text-xs text-rose-500 font-medium">{error}</p>}
+                            {error && <div className="text-sm text-rose-700 bg-rose-100 p-3 rounded-lg border-2 border-rose-200 font-semibold">⚠️ {error}</div>}
 
                             <Button
-                                className="w-full h-12 text-lg bg-slate-900 hover:bg-slate-800 transition-all font-bold"
+                                className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 transition-all font-bold shadow-lg"
                                 onClick={() => setStep(2)}
                                 disabled={!isEmailVerified || !formData.password || !formData.companyName}
                             >
-                                다음 단계로 (Next Step)
+                                다음 단계 →
                             </Button>
                         </div>
                     )}
@@ -209,36 +215,37 @@ export default function SignupPage() {
                     {step === 2 && (
                         <div className="flex flex-col items-center space-y-6">
                             <div className="text-center space-y-2">
-                                <p className="text-sm text-slate-600">
-                                    Google Authenticator 앱으로 아래 QR 코드를 스캔하세요.
+                                <p className="text-base text-slate-700 font-semibold">
+                                    🔐 Google Authenticator 앱으로<br/>
+                                    아래 QR 코드를 스캔하세요.
                                 </p>
                             </div>
 
-                            <div className="p-4 bg-white border-2 border-slate-100 rounded-2xl shadow-inner">
+                            <div className="p-5 bg-gradient-to-br from-blue-50 to-white border-3 border-blue-200 rounded-2xl shadow-lg">
                                 {qrUrl ? (
-                                    <img src={qrUrl} alt="QR Code" className="w-48 h-48" />
+                                    <img src={qrUrl} alt="QR Code" className="w-56 h-56" />
                                 ) : (
-                                    <div className="w-48 h-48 animate-pulse bg-slate-100 rounded-lg" />
+                                    <div className="w-56 h-56 animate-pulse bg-slate-100 rounded-lg" />
                                 )}
                             </div>
 
-                            <div className="w-full p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                <p className="text-[10px] text-slate-400 uppercase font-bold mb-1">Backup Secret Key</p>
-                                <code className="text-sm text-slate-700 break-all font-mono">{secret}</code>
+                            <div className="w-full p-4 bg-slate-50 rounded-lg border-2 border-slate-300">
+                                <p className="text-xs text-slate-600 uppercase font-bold mb-2">🔑 백업 시크릿 키</p>
+                                <code className="text-sm text-slate-900 break-all font-mono font-bold">{secret}</code>
                             </div>
 
-                            <Button className="w-full h-12 text-lg bg-emerald-600 hover:bg-emerald-700 font-bold" onClick={handleSignup}>
-                                회원가입 완료 (Complete)
+                            <Button className="w-full h-12 text-base bg-emerald-600 hover:bg-emerald-700 font-bold shadow-lg" onClick={handleSignup}>
+                                ✓ 회원가입 완료
                             </Button>
                         </div>
                     )}
                 </CardContent>
-                <CardFooter className="flex flex-col border-t bg-slate-50/50 p-6 rounded-b-xl gap-4">
+                <CardFooter className="flex flex-col border-t-2 border-slate-100 bg-gradient-to-r from-blue-50/50 to-slate-50/50 p-6 gap-4">
                     <button
                         onClick={() => router.push('/login')}
-                        className="text-sm font-medium text-slate-500 hover:text-blue-600 transition-colors"
+                        className="text-base font-semibold text-slate-600 hover:text-blue-600 transition-colors"
                     >
-                        이미 계정이 있으신가요? 로그인
+                        이미 계정이 있으신가요? <span className="underline">로그인</span>
                     </button>
                 </CardFooter>
             </Card>

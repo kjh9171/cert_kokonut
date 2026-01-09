@@ -58,62 +58,69 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="flex items-center justify-center min-h-screen bg-slate-50/50">
-            <Card className="w-[400px] shadow-xl border-none overflow-hidden">
-                <div className="h-2 bg-blue-600 w-full" />
-                <CardHeader className="pt-8 pb-6 px-8">
-                    <CardTitle className="text-2xl font-bold text-slate-900">로그인 (Login)</CardTitle>
-                    <CardDescription className="text-slate-500">
-                        안전한 서비스를 위해 로그인해주세요.
+        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50">
+            <Card className="w-[420px] shadow-2xl border-2 border-blue-100 overflow-hidden">
+                <div className="h-3 bg-gradient-to-r from-blue-600 to-blue-500 w-full" />
+                <CardHeader className="pt-8 pb-6 px-8 bg-gradient-to-br from-white to-blue-50/30">
+                    <CardTitle className="text-3xl font-black text-slate-900 mb-2">로그인</CardTitle>
+                    <CardDescription className="text-base text-slate-600 font-medium">
+                        BizGuard에 접속하세요.
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="px-8 pb-8 space-y-6">
+                <CardContent className="px-8 pb-8 space-y-6 bg-white">
                     {step === 1 && (
-                        <div className="space-y-4">
+                        <div className="space-y-5">
                             <div className="space-y-2">
-                                <Label className="text-slate-700 font-semibold text-sm">이메일</Label>
+                                <Label className="text-slate-800 font-bold text-sm block">📧 이메일</Label>
                                 <Input
                                     type="email"
                                     placeholder="admin@company.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="h-11 border-slate-200 focus:ring-blue-500"
+                                    className="h-12 border-2 border-slate-200 focus:border-blue-500 focus:ring-blue-500 text-base font-medium placeholder-slate-400"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label className="text-slate-700 font-semibold text-sm">비밀번호</Label>
+                                <Label className="text-slate-800 font-bold text-sm block">🔐 비밀번호</Label>
                                 <Input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     onKeyDown={(e) => e.key === 'Enter' && handleFirstStep()}
-                                    className="h-11 border-slate-200 focus:ring-blue-500"
+                                    className="h-12 border-2 border-slate-200 focus:border-blue-500 focus:ring-blue-500 text-base font-medium"
                                 />
                             </div>
-                            {error && <div className="text-sm text-rose-500 bg-rose-50 p-2 rounded border border-rose-100">{error}</div>}
+                            {error && (
+                                <div className="text-sm text-rose-700 bg-rose-100 p-3 rounded-lg border-2 border-rose-200 font-medium">
+                                    ⚠️ {error}
+                                </div>
+                            )}
                             <Button
-                                className="w-full h-11 bg-blue-600 hover:bg-blue-700 font-bold shadow-md shadow-blue-200 transition-all"
+                                className="w-full h-12 bg-blue-600 hover:bg-blue-700 font-bold text-base shadow-lg hover:shadow-xl transition-all"
                                 onClick={handleFirstStep}
                             >
-                                다음 단계 (Next)
+                                다음 단계 →
                             </Button>
                         </div>
                     )}
 
                     {step === 2 && (
                         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                            <div className="text-center space-y-2">
-                                <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-blue-50 text-blue-600 mb-2">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                            <div className="text-center space-y-3 bg-blue-50 p-6 rounded-xl border-2 border-blue-100">
+                                <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-blue-600 text-white mb-2 shadow-lg">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
                                 </div>
+                                <p className="text-base text-slate-700 font-semibold">
+                                    🔐 2단계 인증
+                                </p>
                                 <p className="text-sm text-slate-600">
-                                    Google OTP 앱에 표시된<br />
-                                    <span className="font-bold text-slate-900">인증 코드 6자리</span>를 입력하세요.
+                                    Google OTP 앱에서<br />
+                                    <span className="font-bold text-slate-900">6자리 인증 코드</span>를 입력하세요.
                                 </p>
                             </div>
                             <div className="space-y-2">
                                 <Input
-                                    className="text-center text-3xl font-bold tracking-[0.5em] h-16 border-2 border-slate-200 rounded-xl focus:border-blue-500 focus:ring-blue-500"
+                                    className="text-center text-4xl font-black tracking-[0.3em] h-16 border-3 border-blue-300 rounded-xl focus:border-blue-600 focus:ring-blue-500 bg-blue-50/50 placeholder-slate-300"
                                     maxLength={6}
                                     placeholder="000000"
                                     value={otpToken}
@@ -122,24 +129,28 @@ export default function LoginPage() {
                                     autoFocus
                                 />
                             </div>
-                            {error && <div className="text-sm text-rose-500 bg-rose-50 p-2 rounded border border-rose-100 text-center">{error}</div>}
+                            {error && (
+                                <div className="text-sm text-rose-700 bg-rose-100 p-3 rounded-lg border-2 border-rose-200 text-center font-medium">
+                                    ⚠️ {error}
+                                </div>
+                            )}
                             <Button
-                                className="w-full h-11 bg-blue-600 hover:bg-blue-700 font-bold shadow-md shadow-blue-200 transition-all"
+                                className="w-full h-12 bg-emerald-600 hover:bg-emerald-700 font-bold text-base shadow-lg hover:shadow-xl transition-all"
                                 onClick={handleVerifyOtp}
                             >
-                                인증 및 로그인 완료
+                                ✓ 인증 및 로그인
                             </Button>
                             <button
                                 onClick={() => setStep(1)}
-                                className="w-full text-xs text-slate-400 hover:text-slate-600 transition-colors underline"
+                                className="w-full text-sm text-slate-500 hover:text-slate-700 transition-colors font-medium underline"
                             >
-                                이전 단계로 돌아가기
+                                ← 이전 단계로 돌아가기
                             </button>
                         </div>
                     )}
                 </CardContent>
-                <CardFooter className="justify-center bg-slate-50/80 p-6 border-t">
-                    <Link href="/signup" className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                <CardFooter className="justify-center bg-gradient-to-r from-blue-50/50 to-slate-50/50 p-6 border-t-2 border-slate-100">
+                    <Link href="/signup" className="text-base font-semibold text-blue-600 hover:text-blue-800 transition-colors">
                         계정이 없으신가요? <span className="underline">회원가입</span>
                     </Link>
                 </CardFooter>
