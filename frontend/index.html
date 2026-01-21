@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFinance | 엔터프라이즈 재무 관리</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background-color: #F8F9FA;
+            color: #2D3436;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            height: 350px;
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #10B981;
+            width: 32px;
+            height: 32px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .sidebar-item-active {
+            background: #10B981;
+            color: white !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen text-gray-800">
+
+    <!-- Toast Notification -->
+    <div id="toast"
+        class="fixed top-5 right-5 z-[100] transform translate-x-full transition-all duration-500 glass-card px-6 py-4 rounded-2xl flex items-center gap-4 bg-white/90">
+        <div id="toast-icon"
+            class="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 text-xl">✓
+        </div>
+        <div>
+            <h4 id="toast-title" class="font-bold text-gray-900">알림</h4>
+            <p id="toast-message" class="text-sm text-gray-500">메시지 내용</p>
+        </div>
+    </div>
+
+    <!-- LANDING PAGE -->
+    <div id="landing-page" class="min-h-screen flex flex-col bg-gradient-to-br from-[#F8F9FA] to-[#E9ECEF]">
+        <header class="p-8 flex justify-between items-center max-w-7xl mx-auto w-full">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+                    ⟡</div>
+                <h1 class="text-2xl font-black tracking-tight text-gray-900">SmartFinance <span
+                        class="text-xs text-emerald-600 font-bold ml-1 uppercase">Ent.</span></h1>
+            </div>
+            <button onclick="app.ui.openLogin()"
+                class="bg-gray-900 hover:bg-black text-white px-8 py-3 rounded-2xl font-bold transition-all hover:scale-105 active:scale-95 shadow-xl">
+                관리자 로그인
+            </button>
+        </header>
+
+        <main
+            class="flex-grow flex flex-col items-center justify-center text-center px-6 animate__animated animate__fadeIn">
+            <div
+                class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-xs font-black tracking-widest mb-8 uppercase border border-emerald-200">
+                Next-Gen Financial Security</div>
+            <h2 class="text-6xl md:text-8xl font-black text-gray-900 mb-8 leading-tight tracking-tighter">
+                자산 관리의<br><span class="text-emerald-600">완벽한 기준.</span>
+            </h2>
+            <p class="text-xl text-gray-500 max-w-2xl mb-12 leading-relaxed">
+                엔터프라이즈 레벨의 AES-256 데이터 암호화와 서버 사이드 다중 인증(MFA)으로 귀하의 소중한 금융 데이터를 보호합니다.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl w-full">
+                <div
+                    class="p-10 glass-card rounded-[2.5rem] hover:transform hover:-translate-y-2 transition-all duration-300">
+                    <div class="text-5xl mb-6">🔒</div>
+                    <h3 class="text-2xl font-bold mb-4">군사급 암호화</h3>
+                    <p class="text-gray-500 leading-relaxed">모든 거래 금액과 상세 내역은 저장 즉시 AES-256-GCM 알고리즘으로 강력하게 암호화됩니다.</p>
+                </div>
+                <div
+                    class="p-10 glass-card rounded-[2.5rem] hover:transform hover:-translate-y-2 transition-all duration-300">
+                    <div class="text-5xl mb-6">📱</div>
+                    <h3 class="text-2xl font-bold mb-4">서버 검증 MFA</h3>
+                    <p class="text-gray-500 leading-relaxed">클라이언트가 아닌 보안 서버에서 직접 OTP를 검증하여 비정상적인 접근을 원천 차단합니다.</p>
+                </div>
+                <div
+                    class="p-10 glass-card rounded-[2.5rem] hover:transform hover:-translate-y-2 transition-all duration-300">
+                    <div class="text-5xl mb-6">⚡</div>
+                    <h3 class="text-2xl font-bold mb-4">실시간 인사이트</h3>
+                    <p class="text-gray-500 leading-relaxed">데이터베이스 연동 기반의 고성능 차트 엔진으로 재무 상태를 한눈에 파악하세요.</p>
+                </div>
+            </div>
+        </main>
+
+        <footer class="p-12 text-center text-gray-400 font-medium">
+            &copy; 2024 SmartFinance Enterprise. All Rights Reserved.
+        </footer>
+    </div>
+
+    <!-- APP DASHBOARD (Hidden by default) -->
+    <div id="app-dashboard" class="hidden min-h-screen flex bg-[#F8F9FA]">
+        <!-- Sidebar -->
+        <aside class="w-80 glass-card border-r-0 flex flex-col p-8 m-4 rounded-[2rem]">
+            <div class="flex items-center gap-3 mb-12">
+                <div
+                    class="w-8 h-8 bg-emerald-600 rounded-lg flex items-center justify-center text-white text-lg font-bold">
+                    ⟡</div>
+                <span class="text-xl font-black text-gray-900">SmartFinance</span>
+            </div>
+
+            <nav class="flex-grow space-y-3">
+                <button onclick="app.nav.navigate('dashboard')" id="nav-dashboard"
+                    class="sidebar-item-active w-full text-left px-6 py-4 rounded-2xl font-bold flex items-center gap-4 transition-all">
+                    <span class="text-xl">📊</span> 대시보드
+                </button>
+                <button onclick="app.nav.navigate('transactions')" id="nav-transactions"
+                    class="w-full text-left px-6 py-4 rounded-2xl font-bold text-gray-400 hover:bg-gray-100 hover:text-gray-600 flex items-center gap-4 transition-all">
+                    <span class="text-xl">💳</span> 거래 내역
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <div class="bg-emerald-50 rounded-2xl p-5 mb-6">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                        <span class="text-xs font-black text-emerald-700 uppercase">System Online</span>
+                    </div>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest">PostgreSQL Connected</p>
+                </div>
+                <button onclick="app.auth.logout()"
+                    class="w-full py-4 text-sm text-red-400 font-black hover:text-red-600 transition-colors flex items-center gap-2 px-2 uppercase tracking-widest">
+                    Logout <span>→</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col p-4 md:p-8 h-screen overflow-hidden">
+            <header class="flex justify-between items-center mb-8 px-4">
+                <div>
+                    <h2 id="page-title" class="text-3xl font-black text-gray-900 tracking-tight">재무 대시보드</h2>
+                    <p class="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Real-time Encrypted Data
+                    </p>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/50 p-1.5 rounded-2xl flex shadow-sm border border-gray-200">
+                        <button onclick="app.data.setPeriod('monthly')"
+                            class="period-btn px-5 py-2 text-xs font-black rounded-xl transition-all"
+                            data-period="monthly">MONTHLY</button>
+                        <button onclick="app.data.setPeriod('yearly')"
+                            class="period-btn px-5 py-2 text-xs font-black rounded-xl transition-all"
+                            data-period="yearly">YEARLY</button>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-y-auto px-4 space-y-8 pb-12">
+                <div id="global-loader" class="hidden flex justify-center py-20">
+                    <div class="loader"></div>
+                </div>
+
+                <!-- VIEW: DASHBOARD -->
+                <div id="view-dashboard" class="space-y-8 animate__animated animate__fadeIn">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="glass-card p-8 rounded-[2.5rem]">
+                            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Total Income</p>
+                            <h3 class="text-4xl font-black text-gray-900" id="kpi-income">₩0</h3>
+                            <div class="mt-4 flex items-center gap-1 text-emerald-500 font-bold text-xs uppercase">▲
+                                Positive Growth</div>
+                        </div>
+                        <div class="glass-card p-8 rounded-[2.5rem]">
+                            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Total Expense</p>
+                            <h3 class="text-4xl font-black text-gray-900" id="kpi-expense">₩0</h3>
+                            <div class="mt-4 flex items-center gap-1 text-red-500 font-bold text-xs uppercase">▼ Active
+                                Spending</div>
+                        </div>
+                        <div class="bg-gray-900 p-8 rounded-[2.5rem] text-white shadow-2xl">
+                            <p class="text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Net Balance</p>
+                            <h3 class="text-4xl font-black" id="kpi-balance">₩0</h3>
+                            <div class="mt-6 w-full bg-gray-800 rounded-full h-2">
+                                <div id="kpi-bar" class="bg-emerald-500 h-2 rounded-full transition-all duration-1000"
+                                    style="width: 50%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+                        <div class="lg:col-span-3 glass-card p-8 rounded-[2.5rem]">
+                            <h3 class="text-xl font-black mb-8">현금 흐름 트렌드</h3>
+                            <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                        </div>
+                        <div class="lg:col-span-2 glass-card p-8 rounded-[2.5rem]">
+                            <h3 class="text-xl font-black mb-8">지출 카테고리 분포</h3>
+                            <div class="chart-container"><canvas id="categoryChart"></canvas></div>
+                            <div id="category-legend" class="mt-8 grid grid-cols-2 gap-4 h-32 overflow-y-auto px-2">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card rounded-[2.5rem] p-8">
+                        <h3 class="text-xl font-black mb-6">최근 암호화 거래</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="border-b border-gray-100">
+                                    <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                        <th class="pb-4 px-4 text-center">Date</th>
+                                        <th class="pb-4 px-4">Category</th>
+                                        <th class="pb-4 px-4">Description</th>
+                                        <th class="pb-4 px-4 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboard-tx-list" class="divide-y divide-gray-50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIEW: TRANSACTIONS -->
+                <div id="view-transactions" class="hidden space-y-8 animate__animated animate__fadeIn">
+                    <div class="glass-card rounded-[2.5rem] p-8">
+                        <div class="flex justify-between items-center mb-10">
+                            <h3 class="text-xl font-black">전체 거래 관리</h3>
+                            <button onclick="app.ui.openTxModal()"
+                                class="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 rounded-2xl font-bold transition-all shadow-lg hover:scale-105">+
+                                새로운 거래 추가</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="border-b border-gray-100">
+                                    <tr class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                        <th class="pb-6 px-6">Status</th>
+                                        <th class="pb-6 px-6">Date</th>
+                                        <th class="pb-6 px-6">Type / Category</th>
+                                        <th class="pb-6 px-6">Description</th>
+                                        <th class="pb-6 px-6 text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="full-tx-list" class="divide-y divide-gray-50"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL: LOGIN -->
+    <div id="modal-login"
+        class="fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 hidden backdrop-blur-xl">
+        <div class="bg-white rounded-[3rem] shadow-2xl p-12 w-full max-w-lg m-6 animate__animated animate__zoomIn">
+            <div class="text-center mb-10">
+                <div
+                    class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6">
+                    ⟡</div>
+                <h3 class="text-3xl font-black text-gray-900">관리자 로그인</h3>
+                <p class="text-gray-400 font-bold mt-2 uppercase text-xs tracking-widest">Security Gateway</p>
+            </div>
+
+            <form onsubmit="app.auth.submitLogin(event)" class="space-y-6">
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Username</label>
+                    <input type="text" id="login-id"
+                        class="w-full px-6 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
+                        value="admin_user">
+                </div>
+                <div>
+                    <label
+                        class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Password</label>
+                    <input type="password" id="login-pw"
+                        class="w-full px-6 py-4 bg-gray-50 border-0 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
+                        value="secure_password_123">
+                </div>
+                <button type="submit" id="login-btn"
+                    class="w-full bg-gray-900 text-white py-5 rounded-2xl font-black hover:bg-black transition-all shadow-xl hover:scale-[1.02] active:scale-[0.98]">CONTINUE</button>
+            </form>
+            <button onclick="app.ui.closeLogin()"
+                class="w-full mt-6 text-xs font-black text-gray-300 hover:text-gray-500 uppercase tracking-widest">Cancel</button>
+        </div>
+    </div>
+
+    <!-- MODAL: MFA -->
+    <div id="modal-mfa"
+        class="fixed inset-0 z-[200] flex items-center justify-center bg-emerald-950/80 hidden backdrop-blur-xl">
+        <div class="bg-white rounded-[3rem] shadow-2xl p-12 w-full max-w-lg m-6 animate__animated animate__zoomIn">
+            <div class="text-center mb-10">
+                <div
+                    class="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6">
+                    🛡️</div>
+                <h3 class="text-3xl font-black text-gray-900">MFA 인증</h3>
+                <p class="text-emerald-500 font-bold mt-2 uppercase text-xs tracking-widest">Server-side Validation</p>
+                <div class="mt-6 p-4 bg-gray-50 rounded-2xl">
+                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-tighter mb-1">Demo Secret Key</p>
+                    <p class="font-mono font-bold text-gray-600">JBSWY3DPEHPK3PXP</p>
+                </div>
+            </div>
+
+            <form onsubmit="app.auth.submitMFA(event)">
+                <div class="flex flex-col items-center gap-6">
+                    <input type="text" id="mfa-code" maxlength="6"
+                        class="w-full text-center text-4xl tracking-[1rem] py-6 bg-gray-50 rounded-3xl focus:ring-2 focus:ring-emerald-500 outline-none font-black text-emerald-600"
+                        placeholder="000000" required autofocus>
+                    <button type="submit" id="mfa-submit-btn"
+                        class="w-full bg-emerald-600 text-white py-5 rounded-2xl font-black hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-200">VERIFY
+                        ACCESS</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: TRANSACTION -->
+    <div id="modal-tx"
+        class="fixed inset-0 z-[200] flex items-center justify-center bg-gray-900/60 hidden backdrop-blur-xl">
+        <div class="bg-white rounded-[3rem] shadow-2xl p-10 w-full max-w-xl m-6 animate__animated animate__zoomIn">
+            <div class="flex justify-between items-center mb-10 border-b border-gray-100 pb-6">
+                <h3 class="text-2xl font-black text-gray-900">새로운 거래 기록</h3>
+                <button onclick="app.ui.closeTxModal()"
+                    class="text-gray-300 hover:text-gray-900 text-2xl font-black">✕</button>
+            </div>
+
+            <form onsubmit="app.data.submitTx(event)">
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <div class="col-span-2 flex bg-gray-100 p-2 rounded-2xl">
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="tx-type" value="income" class="peer hidden"
+                                onchange="app.ui.updateCategories()" checked>
+                            <span
+                                class="block py-4 rounded-xl text-xs font-black text-gray-400 peer-checked:bg-white peer-checked:text-emerald-600 peer-checked:shadow-sm transition-all uppercase tracking-widest">Income
+                                (+)</span>
+                        </label>
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="tx-type" value="expense" class="peer hidden"
+                                onchange="app.ui.updateCategories()">
+                            <span
+                                class="block py-4 rounded-xl text-xs font-black text-gray-400 peer-checked:bg-white peer-checked:text-red-500 peer-checked:shadow-sm transition-all uppercase tracking-widest">Expense
+                                (-)</span>
+                        </label>
+                    </div>
+
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Date</label>
+                        <input type="date" id="tx-date"
+                            class="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold outline-none" required>
+                    </div>
+                    <div>
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Amount
+                            (KRW)</label>
+                        <input type="number" id="tx-amount"
+                            class="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold outline-none" placeholder="0"
+                            required>
+                    </div>
+                    <div class="col-span-2">
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Category</label>
+                        <select id="tx-category"
+                            class="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold outline-none appearance-none"></select>
+                    </div>
+                    <div class="col-span-2">
+                        <label
+                            class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 px-1">Description
+                            (Will be encrypted)</label>
+                        <input type="text" id="tx-desc"
+                            class="w-full px-6 py-4 bg-gray-50 rounded-2xl font-bold outline-none"
+                            placeholder="예: 서버 유지비 비용">
+                    </div>
+                </div>
+
+                <button type="submit" id="tx-submit-btn"
+                    class="w-full py-5 bg-gray-900 text-white rounded-2xl font-black hover:bg-black transition-all shadow-xl">SECURE
+                    DATA SAVE</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        const app = {
+            state: {
+                isLoggedIn: false,
+                currentView: 'dashboard',
+                period: 'monthly',
+                transactions: [],
+                charts: { trend: null, category: null }
+            },
+
+            categories: {
+                income: ['급여', '보너스', '투자수익', '기타 수입'],
+                expense: ['식비', '교통/차량', '주거/통신', '생활용품', '경조사/회비', '문화생활', '교육', '의료/건강', '저축/보험', '기타 지출']
+            },
+
+            init: function () {
+                this.ui.setupPeriod();
+                document.getElementById('tx-date').valueAsDate = new Date();
+            },
+
+            auth: {
+                login: () => document.getElementById('modal-login').classList.remove('hidden'),
+
+                submitLogin: async function (e) {
+                    e.preventDefault();
+                    const username = document.getElementById('login-id').value;
+                    const password = document.getElementById('login-pw').value;
+                    const btn = document.getElementById('login-btn');
+
+                    btn.disabled = true;
+                    btn.innerText = "VERIFYING...";
+
+                    try {
+                        const response = await fetch(`${API_URL}/auth/login`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username, password })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            document.getElementById('modal-login').classList.add('hidden');
+                            document.getElementById('modal-mfa').classList.remove('hidden');
+                            app.ui.toast('Security Level 1 Pass', 'MFA 인증이 필요합니다.', 'shield');
+                        } else {
+                            app.ui.toast('Login Failed', 'ID 또는 비밀번호를 확인해주세요.', 'error');
+                        }
+                    } catch (error) {
+                        app.ui.toast('Server Error', '백엔드 연결 상태를 확인해주세요.', 'error');
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerText = "CONTINUE";
+                    }
+                },
+
+                submitMFA: async function (e) {
+                    e.preventDefault();
+                    const token = document.getElementById('mfa-code').value;
+                    const btn = document.getElementById('mfa-submit-btn');
+
+                    btn.disabled = true;
+                    btn.innerText = "CHECKING OTP...";
+
+                    try {
+                        const response = await fetch(`${API_URL}/auth/mfa-verify`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ token })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            app.state.isLoggedIn = true;
+                            document.getElementById('modal-mfa').classList.add('hidden');
+                            app.ui.toast('Access Granted', '엔터프라이즈 시스템에 접속합니다.', 'check');
+                            app.ui.switchToApp();
+                        } else {
+                            app.ui.toast('Invalid OTP', '인증 코드가 일치하지 않습니다.', 'error');
+                        }
+                    } catch (error) {
+                        app.ui.toast('Server Error', 'MFA 검증 실패', 'error');
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerText = "VERIFY ACCESS";
+                    }
+                },
+
+                logout: () => location.reload()
+            },
+
+            data: {
+                load: async function () {
+                    app.ui.showLoader(true);
+                    try {
+                        const response = await fetch(`${API_URL}/transactions`);
+                        const data = await response.json();
+                        app.state.transactions = data;
+                        app.ui.refreshView();
+                    } catch (error) {
+                        app.ui.toast('Sync Failed', '데이터를 불러오지 못했습니다.', 'error');
+                    } finally {
+                        app.ui.showLoader(false);
+                    }
+                },
+
+                submitTx: async function (e) {
+                    e.preventDefault();
+                    const btn = document.getElementById('tx-submit-btn');
+                    btn.disabled = true;
+                    btn.innerText = "ENCRYPTING & SAVING...";
+
+                    const txData = {
+                        date: document.getElementById('tx-date').value,
+                        type: document.querySelector('input[name="tx-type"]:checked').value,
+                        category: document.getElementById('tx-category').value,
+                        amount: parseInt(document.getElementById('tx-amount').value),
+                        desc: document.getElementById('tx-desc').value
+                    };
+
+                    try {
+                        const response = await fetch(`${API_URL}/transactions`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(txData)
+                        });
+
+                        if (response.ok) {
+                            app.ui.closeTxModal();
+                            app.ui.toast('Data Encrypted', 'DB에 안전하게 저장되었습니다.', 'check');
+                            await this.load();
+                        }
+                    } catch (error) {
+                        app.ui.toast('Save Failed', '저장 중 오류 발생', 'error');
+                    } finally {
+                        btn.disabled = false;
+                        btn.innerText = "SECURE DATA SAVE";
+                    }
+                },
+
+                setPeriod: function (p) {
+                    app.state.period = p;
+                    app.ui.setupPeriod();
+                    app.ui.refreshView();
+                }
+            },
+
+            nav: {
+                navigate: function (viewId) {
+                    app.state.currentView = viewId;
+                    document.querySelectorAll('aside nav button').forEach(btn => btn.classList.remove('sidebar-item-active'));
+                    document.getElementById(`nav-${viewId}`).classList.add('sidebar-item-active');
+
+                    document.getElementById('view-dashboard').classList.add('hidden');
+                    document.getElementById('view-transactions').classList.add('hidden');
+                    document.getElementById(`view-${viewId}`).classList.remove('hidden');
+
+                    document.getElementById('page-title').innerText = viewId === 'dashboard' ? '재무 대시보드' : '거래 관리 센터';
+                }
+            },
+
+            ui: {
+                openLogin: () => app.auth.login(),
+                closeLogin: () => document.getElementById('modal-login').classList.add('hidden'),
+                openTxModal: () => {
+                    document.getElementById('modal-tx').classList.remove('hidden');
+                    app.ui.updateCategories();
+                },
+                closeTxModal: () => document.getElementById('modal-tx').classList.add('hidden'),
+
+                showLoader: (show) => document.getElementById('global-loader').classList.toggle('hidden', !show),
+
+                switchToApp: function () {
+                    document.getElementById('landing-page').classList.add('hidden');
+                    document.getElementById('app-dashboard').classList.remove('hidden');
+                    app.data.load();
+                },
+
+                setupPeriod: () => {
+                    document.querySelectorAll('.period-btn').forEach(btn => {
+                        const active = btn.dataset.period === app.state.period;
+                        btn.classList.toggle('bg-gray-900', active);
+                        btn.classList.toggle('text-white', active);
+                    });
+                },
+
+                updateCategories: () => {
+                    const type = document.querySelector('input[name="tx-type"]:checked').value;
+                    const select = document.getElementById('tx-category');
+                    select.innerHTML = app.categories[type].map(c => `<option value="${c}">${c}</option>`).join('');
+                },
+
+                refreshView: () => {
+                    const filtered = app.data.getFilteredData();
+                    app.ui.updateKPI(filtered);
+                    app.ui.renderLists(filtered);
+                    app.ui.renderCharts(filtered);
+                },
+
+                getFilteredData: () => {
+                    const now = new Date();
+                    return app.state.transactions.filter(t => {
+                        const d = new Date(t.date);
+                        if (app.state.period === 'monthly') return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                        if (app.state.period === 'yearly') return d.getFullYear() === now.getFullYear();
+                        return true;
+                    });
+                },
+
+                updateKPI: (data) => {
+                    const income = data.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+                    const expense = data.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
+                    const balance = income - expense;
+
+                    document.getElementById('kpi-income').innerText = `₩${income.toLocaleString()}`;
+                    document.getElementById('kpi-expense').innerText = `₩${expense.toLocaleString()}`;
+                    document.getElementById('kpi-balance').innerText = `₩${balance.toLocaleString()}`;
+
+                    const ratio = (income + expense) === 0 ? 50 : (income / (income + expense)) * 100;
+                    document.getElementById('kpi-bar').style.width = `${ratio}%`;
+                },
+
+                renderLists: (data) => {
+                    const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                    const createRow = (t, full = false) => {
+                        const color = t.type === 'income' ? 'text-emerald-500' : 'text-red-500';
+                        const sign = t.type === 'income' ? '+' : '-';
+                        const date = new Date(t.date).toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
+
+                        if (!full) return `
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="py-5 px-4 text-center font-bold text-gray-400 text-xs">${date}</td>
+                                <td class="py-5 px-4"><span class="px-3 py-1 bg-gray-100 rounded-lg text-[10px] font-black uppercase tracking-widest text-gray-500">${t.category}</span></td>
+                                <td class="py-5 px-4 font-bold text-gray-900">${t.description}</td>
+                                <td class="py-5 px-4 text-right font-black ${color}">${sign} ₩${Number(t.amount).toLocaleString()}</td>
+                            </tr>`;
+
+                        return `
+                            <tr class="hover:bg-gray-50/50 transition-colors">
+                                <td class="py-6 px-6"><div class="w-2 h-2 rounded-full ${t.type === 'income' ? 'bg-emerald-400' : 'bg-red-400'}"></div></td>
+                                <td class="py-6 px-6 font-bold text-gray-400">${t.date.substring(0, 10)}</td>
+                                <td class="py-6 px-6">
+                                    <p class="text-[10px] font-black uppercase text-gray-300 mb-1">${t.type}</p>
+                                    <p class="font-black text-gray-900">${t.category}</p>
+                                </td>
+                                <td class="py-6 px-6 font-bold text-gray-600">${t.description}</td>
+                                <td class="py-6 px-6 text-right font-black ${color} text-lg">${sign} ₩${Number(t.amount).toLocaleString()}</td>
+                            </tr>`;
+                    };
+
+                    document.getElementById('dashboard-tx-list').innerHTML = sorted.slice(0, 5).map(t => createRow(t)).join('');
+                    document.getElementById('full-tx-list').innerHTML = sorted.map(t => createRow(t, true)).join('');
+                },
+
+                renderCharts: (data) => {
+                    if (app.state.charts.trend) app.state.charts.trend.destroy();
+                    if (app.state.charts.category) app.state.charts.category.destroy();
+
+                    const dateMap = {};
+                    data.forEach(t => {
+                        const d = t.date.substring(5, 10);
+                        if (!dateMap[d]) dateMap[d] = { i: 0, e: 0 };
+                        dateMap[d][t.type === 'income' ? 'i' : 'e'] += Number(t.amount);
+                    });
+
+                    const labels = Object.keys(dateMap).sort();
+                    app.state.charts.trend = new Chart(document.getElementById('trendChart'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'INCOME', data: labels.map(l => dateMap[l].i), borderColor: '#10B981', tension: 0.4, fill: true, backgroundColor: 'rgba(16, 185, 129, 0.05)' },
+                                { label: 'EXPENSE', data: labels.map(l => dateMap[l].e), borderColor: '#EF4444', tension: 0.4 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { display: false }, x: { grid: { display: false } } } }
+                    });
+
+                    const catMap = {};
+                    data.filter(t => t.type === 'expense').forEach(t => catMap[t.category] = (catMap[t.category] || 0) + Number(t.amount));
+                    const catLabels = Object.keys(catMap);
+                    const colors = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+
+                    app.state.charts.category = new Chart(document.getElementById('categoryChart'), {
+                        type: 'doughnut',
+                        data: { labels: catLabels, datasets: [{ data: Object.values(catMap), backgroundColor: colors, borderWidth: 0 }] },
+                        options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false } } }
+                    });
+
+                    document.getElementById('category-legend').innerHTML = catLabels.map((l, i) => `
+                        <div class="flex items-center gap-2">
+                            <div class="w-1.5 h-1.5 rounded-full" style="background: ${colors[i % colors.length]}"></div>
+                            <span class="text-[10px] font-black text-gray-400 uppercase">${l}</span>
+                        </div>
+                    `).join('');
+                },
+
+                toast: (title, msg, type) => {
+                    const t = document.getElementById('toast');
+                    const icon = document.getElementById('toast-icon');
+                    document.getElementById('toast-title').innerText = title;
+                    document.getElementById('toast-message').innerText = msg;
+
+                    icon.innerHTML = type === 'check' ? '✓' : type === 'shield' ? '🛡️' : '✕';
+                    icon.className = `w-10 h-10 rounded-full flex items-center justify-center text-xl ${type === 'error' ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'}`;
+
+                    t.classList.remove('translate-x-full');
+                    setTimeout(() => t.classList.add('translate-x-full'), 3000);
+                }
+            }
+        };
+
+        window.onload = () => app.init();
+    </script>
+</body>
+
+</html>
