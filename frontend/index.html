@@ -452,9 +452,11 @@
                         const result = await response.json();
 
                         if (result.success) {
+                            // TEST MODE: Skip MFA
+                            app.state.isLoggedIn = true;
                             document.getElementById('modal-login').classList.add('hidden');
-                            document.getElementById('modal-mfa').classList.remove('hidden');
-                            app.ui.toast('Security Level 1 Pass', 'MFA 인증이 필요합니다.', 'shield');
+                            app.ui.toast('Login Success', '테스트 모드: MFA 단계가 생략되었습니다.', 'check');
+                            app.ui.switchToApp();
                         } else {
                             app.ui.toast('Login Failed', 'ID 또는 비밀번호를 확인해주세요.', 'error');
                         }
