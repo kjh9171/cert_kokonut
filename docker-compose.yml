@@ -1,19 +1,54 @@
-version: '3.8'
+# version: '3.8'
 
 services:
-  cert-kokonut:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: cert-kokonut-app
+  # 1. Database: PostgreSQL
+  db:
+    image: postgres:15-alpine
+    container_name: finance_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: smart_finance
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - finance_network
+
+  # 2. Backend API: Node.js
+  backend:
+    build: ./backend
+    container_name: finance_backend
+    restart: always
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=production
-    restart: unless-stopped
+      DB_HOST: db
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: smart_finance
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY} # 32-byte key for AES-256
+      MFA_SECRET: ${MFA_SECRET}
+    depends_on:
+      - db
     networks:
-      - cert-network
+      - finance_network
+
+  # 3. Frontend: Nginx
+  frontend:
+    build: ./frontend
+    container_name: finance_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - finance_network
 
 networks:
-  cert-network:
+  finance_network:
     driver: bridge
+
+volumes:
+  postgres_data:
