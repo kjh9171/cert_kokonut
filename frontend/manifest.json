@@ -1,0 +1,68 @@
+{
+    "name": "Cert Kokonut - 재무 관리",
+    "short_name": "Cert Kokonut",
+    "description": "개인정보 보호를 최우선으로 하는 가계부 관리 서비스",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#fcfaf8",
+    "theme_color": "#4a403a",
+    "orientation": "portrait-primary",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "finance",
+        "productivity"
+    ],
+    "screenshots": [
+        {
+            "src": "/screenshot-mobile.png",
+            "sizes": "540x720",
+            "type": "image/png",
+            "form_factor": "narrow"
+        },
+        {
+            "src": "/screenshot-desktop.png",
+            "sizes": "1280x720",
+            "type": "image/png",
+            "form_factor": "wide"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "거래 추가",
+            "short_name": "거래 추가",
+            "description": "새로운 거래 기록",
+            "url": "/?action=add",
+            "icons": [
+                {
+                    "src": "/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "AI 분석",
+            "short_name": "AI 분석",
+            "description": "재무 분석 보기",
+            "url": "/?action=analysis",
+            "icons": [
+                {
+                    "src": "/icon-192.png",
+                    "sizes": "192x192"
+                }
+            ]
+        }
+    ]
+}
