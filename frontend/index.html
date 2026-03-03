@@ -1,13 +1,32 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CERT 개인정보관리시스템</title>
+    <title>PMS - 개인정보관리시스템 [CERT]</title>
+    <!-- [디자인] Noto Sans 폰트 로드 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'Noto Sans KR', sans-serif; }
+    </style>
   </head>
-  <body>
+  <body class="bg-slate-50 text-slate-900 overflow-hidden">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // [임시 스텁] 실제 배포 시에는 빌드 프로세스나 서버에서 주입함
+      window.__firebase_config = JSON.stringify({
+        apiKey: "stub-api-key",
+        authDomain: "pms-project.firebaseapp.com",
+        projectId: "pms-project",
+        storageBucket: "pms-project.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcdef12345"
+      });
+      window.__app_id = "pms-service-id";
+    </script>
   </body>
 </html>

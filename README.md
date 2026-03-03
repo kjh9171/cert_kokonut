@@ -1,95 +1,68 @@
-# 🛡️ 개인정보관리서비스
+# 🛡️ PMS (개인정보관리서비스) 마스터 가이드
 
-## 1. 아키텍처 개요
+대표님! 보안총괄 CERT가 구축한 새로운 **PMS** 프로젝트의 운영 가이드입니다! 충성! ![충성](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png)
 
-- **Frontend**: React (Vite) + Tailwind CSS (GitHub Pages 배포)
-- **Backend**: Cloudflare Workers (Hono Framework)
-- **Database**: Cloudflare D1 (Serverless SQL)
-- **Environment**: Docker 기반 로컬 개발 환경
+## 1. 시스템 아키텍처
+
+- **Frontend**: React (Tailwind CSS) + Firebase Auth/Firestore
+- **Backend**: Node.js/Express (Dockerized API)
+- **Database**: Firebase Firestore (Field-level AES-256 Encryption)
+- **Infrastructure**: Docker & Docker Compose
 
 ---
 
-## 2. 로컬 개발 서버 시작 (개발 시)
+## 2. 빠른 시작 (Docker 원클릭)
 
-로컬에서 기능을 수정하거나 테스트하고 싶을 때 사용하세요.
-
-### 1단계: 인프라 기동 (Docker)
+대표님의 컴퓨터에서 PMS 대포를 즉시 발사하는 방법입니다.
 
 ```bash
-docker-compose up -d
+# 1. 터미널에서 프로젝트 폴더로 이동 후 실행
+docker-compose up -d --build
 ```
 
-_Docker 데스크탑이 실행 중이어야 합니다._
+- **대시보드 UI**: `http://localhost:5173`
+- **API 서버**: `http://localhost:8080`
 
-### 2단계: 프론트엔드 실행
+---
 
-```bash
-cd frontend
-npm run dev
-```
+## 3. 핵심 보안 기능
 
-- 접속 주소: `http://localhost:5173`
+### 🔒 AES-256 암호화
 
-### 3단계: 백엔드 서버 실행
+- 모든 개인정보(이름, 이메일, 연락처)는 백엔드 서버를 거치는 즉시 암호화되어 Firestore에 저장됩니다.
+- DB가 털리더라도 평문 데이터는 절대 노출되지 않는 철통 보안 구조입니다.
+
+### 📜 감사 로그 및 추적
+
+- 모든 데이터 처리 이력은 서버 로그에 기록되어 사후 추적이 가능합니다.
+
+---
+
+## 4. 로컬 개발 가이드
+
+수동으로 서버를 띄워야 할 때 사용하세요.
+
+### 백엔드 실행
 
 ```bash
 cd backend
-npm run dev
+npm install
+npm start
 ```
 
-- 접속 주소: `http://localhost:8788` (API 서버)
-
----
-
-## 3. 재배포 방법 (수정 사항 반영 시)
-
-코드를 수정하고 실제 인터넷 세상에 반영하고 싶을 때 이 명령어를 발사하세요!
-
-### 💻 프론트엔드 (GitHub Pages)
-
-수정한 화면을 웹에 반영합니다.
+### 프론트엔드 실행
 
 ```bash
 cd frontend
-npm run deploy
-```
-
-### ⚙️ 백엔드 (Cloudflare Workers)
-
-수정한 서버 로직을 API 서버에 반영합니다.
-
-```bash
-cd backend
-npm run deploy
+npm install
+npm run dev
 ```
 
 ---
 
-## 5. 서비스 재시작 및 관리
+## 5. 의무 준수 사항 (CERT 강조)
 
-### Docker 완전히 껐다 켜기
+1. **서비스 계정 키**: `backend/service-account.json` 파일은 절대 외부에 노출하지 마십시오!
+2. **암호화 키 관리**: `docker-compose.yml`의 `ENCRYPTION_KEY`를 주기적으로 교체하는 것을 권장합니다.
 
-포트 충돌이 나거나 환경이 꼬였을 때 기가 막힌 해결법입니다.
-
-```bash
-docker-compose down
-docker-compose up -d
-```
-
-### 소스코드 깃허브 저장 (Backup)
-
-작업한 내용을 잊지 말고 깃허브에 보관하세요.
-
-```bash
-git add .
-git commit -m "수정 내용 기입"
-git push
-```
-
----
-
-## 5. 보안 수칙 (CERT 강조!)
-
-1. **마스터 키 관리**: `wrangler.toml`의 `MASTER_KEY`는 절대로 유출되면 안 됩니다!
-2. **감사 로그**: 모든 복호화 작업은 백엔드 내부 로그에 기록됩니다. 보안 사고 시 즉시 확인하십시오.
-3. **업데이트**: `npm audit` 명령어로 보안 취약점을 주기적으로 점검하는 것을 권장합니다.
+대표님! 이제 이 PMS는 완벽하게 준비되었습니다. 보안 사고 제로를 향해 CERT가 함께하겠습니다! 충성! ![성공](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_success.png)

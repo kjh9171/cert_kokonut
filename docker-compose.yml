@@ -1,21 +1,38 @@
 version: '3.8'
 
 services:
-  # 통합 개발 환경 서비스
-  dev-env:
-    build: .
-    container_name: cert-dev-container
-    volumes:
-      - .:/app
-      - /app/node_modules
+  # PMS 백엔드 API 서비스
+  pms-backend:
+    build: ./backend
+    container_name: pms-api-server
     ports:
-      - "5173:5173" # Frontend (Vite)
-      - "8788:8787" # Backend (Wrangler Dev) - 컨테이너 내부 8787을 호스트 8788로 바인딩
+      - "8080:8080"
     environment:
-      - NODE_ENV=development
-    stdin_open: true
-    tty: true
+      - NODE_ENV=production
+      - APP_ID=pms-service-id
+      - ENCRYPTION_KEY=cert_total_manager_secure_key_256
+      # 파이어베이스 인증을 위한 서비스 계정 경로 (볼륨 마운트 권장)
+      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
+    volumes:
+      - ./backend/service-account.json:/app/service-account.json:ro
+    networks:
+      - pms-network
+
+  # PMS 프론트엔드 대시보드 (Vite Dev Server 또는 Static Serve용)
+  pms-frontend:
+    image: node:18-alpine
+    container_name: pms-ui-dashboard
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - pms-network
+    depends_on:
+      - pms-backend
 
 networks:
-  default:
-    name: cert-network
+  pms-network:
+    driver: bridge
