@@ -1,0 +1,14 @@
+name = "cert-kokonut-backend"
+main = "src/index.ts"
+compatibility_date = "2024-03-03"
+
+# D1 데이터베이스 바인딩 설정
+[[d1_databases]]
+binding = "DB" # 코드 내에서 액세스할 이름
+database_name = "cert_kokonut_db"
+database_id = "your-database-id-placeholder" # 실제 배포 시 생성된 ID로 교체 필요
+
+# 환경 변수 정의
+[vars]
+JWT_SECRET = "super-secret-key-for-cert"
+MASTER_KEY = "master-key-for-aes-256-gcm"
