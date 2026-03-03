@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { sign, verify } from "hono/jwt";
 import { cors } from "hono/cors";
-import { serveStatic } from 'hono/cloudflare-workers'; // 정적 파일 서빙 유틸리티
+import { serveStatic } from 'hono/cloudflare-workers';
+// @ts-ignore
+import manifest from '__STATIC_CONTENT_MANIFEST';
 
 // 환경 변수 및 바인딩 타입 정의
 type Bindings = {
@@ -15,13 +17,15 @@ const app = new Hono<{ Bindings: Bindings }>();
 // 모든 응답에 CORS 설정 적용
 app.use("*", cors());
 
-// --- [정적 파일 및 메인 UI 서빙] ---
-// /api로 시작하지 않는 모든 요청은 프론트엔드 파일(index.html 등)로 연결
-app.get('/assets/*', serveStatic({ root: './' }));
-app.get('/vite.svg', serveStatic({ path: './vite.svg' }));
-app.get('/', serveStatic({ path: './index.html' }));
-// SPA 대응: 정해지지 않은 경로는 모두 index.html로 (Client-side Routing)
-app.get('*', serveStatic({ path: './index.html' }));
+// --- [정적 파일 및 메인 UI 서빙 - 통합 관리] ---
+
+// 1. 자산 파일 (JS, CSS, SVG 등) 직접 서빙
+app.use('/assets/*', serveStatic({ root: './', manifest }));
+app.get('/vite.svg', serveStatic({ path: './vite.svg', manifest }));
+
+// 2. 루트 경로 및 모든 하위 경로에 대해 index.html 서빙 (SPA 대응)
+app.get('/', serveStatic({ path: './index.html', manifest }));
+app.get('*', serveStatic({ path: './index.html', manifest }));
 
 // --- [보안 유틸리티] ---
 
