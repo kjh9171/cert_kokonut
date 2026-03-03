@@ -14,6 +14,11 @@ const app = new Hono<{ Bindings: Bindings }>();
 // 모든 응답에 CORS 설정 적용 (보안을 고려하여 실배포 시에는 도메인 제한 권장)
 app.use("*", cors());
 
+// --- [헬스 체크 및 루트 경로] ---
+app.get('/', (c) => {
+  return c.text('KOKONUT CERT Backend is Running! ![충성](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png)');
+});
+
 // --- [보안 유틸리티] ---
 
 /**
