@@ -23,60 +23,61 @@ export default function App() {
 
   // --- [인증 및 데이터 연동 로직 (Firebase v9+)] ---
   useEffect(() => {
-    // [보안] 환경 변수에서 파이어베이스 설정 로드 (window 객체는 빌드 시 주입 전제)
-    const firebaseConfig = JSON.parse(window.__firebase_config || '{}');
-    const appId = window.__app_id || 'pms-service-id';
+    let unsubscribeAuth = () => {};
+    let unsubscribeData = () => {};
 
-    // 유효한 설정이 없을 경우 초기 테스트용 스텁 처리
-    if (!firebaseConfig.apiKey) {
-      console.warn('[CERT] Firebase config is missing. Please check .env settings.');
-    }
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // [보안 절차] 관리자 세션 유지를 위한 익명 로그인 시도
-    const initSession = async () => {
+    const initAll = async () => {
       try {
+        // [보안] 환경 변수에서 파이어베이스 설정 로드
+        const configStr = window.__firebase_config || '{}';
+        const firebaseConfig = JSON.parse(configStr);
+        const appId = window.__app_id || 'pms-service-id';
+
+        if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'stub-api-key') {
+          console.warn('[CERT] Firebase 설정이 샘플 상태입니다. 대시보드 기능이 제한될 수 있습니다.');
+          setLoading(false); // 가짜 데이터라도 보여주기 위해 로딩 해제
+          return;
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // 익명 로그인 세션 시작
         await signInAnonymously(auth);
+
+        // 인증 상태 감지
+        unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+          setUser(currentUser);
+          setLoading(false);
+        });
+
+        // 실시간 데이터 바인딩
+        const privacyRef = collection(db, 'artifacts', appId, 'public', 'data', 'privacyRecords');
+        const q = query(privacyRef, orderBy('createdAt', 'desc'));
+
+        unsubscribeData = onSnapshot(q, (snapshot) => {
+          const records = snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data(),
+            displayDate: doc.data().createdAt?.toDate().toLocaleString() || '처리 중...'
+          }));
+          setPrivacyRecords(records);
+          setStats({
+            total: records.length,
+            today: records.filter(r => new Date(r.displayDate).toDateString() === new Date().toDateString()).length,
+            alerts: 0
+          });
+        }, (err) => console.error('[EROR] 데이터 동기화 에러:', err));
+
       } catch (err) {
-        console.error('[EROR] Auth session failed:', err);
+        console.error('[EROR] PMS 초기화 실패:', err);
+        setLoading(false); // 에러가 나도 화면은 띄워줌 (White Screen 방어)
       }
     };
 
-    initSession();
+    initAll();
 
-    // 인증 상태 실시간 감지 (관리자 권한 확인)
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-
-    // [실시간 모니터링] Firestore 개인정보 데이터 수신 (Rule 준수 경로)
-    let unsubscribeData = () => {};
-    if (user) {
-      const privacyRef = collection(db, 'artifacts', appId, 'public', 'data', 'privacyRecords');
-      const q = query(privacyRef, orderBy('createdAt', 'desc'));
-
-      unsubscribeData = onSnapshot(q, (snapshot) => {
-        const records = snapshot.docs.map(doc => ({ 
-          id: doc.id, 
-          ...doc.data(),
-          // 타임스탬프 가독 처리
-          displayDate: doc.data().createdAt?.toDate().toLocaleString() || '처리 중...'
-        }));
-        setPrivacyRecords(records);
-        // 통계 업데이트 로직 (간소화)
-        setStats({
-          total: records.length,
-          today: records.filter(r => new Date(r.displayDate).toDateString() === new Date().toDateString()).length,
-          alerts: 0
-        });
-      }, (err) => console.error('[EROR] Real-time data sync failed:', err));
-    }
-
-    // 마운트 해제 시 리소스 정리 (메모리 최적화)
     return () => {
       unsubscribeAuth();
       unsubscribeData();

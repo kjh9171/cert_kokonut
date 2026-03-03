@@ -15,9 +15,8 @@
   </head>
   <body class="bg-slate-50 text-slate-900 overflow-hidden">
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
     <script>
-      // [임시 스텁] 실제 배포 시에는 빌드 프로세스나 서버에서 주입함
+      // [보안 설정] 파이어베이스 설정값 앱 엔진 주입 (인라인 스크립트 우선 실행)
       window.__firebase_config = JSON.stringify({
         apiKey: "stub-api-key",
         authDomain: "pms-project.firebaseapp.com",
@@ -28,5 +27,6 @@
       });
       window.__app_id = "pms-service-id";
     </script>
+    <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
