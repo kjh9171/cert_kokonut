@@ -16,7 +16,15 @@ app.use("*", cors());
 
 // --- [헬스 체크 및 루트 경로] ---
 app.get('/', (c) => {
-  return c.text('KOKONUT CERT Backend is Running! ![충성](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png)');
+  return c.html(`
+    <body style="background:#0f172a; color:#f8fafc; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;">
+      <h1 style="color:#3b82f6;">🚀 KOKONUT CERT Backend</h1>
+      <p>서버가 명쾌하게 작동 중입니다! 충성!</p>
+      <div style="background:#1e293b; padding:20px; border-radius:10px; border:1px solid #334155;">
+        API Endpoint: <code>/api/dashboard/stats</code>
+      </div>
+    </body>
+  `);
 });
 
 // --- [보안 유틸리티] ---

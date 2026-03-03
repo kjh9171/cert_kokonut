@@ -12,6 +12,11 @@ import {
 // --- [더미 데이터 및 상수] ---
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
+// 환경에 따른 API 베이스 URL 설정
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:8788' 
+  : 'https://certkokonut.gimjonghwan319.workers.dev';
+
 // --- [공통 컴포넌트: 카드] ---
 const Card = ({ title, children, icon: Icon }) => (
   <div className="glass rounded-premium p-6 shadow-premium">
@@ -31,6 +36,38 @@ export default function App() {
   const [stats, setStats] = useState({ totalRecords: 0, encryptionRate: 0, apiCalls: 0 }); // 통계 데이터
   const [users, setUsers] = useState([]); // 개인정보 리스트
   const [activeTab, setActiveTab] = useState('dashboard'); // 현재 활성화된 메뉴
+  const [loading, setLoading] = useState(false); // 로딩 상태
+
+  // 초기 데이터 로딩 (백엔드 연동)
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchDashboardStats();
+      fetchUserList();
+    }
+  }, [isAuthenticated]);
+
+  const fetchDashboardStats = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/dashboard/stats`);
+      const data = await res.json();
+      setStats(data);
+    } catch (e) {
+      console.error("통계 로딩 실패:", e);
+    }
+  };
+
+  const fetchUserList = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/list`);
+      const data = await res.json();
+      setUsers(data);
+    } catch (e) {
+      console.error("회원 리스트 로딩 실패:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 1. 로그인 로직
   const handleLogin = (e) => {
@@ -51,12 +88,22 @@ export default function App() {
   // 3. 복호화 요청 (보안 로직)
   const handleDecrypt = async (userId, field) => {
     alert(`[감사 로그 생성됨] ${userId}번 회원의 ${field} 정보를 복호화합니다.`);
-    // 실제 API 연동 시: 
-    // const res = await fetch('/api/users/decrypt', { method: 'POST', body: JSON.stringify({userId, field}) });
-    // const data = await res.json();
-    setUsers(prev => prev.map(u => 
-      u.id === userId ? { ...u, [field]: field === 'email' ? 'real-email@cert.com' : '010-1111-2222' } : u
-    ));
+    // 실제 API 연동 로직
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/users/decrypt`, { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, field }) 
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUsers(prev => prev.map(u => 
+          u.id === userId ? { ...u, [field]: data.value } : u
+        ));
+      }
+    } catch (e) {
+      console.error("복호화 실패:", e);
+    }
   };
 
   if (!isAuthenticated) {
