@@ -15,7 +15,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 // 환경에 따른 API 베이스 URL 설정
 const API_BASE_URL = window.location.hostname === 'localhost' 
   ? 'http://localhost:8788' 
-  : 'https://certkokonut.gimjonghwan319.workers.dev';
+  : ''; // 배포 시에는 같은 도메인(Relative Path) 사용
 
 // --- [공통 컴포넌트: 카드] ---
 const Card = ({ title, children, icon: Icon }) => (

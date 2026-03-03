@@ -1,31 +1,27 @@
-import { Hono } from "hono"; // 서버리스 API를 위한 Hono 프레임워크
-import { sign, verify } from "hono/jwt"; // 인증을 위한 JWT 유틸리티
-import { cors } from "hono/cors"; // 크로스 오리진 리소스 공유 설정
+import { Hono } from "hono";
+import { sign, verify } from "hono/jwt";
+import { cors } from "hono/cors";
+import { serveStatic } from 'hono/cloudflare-workers'; // 정적 파일 서빙 유틸리티
 
 // 환경 변수 및 바인딩 타입 정의
 type Bindings = {
-  DB: D1Database; // Cloudflare D1 데이터베이스 바인딩
-  JWT_SECRET: string; // JWT 서명용 비밀키
-  MASTER_KEY: string; // 암호화용 마스터키
+  DB: D1Database;
+  JWT_SECRET: string;
+  MASTER_KEY: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-// 모든 응답에 CORS 설정 적용 (보안을 고려하여 실배포 시에는 도메인 제한 권장)
+// 모든 응답에 CORS 설정 적용
 app.use("*", cors());
 
-// --- [헬스 체크 및 루트 경로] ---
-app.get('/', (c) => {
-  return c.html(`
-    <body style="background:#0f172a; color:#f8fafc; font-family:sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh;">
-      <h1 style="color:#3b82f6;">🚀 KOKONUT CERT Backend</h1>
-      <p>서버가 명쾌하게 작동 중입니다! 충성!</p>
-      <div style="background:#1e293b; padding:20px; border-radius:10px; border:1px solid #334155;">
-        API Endpoint: <code>/api/dashboard/stats</code>
-      </div>
-    </body>
-  `);
-});
+// --- [정적 파일 및 메인 UI 서빙] ---
+// /api로 시작하지 않는 모든 요청은 프론트엔드 파일(index.html 등)로 연결
+app.get('/assets/*', serveStatic({ root: './' }));
+app.get('/vite.svg', serveStatic({ path: './vite.svg' }));
+app.get('/', serveStatic({ path: './index.html' }));
+// SPA 대응: 정해지지 않은 경로는 모두 index.html로 (Client-side Routing)
+app.get('*', serveStatic({ path: './index.html' }));
 
 // --- [보안 유틸리티] ---
 

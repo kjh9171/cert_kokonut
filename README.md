@@ -56,8 +56,6 @@ cd frontend
 npm run deploy
 ```
 
-- 배포 주소: [https://kjh9171.github.io/cert_kokonut/](https://kjh9171.github.io/cert_kokonut/)
-
 ### ⚙️ 백엔드 (Cloudflare Workers)
 
 수정한 서버 로직을 API 서버에 반영합니다.
@@ -67,11 +65,9 @@ cd backend
 npm run deploy
 ```
 
-- 배포 주소: [https://certkokonut.gimjonghwan319.workers.dev/](https://certkokonut.gimjonghwan319.workers.dev/)
-
 ---
 
-## 4. 서비스 재시작 및 관리
+## 5. 서비스 재시작 및 관리
 
 ### Docker 완전히 껐다 켜기
 

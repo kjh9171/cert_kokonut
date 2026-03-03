@@ -2,6 +2,10 @@ name = "certkokonut"
 main = "src/index.ts"
 compatibility_date = "2024-03-03"
 
+# 프론트엔드 정적 파일 서빙 설정 (통합 배포)
+[site]
+bucket = "../frontend/dist"
+
 # D1 데이터베이스 바인딩 설정
 [[d1_databases]]
 binding = "DB" # 코드 내에서 액세스할 이름
