@@ -60,5 +60,12 @@ npm run dev
 
 ## 5. 의무 준수 사항 (CERT 강조)
 
-1. **서비스 계정 키**: `backend/service-account.json` 파일은 절대 외부에 노출하지 마십시오!
+1. **서비스 계정 키**: `backend/service-account.json` 파일은 반드시 Firebase 콘솔에서 다운로드한 대표님의 실제 키 파일로 교체해야 백엔드가 정상 작동합니다! 현재는 기동을 위한 샘플 파일이 들어있습니다.
 2. **암호화 키 관리**: `docker-compose.yml`의 `ENCRYPTION_KEY`를 주기적으로 교체하는 것을 권장합니다.
+
+### 🔑 Firebase 서비스 계정 키 얻는 법
+
+1. [Firebase 콘솔](https://console.firebase.google.com/) 접속
+2. 프로젝트 설정 > 서비스 계정 탭 이동
+3. '새 비공개 키 생성' 클릭 후 다운로드
+4. 다운로드한 파일의 이름을 `service-account.json`으로 변경하여 `backend/` 폴더에 덮어쓰기!
