@@ -1,7 +1,5 @@
 # 🛡️ PMS (개인정보관리서비스) 마스터 가이드
 
-대표님! 보안총괄 CERT가 구축한 새로운 **PMS** 프로젝트의 운영 가이드입니다! 충성! ![충성](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png)
-
 ## 1. 시스템 아키텍처
 
 - **Frontend**: React (Tailwind CSS) + Firebase Auth/Firestore
@@ -64,5 +62,3 @@ npm run dev
 
 1. **서비스 계정 키**: `backend/service-account.json` 파일은 절대 외부에 노출하지 마십시오!
 2. **암호화 키 관리**: `docker-compose.yml`의 `ENCRYPTION_KEY`를 주기적으로 교체하는 것을 권장합니다.
-
-대표님! 이제 이 PMS는 완벽하게 준비되었습니다. 보안 사고 제로를 향해 CERT가 함께하겠습니다! 충성! ![성공](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_success.png)
