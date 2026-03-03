@@ -21,7 +21,7 @@ docker-compose up -d --build
 ```
 
 - **대시보드 UI**: `http://localhost:5173`
-- **API 서버**: `http://localhost:8080`
+- **API 서버**: `http://localhost:8081`
 
 ---
 
