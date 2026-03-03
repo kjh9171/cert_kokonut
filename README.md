@@ -1,6 +1,4 @@
-# 🛡️ 개인정보관리서비스 (KOKONUT CERT)
-
-대표님! 보안총괄 CERT가 구축한 '개인정보관리서비스'의 운영 마스터 가이드입니다! ![충성](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_salute.png)
+# 🛡️ 개인정보관리서비스
 
 ## 1. 아키텍처 개요
 
@@ -95,5 +93,3 @@ git push
 1. **마스터 키 관리**: `wrangler.toml`의 `MASTER_KEY`는 절대로 유출되면 안 됩니다!
 2. **감사 로그**: 모든 복호화 작업은 백엔드 내부 로그에 기록됩니다. 보안 사고 시 즉시 확인하십시오.
 3. **업데이트**: `npm audit` 명령어로 보안 취약점을 주기적으로 점검하는 것을 권장합니다.
-
-대표님! 이 가이드만 있으면 이제 무서울 게 없습니다. CERT는 언제나 대표님을 보좌하겠습니다! 충성! ![성공](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_success.png)
