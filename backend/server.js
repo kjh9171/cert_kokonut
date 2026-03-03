@@ -10,15 +10,25 @@ const app = express();
 // JSON 바디 파싱 미들웨어 등록
 app.use(express.json());
 
-// 파이어베이스 어드민 초기화 (이미 초기화된 경우 건너뜀)
-// 서버리스 환경 및 도커 환경에서 안정적인 연결을 보장함
+// 파이어베이스 어드민 초기화 (인증 파일 부재 시에도 서버 기동을 위해 try-catch 처리)
+let isFirebaseInitialized = false;
 if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault()
-  });
+  try {
+    admin.initializeApp({
+      credential: admin.credential.applicationDefault()
+    });
+    isFirebaseInitialized = true;
+    console.log('[CERT] Firebase Admin SDK가 명쾌하게 연결되었습니다! 충성!');
+  } catch (error) {
+    console.warn('[CERT] [WARNING] Firebase 인증 오류: 대표님의 실제 키를 backend/service-account.json에 넣어주셔야 서비스가 정상 작동합니다.');
+    console.error('[CERT] [DEBUG] Detail:', error.message);
+  }
+} else {
+  isFirebaseInitialized = true;
 }
-// Firestore 데이터베이스 인스턴스 획득
-const db = admin.firestore();
+
+// Firestore 데이터베이스 인스턴스 (초기화 실패 시 null 처리로 런타임 에러 방지)
+const db = isFirebaseInitialized ? admin.firestore() : null;
 
 // [보안 설정] 암호화 키 (환경 변수 권장, 기본값은 샘플용)
 // 실제 운영 시에는 강력한 랜덤 문자열을 사용해야 함

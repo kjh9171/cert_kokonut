@@ -1,4 +1,4 @@
-version: '3.8'
+# version: '3.8'
 
 services:
   # PMS 백엔드 API 서비스
