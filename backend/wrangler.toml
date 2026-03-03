@@ -6,7 +6,7 @@ compatibility_date = "2024-03-03"
 [[d1_databases]]
 binding = "DB" # 코드 내에서 액세스할 이름
 database_name = "cert_kokonut_db"
-database_id = "your-database-id-placeholder" # 실제 배포 시 생성된 ID로 교체 필요
+database_id = "20fd8dda-f65f-4fa6-81ff-e72399f78d56" # 실제 생성된 ID 반영 완료!
 
 # 환경 변수 정의
 [vars]
