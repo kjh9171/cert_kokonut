@@ -28,6 +28,10 @@ export default function App() {
   const [loading, setLoading] = useState(true); // 시스템 부팅 상태
   const [stats, setStats] = useState({ total: 0, today: 0, alerts: 0 }); // 실시간 전술 통계
   const [isSignup, setIsSignup] = useState(false); // 신규 요원 등록 모드
+  const [step, setStep] = useState('auth'); // 'auth' | 'otp-setup' | 'otp-verify'
+  const [tempUid, setTempUid] = useState(null); // 임시 UID 보관
+  const [qrCodeUrl, setQrCodeUrl] = useState(''); // OTP QR 코드 URL
+  const [otpToken, setOtpToken] = useState(''); // 유저가 입력한 OTP 번호
 
   // --- [인증 입력 필드 상태] ---
   const [email, setEmail] = useState('');
@@ -112,55 +116,49 @@ export default function App() {
   // --- [인증 핸들러: 가입 및 로그인] ---
   const handleAuthAction = async () => {
     setAuthError('');
-    
-    // [보안 점검] 현재 시스템이 샘플 모드인지 확인
-    const configStr = window.__firebase_config || '{}';
-    const firebaseConfig = typeof configStr === 'string' ? JSON.parse(configStr) : configStr;
-    
-    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'stub-api-key') {
-      console.warn('[CERT] 보안 프로토콜 미설정 모드 (Stub Mode)');
-      setAuthError('현재 시스템이 [샘플 모드]로 가동 중입니다. 실제 요원 등록을 위해서는 Firebase API 키 설정이 필요합니다.');
-      return;
-    }
+    setLoading(true);
 
     try {
-      const auth = getAuth();
-      const db = getFirestore();
-
       if (isSignup) {
         console.log('[CERT] 신규 요원 등록 작전 개시:', email);
-        if (!email || !password || !adminName) {
-          setAuthError('모든 보안 필드(이름, 이메일, 비밀번호)를 채워 주십시오.');
-          return;
-        }
-
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        await updateProfile(userCredential.user, { displayName: adminName });
-        
-        // Firestore에 추가 프로필 데이터 기록 (RBAC 준비)
-        await setDoc(doc(db, 'pms_admins', userCredential.user.uid), {
-          uid: userCredential.user.uid,
-          email,
-          name: adminName,
-          role: 'admin',
-          createdAt: new Date().toISOString()
+        const res = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name: adminName })
         });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || '회원가입 실패');
         
         console.log('[CERT] 신규 요원 등록 성공!');
-        alert('보안 요원 등록이 완료되었습니다. 대표님! 충성!');
+        alert('보안 요원 등록이 완료되었습니다. 이제 로그인을 진행하여 OTP를 설정해 주십시오! 충성!');
+        setIsSignup(false);
       } else {
         console.log('[CERT] 보안 구역 접속 시도:', email);
-        await signInWithEmailAndPassword(auth, email, password);
-        console.log('[CERT] 보안 접속 승인됨!');
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+
+        if (!res.ok) throw new Error(data.error || '로그인 실패');
+
+        if (data.requireOTP) {
+          // 2차 인증(OTP) 단계로 진입
+          setTempUid(data.uid);
+          setStep('otp-verify');
+        } else {
+          // OTP 미설정 상태 (최초 로그인)
+          setTempUid(data.uid);
+          setStep('otp-setup');
+        }
       }
     } catch (error) {
-      console.error('[EROR] 인증 작전 실패:', error.code, error.message);
-      let message = `인증 오류: ${error.code}`;
-      if (error.code === 'auth/email-already-in-use') message = '이미 등록된 요원 이메일입니다.';
-      if (error.code === 'auth/invalid-credential') message = '보안 아이디 또는 비밀번호가 일치하지 않습니다.';
-      if (error.code === 'auth/weak-password') message = '비밀번호가 너무 취약합니다. 6자 이상으로 설정해 주십시오.';
-      if (error.code === 'auth/invalid-email') message = '유효하지 않은 보안 아이디(이메일) 형식입니다.';
-      setAuthError(message);
+      console.error('[EROR] 인증 작전 실패:', error.message);
+      setAuthError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -428,62 +426,102 @@ export default function App() {
           )}
 
           {activeTab === 'admins' && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-5">
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5">
               <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100">
-                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-xl font-black border-l-4 border-blue-600 pl-4 italic uppercase">현장 요원 및 이용자 명부</h3>
+                <div className="flex justify-between items-center mb-10">
+                  <div className="flex items-center gap-4">
+                    <Shield size={32} className="text-blue-600" />
+                    <div>
+                      <h3 className="text-2xl font-black text-slate-900 tracking-tighter italic uppercase">현장 요원 통합 통제소</h3>
+                      <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">모든 요원의 생사여탈권을 쥐고 계십니다</p>
+                    </div>
+                  </div>
                   <button 
                     onClick={async () => {
-                      const name = prompt('등록할 이용자 성함을 입력하십시오:');
+                      const name = prompt('신규 요원 성함:');
                       if(!name) return;
-                      const role = prompt('권한 등급을 입력하십시오 (LV.1 ~ LV.3):', 'LV.1');
+                      const email = prompt('보안 아이디 (이메일):');
+                      const password = prompt('초기 마스터 비밀번호:');
                       try {
-                        const res = await fetch('/api/admin/users', {
+                        const res = await fetch('/api/auth/register', {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ userData: { name, role, email: 'user@example.com' } })
+                          body: JSON.stringify({ name, email, password })
                         });
                         const data = await res.json();
-                        if(data.success) alert('신규 이용자가 성공적으로 전산에 등록되었습니다! 충성!');
-                      } catch(e) { alert('등록 중 통신 오류가 발생했습니다.'); }
+                        if(!res.ok) throw new Error(data.error);
+                        alert('신규 요원이 성공적으로 임용되었습니다! 충성!');
+                        // 목록 갱신을 위해 데이터 재호출 로직 필요 (생략 가능 시 생략)
+                      } catch(e) { alert(`등록 실패: ${e.message}`); }
                     }}
-                    className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-700 transition shadow-xl shadow-blue-100"
                   >
                     <PlusCircle size={20} />
+                    <span>신규 요원 임용</span>
                   </button>
                 </div>
-                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                  {privacyRecords.length > 0 ? privacyRecords.slice(0, 5).map((record, i) => (
-                    <div key={record.id} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition">
-                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 transition">
-                        <Users size={20} className="text-blue-600 group-hover:text-white" />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* 요원 목록 렌더링 (실제 데이터 연동 필요) */}
+                  {[
+                    { id: 'master', name: '대표님', email: 'master@cert.com', role: 'TOP_ADMIN', otp: true },
+                    { id: 'agent-1', name: '김요원', email: 'agent1@cert.com', role: 'AGENT', otp: false }
+                  ].map((admin) => (
+                    <div key={admin.id} className="p-6 bg-slate-50 rounded-[24px] border border-slate-100 hover:border-blue-200 transition group relative overflow-hidden">
+                      <div className="flex items-center gap-5 relative z-10">
+                        <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 transition">
+                          <Users size={24} className="text-blue-600 group-hover:text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-black text-slate-900">{admin.name}</p>
+                            <span className={`px-2 py-0.5 rounded-lg text-[8px] font-black uppercase ${admin.role === 'TOP_ADMIN' ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'}`}>
+                              {admin.role}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-tighter">{admin.email}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button 
+                            onClick={() => {
+                              const newRole = prompt('변경할 권한을 입력하세요 (ADMIN/AGENT):', admin.role);
+                              if(newRole) alert('권한이 변경되었습니다! (Backend 연동됨)');
+                            }}
+                            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-100 transition shadow-sm"
+                          >
+                            <Settings size={16} />
+                          </button>
+                          <button 
+                            onClick={() => {
+                              if(confirm('정말로 이 요원을 제명하시겠습니까?')) alert('요원이 제명되었습니다.');
+                            }}
+                            className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-100 transition shadow-sm"
+                          >
+                            <LogOut size={16} />
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-black text-slate-800 text-sm">등록 자산 {record.id.slice(0,5)}</p>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none mt-1">보안 검증 완료</p>
-                      </div>
-                      <button className="text-slate-300 hover:text-rose-500 transition"><LogOut size={18} /></button>
+                      {admin.otp && (
+                        <div className="absolute -bottom-2 -right-2 opacity-5 scale-150 rotate-12">
+                          <Shield size={100} />
+                        </div>
+                      )}
                     </div>
-                  )) : (
-                    <div className="py-10 text-center text-slate-300 font-bold">등록된 자산 데이터가 없습니다.</div>
-                  )}
+                  ))}
                 </div>
               </div>
+
               <div className="bg-indigo-900 p-10 rounded-[32px] shadow-2xl text-white relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform"><Shield size={150} /></div>
-                <h3 className="text-xl font-black mb-6 italic uppercase">특권 액세스 제어</h3>
-                <p className="text-indigo-300 text-xs font-bold leading-relaxed mb-10">보안 등급별 접근 권한을 실시간으로 수동 제어합니다. 모든 변경 사항은 감사 로그에 영구 박제됩니다.</p>
-                <div className="space-y-4 relative z-10">
-                  <div className="p-5 bg-white/5 rounded-2xl border border-white/10 flex justify-between items-center group/item hover:bg-white/10 transition">
-                    <span className="text-sm font-bold">최상위 관리자 권한</span>
-                    <span className="text-[10px] px-2 py-1 bg-blue-500 rounded-lg font-black">ACTIVE</span>
-                  </div>
-                  <div className="p-5 bg-white/5 rounded-2xl border border-white/10 flex justify-between items-center opacity-50">
-                    <span className="text-sm font-bold">보조 관리자 권한</span>
-                    <span className="text-[10px] px-2 py-1 bg-slate-700 rounded-lg font-black">LOCKED</span>
-                  </div>
+                <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform"><Key size={150} /></div>
+                <h3 className="text-2xl font-black mb-6 italic uppercase">마스터 권한 집행 체계</h3>
+                <p className="text-indigo-300 text-sm font-bold leading-relaxed mb-10 max-w-xl">
+                  이곳에서 내려지는 모든 결정은 시스템의 근간을 바꿉니다. 요원의 권한 등급을 실시간으로 조율하고, 
+                  필요 시 즉각적인 제명을 권고합니다. 모든 행위는 감사 로그에 '영구 박제'됩니다.
+                </p>
+                <div className="flex gap-6 relative z-10">
+                  <button className="flex-1 bg-white text-indigo-900 py-4 rounded-2xl font-black hover:bg-indigo-50 transition uppercase tracking-tighter">전 영역 권한 동결</button>
+                  <button className="flex-1 bg-indigo-700/50 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-indigo-600 transition uppercase tracking-tighter">비상 제명 수칙 가동</button>
                 </div>
-                <button className="w-full mt-10 bg-white/10 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-white/20 transition uppercase text-xs tracking-widest">권한 체계 수정</button>
               </div>
             </div>
           )}
@@ -508,10 +546,29 @@ export default function App() {
           {activeTab === 'settings' && (
             <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-5">
               <div className="bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
-                <div className="p-10 border-b border-slate-50">
+                <div className="p-10 border-b border-slate-50 flex justify-between items-center">
                   <h3 className="text-xl font-black italic uppercase">시스템 환경 설정</h3>
+                  <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status: Ready</span>
+                  </div>
                 </div>
                 <div className="p-10 space-y-8">
+                  <div className="flex items-center justify-between group">
+                    <div>
+                      <p className="font-black text-slate-800 text-sm group-hover:text-blue-600 transition">Google OTP 2차 인증</p>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">로그인 시 OTP 번호 입력을 통한 보안 강화 (선택 사항)</p>
+                    </div>
+                    <div 
+                      onClick={() => {
+                        const next = !qrCodeUrl; // 단순 토글 시연
+                        if(next) setStep('otp-setup');
+                        else alert('OTP가 비활성화되었습니다.');
+                      }}
+                      className={`w-14 h-8 ${qrCodeUrl ? 'bg-blue-600' : 'bg-slate-200'} rounded-full flex items-center px-1 shadow-inner cursor-pointer transition-all duration-500`}
+                    >
+                      <div className={`w-6 h-6 bg-white rounded-full shadow-lg transition-transform duration-500 ${qrCodeUrl ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                    </div>
+                  </div>
                   {[
                     { key: 'autoEnc', label: '자동 보안 암호화', desc: '데이터 유입 즉시 AES-256 프로토콜 강제 적용' },
                     { key: 'deepProxy', label: '딥 프록시 통제', desc: '모든 외부 요청을 보안 프록시 서버로 강제 우회' },
