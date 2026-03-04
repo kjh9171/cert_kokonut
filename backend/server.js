@@ -4,7 +4,7 @@ import express from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { TOTP } from 'otplib';
+import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
 import qrcode from 'qrcode';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -17,14 +17,17 @@ const __dirname = path.dirname(__filename);
 // 대표님의 명령에 따라 외부 클라우드(Firebase) 연결을 차단하고 로컬에서만 작동합니다!
 const LOCAL_DB_PATH = path.join(__dirname, 'local_db.json');
 if (!fs.existsSync(LOCAL_DB_PATH)) {
-  fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({ pms_admins: [], privacy_records: [] }, null, 2));
+  fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({ pms_admins: [], privacy_records: [], pms_users: [] }, null, 2));
 }
 
 /**
- * [보안 패치] otplib v13 ESM 호환성 해결
- * Node.js의 내장 crypto 엔진을 직접 연결하여 TOTP 인스턴스를 생성합니다!
+ * [보안 패치] otplib v13 전체 플러그인 이식
+ * Crypto 및 Base32 플러그인을 명시적으로 연결하여 모든 환경적 변수를 제거합니다!
  */
-const authenticator = new TOTP({ crypto });
+const authenticator = new TOTP({
+  crypto: NobleCryptoPlugin,
+  base32: ScureBase32Plugin
+});
 // Express 앱 초기화
 const app = express();
 app.use(express.json());
@@ -215,8 +218,12 @@ app.post('/api/auth/otp-setup', async (req, res) => {
     const otpSecret = decrypt(userData.otpSecret);
     if (!otpSecret) return res.status(500).json({ error: '보안 키 복원 실패' });
     
-    // Google OTP용 URI 생성
-    const otpUri = authenticator.keyuri(userData.email, 'PMS_CERT', otpSecret);
+    // Google OTP용 URI 생성 (v13 명세 적용)
+    const otpUri = authenticator.generateURI({ 
+      label: userData.email, 
+      issuer: 'PMS_CERT', 
+      secret: otpSecret 
+    });
     const qrCodeUrl = await qrcode.toDataURL(otpUri);
 
     res.json({ qrCodeUrl });
@@ -237,7 +244,8 @@ app.post('/api/auth/otp-verify', async (req, res) => {
     const otpSecret = decrypt(userData.otpSecret);
     if (!otpSecret) return res.status(500).json({ error: '보안 키 복원 실패' });
     
-    const isValid = authenticator.verify({ token: otpToken, secret: otpSecret });
+    // v13 비동기 검증 대응
+    const isValid = await authenticator.verify({ token: otpToken, secret: otpSecret });
 
     if (!isValid) return res.status(401).json({ error: 'OTP 번호가 일치하지 않습니다.' });
 
