@@ -1,369 +1,996 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Shield, Users, Database, Key, FileText, Settings, 
-  Bell, Search, Menu, X, Download, Plus, LayoutDashboard, 
-  History, Mail, CreditCard, HelpCircle, Eye, ShieldCheck,
-  PlusCircle, Activity, LogOut, Lock, ChevronDown, ChevronRight,
-  ClipboardList, MessageSquare, AlertCircle, Bookmark, Globe, Terminal, Save
-} from 'lucide-react';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, AreaChart, Area 
-} from 'recharts';
+import React, { useState, useEffect } from "react";
+// 보안 및 UI를 위한 아이콘 세트 (lucide-react) - 필수 라이브러리 임포트
+import {
+  Shield,
+  Users,
+  Database,
+  Key,
+  FileText,
+  Settings,
+  Bell,
+  Search,
+  Menu,
+  X,
+  Download,
+  Plus,
+  LayoutDashboard,
+  History,
+  Mail,
+  CreditCard,
+  HelpCircle,
+  Eye,
+  ShieldCheck,
+  ChevronRight,
+  Lock,
+  CheckCircle,
+  AlertTriangle,
+  UserPlus,
+  LogIn,
+  ArrowLeft,
+  Globe,
+  Zap,
+  Check,
+  Activity,
+  BarChart3,
+  TrendingUp,
+  Save,
+} from "lucide-react";
+// 데이터 시각화를 위한 차트 라이브러리 (recharts) - 통계 화면용
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+} from "recharts";
 
-// --- [공통 보조 컴포넌트: 전술 통계 카드] ---
-const StatCard = ({ title, value, unit = "건", icon: Icon, colorClass }) => (
-  <div className={`${colorClass} p-8 rounded-[32px] shadow-2xl text-white relative overflow-hidden group`}>
-    <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform"><Icon size={80} /></div>
-    <div className="relative z-10">
-      <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-2">{title}</p>
-      <div className="flex items-baseline gap-2">
-        <span className="text-4xl font-black italic">{value}</span>
-        <span className="text-xs font-bold opacity-60">{unit}</span>
-      </div>
-    </div>
-  </div>
-);
+// --- 상수 데이터 및 메뉴 구성 정의 ---
 
-// --- [보조 컴포넌트: 알림(Toast)] ---
-const Toast = ({ message, type, onClose }) => (
-  <div className={`fixed top-10 left-1/2 -translate-x-1/2 z-[200] px-10 py-5 rounded-2xl shadow-2xl font-black italic flex items-center gap-4 animate-in slide-in-from-top-10 duration-500 ${type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'}`}>
-    <ShieldCheck size={24} />
-    <span>{message}</span>
-    <button onClick={onClose} className="ml-4 opacity-50 hover:opacity-100"><X size={18} /></button>
-  </div>
-);
+// 기업 관리자용 메뉴 구성 (아이콘 포함)
+const COMPANY_MENU = [
+  { id: "dashboard", label: "운영 대시보드", icon: LayoutDashboard },
+  { id: "member_db", label: "회원 DB 관리", icon: Database },
+  { id: "api_keys", label: "API 연동관리", icon: Key },
+  { id: "policy", label: "개인정보처리방침", icon: ShieldCheck },
+  { id: "subscription", label: "구독 관리", icon: CreditCard },
+];
 
-// --- [보조 컴포넌트: 로딩 화면] ---
-const LoadingScreen = () => (
-  <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-white p-6 text-center">
-    <Shield size={80} className="animate-bounce text-blue-500 mb-8" />
-    <h1 className="text-2xl font-black tracking-widest mb-4 uppercase italic">PMS 보안 엔진 분석 중...</h1>
-    <div className="w-64 h-1.5 bg-slate-800 rounded-full overflow-hidden mb-6">
-      <div className="h-full bg-blue-500 animate-pulse w-full"></div>
-    </div>
-  </div>
-);
+// 시스템 관리자(공급자) 전용 메뉴 구성
+const SYSTEM_MENU = [
+  { id: "total_stats", label: "전체 통계", icon: BarChart3 },
+  { id: "company_manage", label: "고객사 관리", icon: Globe },
+  { id: "security_monitor", label: "보안 모니터링", icon: Activity },
+  { id: "billing_stats", label: "매출 현황", icon: TrendingUp },
+  { id: "system_settings", label: "시스템 설정", icon: Settings },
+];
 
-// --- [보조 컴포넌트: 인증 화면 (강력한 보안 로직 포함)] ---
-const AuthScreen = ({ isSignup, setIsSignup, handleAuthAction, authError }) => (
-  <div className="min-h-screen flex items-center justify-center bg-slate-900 p-6">
-    <div className="w-full max-w-xl bg-white rounded-[48px] shadow-2xl p-16 animate-in zoom-in duration-700">
-      <div className="flex justify-center mb-10 text-blue-600"><Shield size={80} /></div>
-      <h2 className="text-4xl font-black text-center text-slate-900 mb-2 italic tracking-tighter uppercase">PMS 관제실</h2>
-      <p className="text-center text-slate-400 font-bold mb-12 uppercase tracking-widest text-xs italic">고도의 보안이 요구되는 국가급 관리 구역입니다.</p>
-      
-      <div className="space-y-6">
-        {isSignup && (
-          <div>
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-2">성함 / 요원 명칭</label>
-            <input id="auth-name" placeholder="홍길동" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition font-bold" />
-          </div>
-        )}
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-2">보안 아이디 (ADMIN/USER)</label>
-          <input id="auth-email" placeholder="admin@cert.com" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition font-bold" />
-        </div>
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-2">보안 암호 (PASSWORD: 1234)</label>
-          <input id="auth-password" type="password" placeholder="••••••••" className="w-full p-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition font-bold" />
-        </div>
-        
-        {authError && <p className="text-rose-500 text-center font-black text-xs uppercase italic animate-bounce">{authError}</p>}
-        
-        <button id="login-btn" onClick={handleAuthAction} className="w-full bg-blue-600 text-white py-6 rounded-2xl font-black text-xl hover:bg-blue-700 transition shadow-xl mt-6 uppercase tracking-tighter italic">
-          시스템 접속 승인
-        </button>
-        <button onClick={() => setIsSignup(!isSignup)} className="w-full text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-blue-600 mt-4 underline decoration-double underline-offset-4">
-          신규 요원 계정 등록 (Signup)
-        </button>
-      </div>
-      <p className="mt-10 text-center text-[8px] font-bold text-slate-200 tracking-widest uppercase italic">Unauthorized access is strictly prohibited by safety protocols.</p>
-    </div>
-  </div>
-);
+// 차트 시각화를 위한 샘플 데이터 셋
+const CHART_DATA = [
+  { name: "02.26", value: 400, api: 2400 },
+  { name: "02.27", value: 300, api: 1398 },
+  { name: "02.28", value: 600, api: 9800 },
+  { name: "03.01", value: 800, api: 3908 },
+  { name: "03.02", value: 500, api: 4800 },
+];
 
-// --- [기업 관리자 전용: 대시보드 뷰 (연동 로직)] ---
-const UserDashboardView = ({ stats, credits, formCount }) => {
-  return (
-    <div className="space-y-10 animate-in fade-in duration-700 pb-20">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-12 rounded-[48px] shadow-xl border border-slate-100 flex items-center justify-between group hover:shadow-2xl transition-all duration-500">
-          <div className="space-y-6">
-            <h3 className="text-2xl font-black italic text-slate-900 leading-tight">개인정보 수집 프로세스<br/><span className="text-blue-600">수집 폼</span>으로 완전 자동화!</h3>
-            <p className="text-sm font-bold text-slate-400">가동 중인 폼 스택: <span className="text-blue-600 font-black">{formCount}</span>개 단말</p>
-            <button className="px-8 py-4 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase italic hover:bg-blue-700 transition shadow-lg shadow-blue-200 active:scale-95">신규 폼 배포</button>
-          </div>
-          <div className="hidden md:block w-32 h-32 bg-orange-100 rounded-[32px] flex items-center justify-center text-orange-500"><ClipboardList size={64} /></div>
-        </div>
-        
-        <div className="bg-white p-12 rounded-[48px] shadow-xl border border-slate-100 group">
-          <div className="flex justify-between items-start mb-8">
-            <h3 className="text-2xl font-black italic text-slate-900 uppercase">라이선스 통제</h3>
-            <button className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1 hover:text-blue-600">상세 로그 <ChevronRight size={12} /></button>
-          </div>
-          <div className="space-y-6">
-            <div className="flex justify-between items-center p-6 bg-slate-50 rounded-3xl border border-slate-100">
-              <span className="text-blue-600 font-black italic">보안 베이직 아머</span>
-              <span className="text-xl font-black italic text-slate-900">{credits.toLocaleString()} <span className="text-xs opacity-40">CREDITS</span></span>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">상계 상태</p><p className="font-black italic text-emerald-500 uppercase">Active</p></div>
-              <div className="p-4 text-right"><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">차기 갱신일</p><p className="font-black italic text-slate-800">2026.12.31</p></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white p-12 rounded-[48px] shadow-xl border border-slate-100">
-        <h3 className="text-2xl font-black italic text-slate-900 mb-10 flex items-center gap-3">전술 정보 보관 현황 <span className="text-xs font-bold text-blue-500 bg-blue-50 px-3 py-1 rounded-full px-2 italic uppercase">Secured Realtime Monitoring</span></h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-          <div className="p-10 bg-slate-50 rounded-[40px] border border-slate-100 group hover:border-blue-500 transition-all duration-500">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">전체 보관량</p>
-            <p className="text-5xl font-black italic text-slate-900 group-hover:scale-110 transition-transform">{stats.total}<span className="text-xl ml-1">건</span></p>
-          </div>
-          <div className="p-10 bg-slate-50 rounded-[40px] border border-slate-100 group hover:border-blue-500 transition-all duration-500">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">금일 유입량</p>
-            <p className="text-5xl font-black italic text-slate-900 group-hover:scale-110 transition-transform">{stats.today}<span className="text-xl ml-1">건</span></p>
-          </div>
-          <div className="p-10 bg-slate-50 rounded-[40px] border border-slate-100 group hover:border-blue-500 transition-all duration-500">
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">보안 경계치</p>
-            <p className="text-5xl font-black italic text-rose-500 group-hover:scale-110 transition-transform">{stats.alerts}<span className="text-xl ml-1">건</span></p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// --- [기업 관리자 전용: 회사 기본 정보 (영속성 로직)] ---
-const CompanyInfoView = ({ companyInfo, setCompanyInfo, showToast }) => {
-  const [editing, setEditing] = useState(false);
-  const [tempInfo, setTempInfo] = useState({ ...companyInfo });
-
-  const handleSave = () => {
-    setCompanyInfo({ ...tempInfo });
-    localStorage.setItem('pms_company_persistence', JSON.stringify(tempInfo));
-    setEditing(false);
-    showToast('회사 보안 정보가 영구 저장소에 동기화되었습니다! 충성!', 'success');
-  };
-
-  return (
-    <div className="space-y-10 animate-in slide-in-from-right-10 duration-700 pb-20">
-      <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-3xl font-black italic text-slate-900 uppercase tracking-tighter">회사 기본 정보</h3>
-          <p className="text-sm font-bold text-slate-400 mt-1 uppercase tracking-widest italic">보안 구역의 핵심 신상 정보를 통제합니다.</p>
-        </div>
-        {editing ? (
-          <button id="save-company-btn" onClick={handleSave} className="px-12 py-5 bg-emerald-600 text-white rounded-2xl font-black text-sm uppercase italic hover:bg-emerald-700 transition shadow-xl flex items-center gap-2"><Save size={18} /> 동기화 승인</button>
-        ) : (
-          <button id="edit-company-btn" onClick={() => setEditing(true)} className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-sm uppercase italic hover:bg-blue-700 transition shadow-xl">정보 개정</button>
-        )}
-      </div>
-      <div className="bg-white p-16 rounded-[48px] shadow-2xl border border-slate-100 relative overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16 relative z-10">
-          <div className="space-y-10">
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 italic">소속 기관 명칭</label>
-              <input id="company-name-input" disabled={!editing} value={editing ? tempInfo.name : companyInfo.name} onChange={e => setTempInfo({...tempInfo, name: e.target.value})} className={`w-full p-5 rounded-xl border-2 font-black italic outline-none transition ${editing ? 'bg-slate-50 border-blue-500 text-slate-900 shadow-lg' : 'bg-white border-transparent text-slate-400 select-none'}`} />
-            </div>
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 italic">사업자 식별 번호</label>
-              <input disabled={!editing} value={editing ? tempInfo.bizNum : companyInfo.bizNum} onChange={e => setTempInfo({...tempInfo, bizNum: e.target.value})} className={`w-full p-5 rounded-xl border-2 font-black italic outline-none transition ${editing ? 'bg-slate-50 border-blue-500 text-slate-900 shadow-lg' : 'bg-white border-transparent text-slate-400 select-none'}`} />
-            </div>
-          </div>
-          <div className="space-y-10">
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 italic">현장 총괄 책임자</label>
-              <input disabled={!editing} value={editing ? tempInfo.manager : companyInfo.manager} onChange={e => setTempInfo({...tempInfo, manager: e.target.value})} className={`w-full p-5 rounded-xl border-2 font-black italic outline-none transition ${editing ? 'bg-slate-50 border-blue-500 text-slate-900 shadow-lg' : 'bg-white border-transparent text-slate-400 select-none'}`} />
-            </div>
-            <div>
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4 italic">보안 통신 채널 (EMAIL)</label>
-              <input disabled={!editing} value={editing ? tempInfo.email : companyInfo.email} onChange={e => setTempInfo({...tempInfo, email: e.target.value})} className={`w-full p-5 rounded-xl border-2 font-black italic outline-none transition ${editing ? 'bg-slate-50 border-blue-500 text-slate-900 shadow-lg' : 'bg-white border-transparent text-slate-400 select-none'}`} />
-            </div>
-          </div>
-        </div>
-        <Shield size={300} className="absolute -bottom-20 -right-20 opacity-[0.03] rotate-12" />
-      </div>
-    </div>
-  );
-};
-
-// --- [메인 애플리케이션 컴포넌트] ---
+// 메인 애플리케이션 컴포넌트
 export default function App() {
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('cert_pms_user')) || null);
-  const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [openGroups, setOpenGroups] = useState({ collection: true, management: false });
-  const [authError, setAuthError] = useState('');
-  const [toast, setToast] = useState(null);
+  // --- 상태 관리 (State Management) ---
 
-  // --- [실질적 비즈니스 데이터 상태] ---
-  const [companyInfo, setCompanyInfo] = useState(JSON.parse(localStorage.getItem('pms_company_persistence')) || { name: 'CERT PMS HUB', bizNum: '101-88-12345', manager: '안티그래비티 총괄', email: 'cert@pms.com' });
-  const [credits, setCredits] = useState(Number(localStorage.getItem('pms_credit_balance')) || 100000);
-  const [formsCount, setFormsCount] = useState(Number(localStorage.getItem('pms_forms_count')) || 0);
-  const [stats, setStats] = useState({ total: 142, today: 12, alerts: 0 });
+  // 현재 접속한 사용자 세션 정보 (로컬 스토리지에서 복구)
+  const [user, setUser] = useState(
+    () => JSON.parse(localStorage.getItem("cert_pms_user")) || null,
+  );
+  // 현재 활성화된 화면 상태: 'landing' | 'login' | 'signup' | 'company_admin' | 'system_admin'
+  const [currentScreen, setCurrentScreen] = useState(() =>
+    user ? "company_admin" : "landing",
+  );
+  // 대시보드 내에서 선택된 활성 탭
+  const [activeTab, setActiveTab] = useState("dashboard");
+  // 사이드바의 확장/축소 상태 (UI UX 최적화)
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const showToast = (message, type = 'success') => setToast({ message, type });
-  useEffect(() => { if (toast) { const t = setTimeout(() => setToast(null), 3500); return () => clearTimeout(t); } }, [toast]);
+  // --- 비즈니스 로직 연동용 상태 ---
 
-  const handleAuthAction = async () => {
-    setLoading(true);
-    setAuthError('');
-    const email = document.getElementById('auth-email').value;
-    const password = document.getElementById('auth-password').value;
-    
-    // [보안 우회 및 테스트 시뮬레이션]
-    if (password === '1234') {
-      const mockUser = {
-        email,
-        role: email.startsWith('admin') ? 'admin' : 'user',
-        name: email.startsWith('admin') ? '대표 요원' : '보안 요원'
-      };
-      setTimeout(() => {
-        localStorage.setItem('cert_pms_user', JSON.stringify(mockUser));
-        setUser(mockUser);
-        setLoading(false);
-        showToast(`${mockUser.name}님, 시스템 접속을 환영합니다! 충성!`, 'success');
-      }, 800);
-      return;
-    }
+  // 회사 기본 정보 (영속성 유지)
+  const [companyInfo, setCompanyInfo] = useState(
+    () =>
+      JSON.parse(localStorage.getItem("pms_company_persistence")) || {
+        name: "CERT PMS HUB",
+        bizNum: "101-88-12345",
+        manager: "안티그래비티 총괄",
+        email: "cert@pms.com",
+      },
+  );
+  // 상계 가능 크레딧 및 통계 정보
+  const [credits, setCredits] = useState(
+    () => Number(localStorage.getItem("pms_credit_balance")) || 100000,
+  );
+  const [stats, setStats] = useState({ total: 1284, today: 42, alerts: 0 });
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      localStorage.setItem('cert_pms_token', data.token);
-      localStorage.setItem('cert_pms_user', JSON.stringify(data.user));
-      setUser(data.user);
-    } catch (e) { 
-      setAuthError('보안 암호가 일치하지 않거나 서버 응답이 없습니다.'); 
-    } finally { setLoading(false); }
-  };
+  // --- 보조 기능 함수 ---
 
+  // 로그아웃 처리 (로컬 스토리지 파기 및 초기화)
   const handleLogout = () => {
-    if(!window.confirm('시스템 세션을 즉시 파기하고 로그아웃하시겠습니까?')) return;
-    localStorage.removeItem('cert_pms_user');
-    localStorage.removeItem('cert_pms_token');
+    if (!window.confirm("시스템 세션을 즉시 파기하고 로그아웃하시겠습니까?"))
+      return;
+    localStorage.removeItem("cert_pms_user");
     setUser(null);
-    setActiveTab('dashboard');
-    alert('임무가 종료되었습니다. 안전하게 시스템을 종료합니다. 충성!');
+    setCurrentScreen("landing");
   };
 
-  if (loading) return <LoadingScreen />;
-  if (!user) return <AuthScreen handleAuthAction={handleAuthAction} authError={authError} />;
+  // 로그인 성고 시 처리 로직 (모의 인증 체계)
+  const handleAuthSuccess = (userData) => {
+    localStorage.setItem("cert_pms_user", JSON.stringify(userData));
+    setUser(userData);
+    setCurrentScreen("company_admin");
+  };
 
-  // --- [계충형 메뉴 격리 시스템] ---
-  const ADMIN_MENU = [
-    { id: 'dashboard', label: '통합 관제실', icon: LayoutDashboard, single: true },
-    { id: 'admin_security', label: '보안 자산 검색', icon: Search, single: true },
-    { id: 'admin_infra', label: '인프라 관리', icon: Terminal, single: true },
-  ];
+  // 회사 정보 영구 저장 처리 (로컬 스토리지 동기화)
+  const handleCompanySave = (updatedInfo) => {
+    setCompanyInfo(updatedInfo);
+    localStorage.setItem(
+      "pms_company_persistence",
+      JSON.stringify(updatedInfo),
+    );
+    alert("회사 보안 정보가 영구 저장소에 동기화되었습니다! 충성!");
+  };
 
-  const USER_MENU = [
-    { id: 'dashboard', label: '대시보드', icon: LayoutDashboard, single: true },
-    { id: 'collection', label: '개인정보 수집/관리', icon: Database, items: [
-      { id: 'form_mgmt', label: '수집 폼 관리' },
-      { id: 'consent_list', label: '동의서 목록' }
-    ]},
-    { id: 'management', label: '관리', icon: Settings, items: [
-      { id: 'company_info', label: '회사 정보 관리' },
-      { id: 'billing', label: '결제 및 라이선스' }
-    ]},
-  ];
+  // --- View 컴포넌트 정의 ---
 
-  const menuSet = user.role === 'admin' ? ADMIN_MENU : USER_MENU;
-
-  return (
-    <div className="min-h-screen bg-white flex font-sans text-slate-900 overflow-hidden select-none">
-      {toast && <Toast {...toast} onClose={() => setToast(null)} />}
-      
-      {/* 껍데기를 넘어선 실질적 사이드바 */}
-      <aside className={`w-80 flex flex-col shadow-2xl relative z-50 transition-all duration-700 ${user.role === 'admin' ? 'bg-slate-950 text-white' : 'bg-white border-r border-slate-100'}`}>
-        <div className={`p-8 border-b flex items-center justify-between group ${user.role === 'admin' ? 'bg-white/5' : 'bg-slate-50/50'}`}>
-          <div className="flex items-center gap-3">
-             <div className="p-2 bg-blue-600 rounded-xl text-white shadow-lg shadow-blue-200 group-hover:rotate-12 transition-transform"><Shield size={22} /></div>
-             <div><p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">보안 관제</p><h1 className="text-xl font-black italic tracking-tighter uppercase">PMS Hub</h1></div>
+  // 1. 서비스 메인 홈페이지 (Landing View)
+  const HomeView = () => (
+    <div className="min-h-screen bg-white font-sans selection:bg-blue-100 animate-in fade-in duration-700">
+      {/* 고정 상단 네비게이션 (유리 효과 적용) */}
+      <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => setCurrentScreen("landing")}
+          >
+            <div className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-100">
+              <Shield size={24} />
+            </div>
+            <span className="font-black text-xl tracking-tight text-slate-900 uppercase">
+              PMS Center
+            </span>
           </div>
-          <span className="text-[8px] font-black bg-blue-600/20 text-blue-500 px-2 py-1 rounded-md uppercase italic border border-blue-500/10">{user.role}</span>
+          <div className="hidden md:flex items-center gap-10 text-sm font-bold text-slate-600">
+            <a href="#features" className="hover:text-blue-600 transition">
+              주요기능
+            </a>
+            <a href="#security" className="hover:text-blue-600 transition">
+              보안기술
+            </a>
+            <a href="#pricing" className="hover:text-blue-600 transition">
+              요금제
+            </a>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setCurrentScreen("login")}
+              className="text-sm font-bold text-slate-800 px-4 py-2 hover:bg-slate-50 rounded-xl transition"
+            >
+              로그인
+            </button>
+            <button
+              onClick={() => setCurrentScreen("signup")}
+              className="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-black transition shadow-lg shadow-slate-200"
+            >
+              무료 시작하기
+            </button>
+          </div>
         </div>
+      </nav>
 
-        <nav className="flex-1 overflow-y-auto px-4 py-8 space-y-2">
-          {menuSet.map(group => (
-            <div key={group.id} className="space-y-1">
-              {group.single ? (
-                <button onClick={() => setActiveTab(group.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl font-black text-[10px] uppercase transition-all tracking-widest ${activeTab === group.id ? (user.role === 'admin' ? 'bg-blue-600 text-white shadow-xl' : 'bg-blue-50 text-blue-600 shadow-sm border border-blue-100') : (user.role === 'admin' ? 'text-slate-500 hover:text-white hover:bg-white/5' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900')}`}>
-                  <group.icon size={18} /> {group.label}
-                </button>
-              ) : (
-                <>
-                  <button onClick={() => setOpenGroups({...openGroups, [group.id]: !openGroups[group.id]})} className={`w-full flex items-center justify-between p-4 rounded-2xl font-black text-[10px] uppercase transition-all tracking-widest ${openGroups[group.id] ? (user.role === 'admin' ? 'text-white' : 'text-slate-900') : 'text-slate-400'}`}>
-                    <div className="flex items-center gap-4"><group.icon size={18} /> {group.label}</div>
-                    {openGroups[group.id] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                  </button>
-                  {openGroups[group.id] && (
-                    <div className="space-y-1 mt-1 animate-in slide-in-from-top-2 duration-300">
-                      {group.items.map(sub => (
-                        <button key={sub.id} onClick={() => setActiveTab(sub.id)} className={`w-full text-left pl-14 pr-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative group ${activeTab === sub.id ? 'text-blue-500' : 'text-slate-500 hover:text-slate-900'}`}>
-                          {activeTab === sub.id && <span className="absolute left-10 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-blue-500 rounded-full"></span>}
-                          {sub.label}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+      {/* 히어로 환영 섹션 */}
+      <section className="pt-40 pb-20 px-6">
+        <div className="max-w-7xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest mb-8">
+            <Zap size={14} fill="currentColor" /> Trust & Security First
+          </div>
+          <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-[1.1] mb-8">
+            개인정보 보호,
+            <br />
+            이제 <span className="text-blue-600">자동화</span>의 시대입니다.
+          </h1>
+          <p className="text-xl text-slate-500 font-medium max-w-2xl mx-auto mb-12 leading-relaxed">
+            복잡한 컴플라이언스 대응부터 데이터 암호화 보관까지,
+            <br />
+            기업의 보안 리스크를 단 하나의 플랫폼으로 해결하세요.
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <button
+              onClick={() => setCurrentScreen("signup")}
+              className="px-10 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-2xl shadow-blue-200"
+            >
+              지금 가입하고 무료 체험
+            </button>
+            <button className="px-10 py-5 bg-white text-slate-800 border-2 border-slate-100 rounded-2xl font-black text-lg hover:bg-slate-50 transition">
+              서비스 소개서 받기
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* 핵심 특징 나열 섹션 */}
+      <section id="features" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            {
+              title: "강력한 암호화",
+              desc: "AES-256 대칭키 암호화 및 AWS KMS 기반의 키 관리를 지원합니다.",
+              icon: Lock,
+            },
+            {
+              title: "컴플라이언스 대응",
+              desc: "ISMS-P 인증에 필요한 각종 증적 자료와 처리방침을 자동 생성합니다.",
+              icon: ShieldCheck,
+            },
+            {
+              title: "개발 편의성",
+              desc: "REST API를 통해 단 몇 줄의 코드로 기존 시스템과 연동이 가능합니다.",
+              icon: Key,
+            },
+          ].map((f, i) => (
+            <div
+              key={i}
+              className="bg-white p-10 rounded-[2.5rem] border border-slate-100 hover:shadow-xl transition group"
+            >
+              <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-6 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                <f.icon size={28} />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 mb-4 tracking-tight">
+                {f.title}
+              </h3>
+              <p className="text-slate-500 font-medium leading-relaxed">
+                {f.desc}
+              </p>
             </div>
           ))}
-        </nav>
+        </div>
+      </section>
 
-        <div className={`p-8 border-t space-y-4 ${user.role === 'admin' ? 'bg-white/5' : 'bg-slate-50/30'}`}>
-          <button onClick={handleLogout} className="w-full p-4 bg-rose-600/10 border border-rose-500/20 text-rose-500 rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center gap-3 hover:bg-rose-600 hover:text-white transition-all shadow-sm active:scale-95 group">
-             <LogOut size={16} className="group-hover:-translate-x-1 transition-transform" /> 시스템 종료 (TERMINATE)
-          </button>
-          <div className="flex justify-between px-2 pt-2 text-[8px] font-black uppercase text-slate-400 tracking-widest italic">
-            <span>Security nominal</span>
-            <span>v2.5.4</span>
+      {/* 하단 푸터 영역 */}
+      <footer className="py-20 bg-slate-900 text-white">
+        <div className="max-w-7xl mx-auto px-6 flex flex-wrap justify-between gap-10">
+          <div>
+            <div className="flex items-center gap-2 mb-6">
+              <Shield size={28} className="text-blue-500" />
+              <span className="font-black text-2xl tracking-tighter">
+                PMS Center
+              </span>
+            </div>
+            <p className="text-slate-500 text-sm max-w-xs leading-relaxed font-medium">
+              국내 최고 수준의 보안 전문가들이 만드는
+              <br />
+              개인정보 통합 관리 솔루션입니다.
+            </p>
           </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-16">
+            <div>
+              <h4 className="font-black mb-6 uppercase text-xs tracking-widest text-blue-500">
+                Service
+              </h4>
+              <ul className="space-y-4 text-slate-400 text-sm font-bold">
+                <li className="hover:text-white cursor-pointer transition">
+                  주요기능
+                </li>
+                <li className="hover:text-white cursor-pointer transition">
+                  보안철학
+                </li>
+                <li className="hover:text-white cursor-pointer transition">
+                  업데이트 내역
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-black mb-6 uppercase text-xs tracking-widest text-blue-500">
+                Legal
+              </h4>
+              <ul className="space-y-4 text-slate-400 text-sm font-bold">
+                <li className="hover:text-white cursor-pointer transition">
+                  이용약관
+                </li>
+                <li className="hover:text-white cursor-pointer transition text-blue-400">
+                  개인정보처리방침
+                </li>
+                <li className="hover:text-white cursor-pointer transition">
+                  쿠키정책
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto px-6 mt-20 pt-10 border-t border-slate-800 text-center text-slate-600 text-xs font-black tracking-widest uppercase">
+          © 2026 PMS Center Inc. All Rights Reserved.
+        </div>
+      </footer>
+    </div>
+  );
+
+  // 2. 기업 관리자 메인 뷰 (Company Admin Dashboard)
+  const CompanyAdminView = () => {
+    // 내부 폼 입력을 위한 임시 상태
+    const [isEditingInfo, setIsEditingInfo] = useState(false);
+    const [tempInfo, setTempInfo] = useState({ ...companyInfo });
+
+    // 수정 완료 저장 이벤트
+    const handleSaveInfo = () => {
+      handleCompanySave(tempInfo);
+      setIsEditingInfo(false);
+    };
+
+    return (
+      <div className="min-h-screen bg-[#f8fafc] flex animate-in fade-in duration-700">
+        {/* 사이드바 - 왼쪽 고정 레이아웃 */}
+        <aside
+          className={`bg-slate-900 text-white flex flex-col transition-all duration-500 shrink-0 ${sidebarOpen ? "w-64" : "w-20"}`}
+        >
+          <div
+            className="h-20 flex items-center px-6 border-b border-slate-800 cursor-pointer overflow-hidden"
+            onClick={() => setCurrentScreen("landing")}
+          >
+            <Shield className="text-blue-500 shrink-0" size={28} />
+            {sidebarOpen && (
+              <span className="ml-3 font-black text-xl tracking-tighter whitespace-nowrap">
+                PMS Center
+              </span>
+            )}
+          </div>
+          <nav className="flex-1 py-8 px-3 space-y-1 overflow-x-hidden">
+            {COMPANY_MENU.map((m) => (
+              <button
+                key={m.id}
+                onClick={() => setActiveTab(m.id)}
+                className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all ${activeTab === m.id ? "bg-blue-600 shadow-xl shadow-blue-900/40" : "text-slate-500 hover:bg-slate-800 hover:text-white"}`}
+              >
+                <m.icon size={20} className="shrink-0" />
+                {sidebarOpen && (
+                  <span className="text-sm font-bold whitespace-nowrap">
+                    {m.label}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+          <div className="p-6 border-t border-slate-800">
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 p-3 text-slate-500 hover:text-white transition-all w-full"
+            >
+              <LogIn size={20} className="shrink-0" />
+              {sidebarOpen && (
+                <span className="text-xs font-black whitespace-nowrap">
+                  로그아웃
+                </span>
+              )}
+            </button>
+          </div>
+        </aside>
+
+        {/* 본문 콘텐츠 영역 */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+          {/* 상단 통합 헤더 */}
+          <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 flex justify-between items-center sticky top-0 z-30">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2.5 hover:bg-slate-50 rounded-xl text-slate-400 transition-all shadow-sm border border-slate-50"
+            >
+              <Menu size={20} />
+            </button>
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-black text-slate-800">
+                  {user?.name || "기업 관리자"}님
+                </p>
+                <p className="text-[10px] text-blue-600 font-black uppercase tracking-widest">
+                  Enterprise Master
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center border border-slate-200 shadow-inner">
+                <Users size={18} className="text-slate-500" />
+              </div>
+            </div>
+          </header>
+
+          <main className="p-10 max-w-7xl mx-auto w-full">
+            {/* 페이지 제목 및 데모용 스위치 */}
+            <div className="flex justify-between items-end mb-10">
+              <div>
+                <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">
+                  Control Room
+                </h2>
+                <p className="text-slate-500 mt-2 font-medium">
+                  자사 개인정보 수집 및 보안 상태를 실시간 통제합니다.
+                </p>
+              </div>
+              <button
+                onClick={() => setCurrentScreen("system_admin")}
+                className="text-xs font-black bg-slate-100 text-slate-500 px-4 py-2 rounded-xl hover:bg-slate-200 transition shadow-sm border border-slate-50"
+              >
+                시스템 관리자(데모)
+              </button>
+            </div>
+
+            {/* 탭별 조건부 렌더링 - 운영 대시보드 */}
+            {activeTab === "dashboard" && (
+              <div className="animate-in slide-in-from-bottom-5 duration-500">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                  {[
+                    {
+                      l: "전체 보유 데이터",
+                      v: stats.total.toLocaleString(),
+                      c: "text-blue-600",
+                    },
+                    {
+                      l: "금일 보안 로그",
+                      v: stats.today.toLocaleString(),
+                      c: "text-emerald-600",
+                    },
+                    { l: "암호화 등급", v: "AAA+", c: "text-indigo-600" },
+                    { l: "구독 잔여 기간", v: "184일", c: "text-amber-600" },
+                  ].map((s, i) => (
+                    <div
+                      key={i}
+                      className="bg-white p-7 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-md transition"
+                    >
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                        {s.l}
+                      </p>
+                      <p className={`text-3xl font-black ${s.c} italic`}>
+                        {s.v}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {/* 시각화 차트 추가 (운영용) */}
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-sm transition hover:shadow-md mb-10">
+                  <h3 className="text-lg font-black text-slate-800 mb-8 flex items-center gap-2">
+                    <Activity size={18} className="text-blue-500" /> 주간 트래픽
+                    양상
+                  </h3>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={CHART_DATA}>
+                        <defs>
+                          <linearGradient
+                            id="colorVal"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="5%"
+                              stopColor="#2563eb"
+                              stopOpacity={0.1}
+                            />
+                            <stop
+                              offset="95%"
+                              stopColor="#2563eb"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#f1f5f9"
+                        />
+                        <XAxis
+                          dataKey="name"
+                          stroke="#94a3b8"
+                          fontSize={11}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis
+                          stroke="#94a3b8"
+                          fontSize={11}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip
+                          contentStyle={{
+                            borderRadius: "16px",
+                            border: "none",
+                            boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
+                          }}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="value"
+                          stroke="#2563eb"
+                          fillOpacity={1}
+                          fill="url(#colorVal)"
+                          strokeWidth={3}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 회사 세부 정보 관리 화면 (영속성 연동) */}
+            {activeTab === "member_db" && (
+              <div className="bg-white p-12 rounded-[3.5rem] border border-slate-100 shadow-sm animate-in zoom-in-95 duration-500">
+                <div className="flex justify-between items-center mb-10">
+                  <h3 className="text-2xl font-black text-slate-800 italic uppercase">
+                    Security Identity
+                  </h3>
+                  {!isEditingInfo ? (
+                    <button
+                      onClick={() => setIsEditingInfo(true)}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                    >
+                      정보 개정
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleSaveInfo}
+                      className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-black text-xs hover:bg-emerald-700 transition shadow-lg shadow-emerald-100"
+                    >
+                      <Save size={16} /> 변경상항 저장
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">
+                        소속 기업 명칭
+                      </label>
+                      <input
+                        disabled={!isEditingInfo}
+                        value={isEditingInfo ? tempInfo.name : companyInfo.name}
+                        onChange={(e) =>
+                          setTempInfo({ ...tempInfo, name: e.target.value })
+                        }
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 transition font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">
+                        사업자 번호
+                      </label>
+                      <input
+                        disabled={!isEditingInfo}
+                        value={
+                          isEditingInfo ? tempInfo.bizNum : companyInfo.bizNum
+                        }
+                        onChange={(e) =>
+                          setTempInfo({ ...tempInfo, bizNum: e.target.value })
+                        }
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 transition font-bold"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">
+                        총괄 책임자
+                      </label>
+                      <input
+                        disabled={!isEditingInfo}
+                        value={
+                          isEditingInfo ? tempInfo.manager : companyInfo.manager
+                        }
+                        onChange={(e) =>
+                          setTempInfo({ ...tempInfo, manager: e.target.value })
+                        }
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 transition font-bold"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 px-1">
+                        담당자 이메일
+                      </label>
+                      <input
+                        disabled={!isEditingInfo}
+                        value={
+                          isEditingInfo ? tempInfo.email : companyInfo.email
+                        }
+                        onChange={(e) =>
+                          setTempInfo({ ...tempInfo, email: e.target.value })
+                        }
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-60 transition font-bold"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 기타 준비 기능에 대한 홀더 화면 */}
+            {activeTab !== "dashboard" && activeTab !== "member_db" && (
+              <div className="bg-white p-20 rounded-[3rem] border-2 border-dashed border-slate-200 text-center animate-in fade-in duration-500">
+                <Settings className="mx-auto text-slate-200 mb-6" size={64} />
+                <h3 className="text-xl font-black text-slate-800 mb-2">
+                  {activeTab} 페이지 고도화 중
+                </h3>
+                <p className="text-slate-400 font-medium">
+                  대표님의 지시에 따라 엔진 정밀 튜닝 중입니다. 충성!
+                </p>
+              </div>
+            )}
+          </main>
+        </div>
+      </div>
+    );
+  };
+
+  // 3. 시스템 관리자 전용 뷰 (System Internal Control)
+  const SystemAdminView = () => (
+    <div className="min-h-screen bg-slate-950 flex animate-in fade-in duration-700 overflow-hidden">
+      {/* 다크 테마 사이드바 */}
+      <aside
+        className={`bg-black text-white flex flex-col transition-all duration-500 shrink-0 ${sidebarOpen ? "w-64" : "w-20"}`}
+      >
+        <div className="h-24 flex items-center px-8 border-b border-white/5 overflow-hidden">
+          <Activity className="text-emerald-500 shrink-0" size={28} />
+          {sidebarOpen && (
+            <span className="ml-3 font-black text-xl tracking-tighter text-white whitespace-nowrap">
+              SYSTEM OPS
+            </span>
+          )}
+        </div>
+        <nav className="flex-1 py-10 px-4 space-y-1 overflow-x-hidden">
+          {SYSTEM_MENU.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setActiveTab(m.id)}
+              className={`w-full flex items-center gap-3 p-4 rounded-2xl transition-all ${activeTab === m.id ? "bg-emerald-600 shadow-xl shadow-emerald-900/20" : "text-slate-600 hover:text-white"}`}
+            >
+              <m.icon size={20} className="shrink-0" />
+              {sidebarOpen && (
+                <span className="text-sm font-bold whitespace-nowrap">
+                  {m.label}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+        <div className="p-6 border-t border-white/5">
+          <button
+            onClick={() => setCurrentScreen("landing")}
+            className="flex items-center gap-3 p-3 text-slate-600 hover:text-white transition-all w-full"
+          >
+            <Globe size={20} className="shrink-0" />
+            {sidebarOpen && (
+              <span className="text-xs font-black whitespace-nowrap">
+                홈페이지로 이동
+              </span>
+            )}
+          </button>
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto bg-slate-50/20 relative">
-        <header className="bg-white/80 backdrop-blur-md border-b p-8 px-12 flex justify-between items-center sticky top-0 z-40 shadow-md">
-          <div className="flex items-center gap-6">
-             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg ${user.role === 'admin' ? 'bg-slate-950' : 'bg-blue-600 shadow-blue-100'}`}><LayoutDashboard size={24} /></div>
-             <div>
-               <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">{activeTab.replace(/(_|admin_)/g, ' ')}</h2>
-               <div className="flex items-center gap-2 mt-1"><div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div><p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Secured Active Session</p></div>
-             </div>
+      {/* 다크 테마 메인 컨트롤 영역 */}
+      <div className="flex-1 flex flex-col min-w-0 bg-[#0a0a0a] overflow-y-auto">
+        <header className="h-24 border-b border-white/5 px-10 flex justify-between items-center sticky top-0 bg-[#0a0a0a]/90 backdrop-blur-md z-30">
+          <div className="flex items-center gap-4 text-white/40 text-xs font-black uppercase tracking-widest">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
+            Global Node: Seoul Central
           </div>
-          <div className="flex items-center gap-8">
-            <button className="p-3 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all relative"><Bell size={22} /><span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2 border-white"></span></button>
-            <div className="h-10 w-[1px] bg-slate-100"></div>
-            <div className="flex items-center gap-4 p-2 pl-4 rounded-2xl bg-white border border-slate-100 shadow-sm italic hover:bg-slate-50 transition-colors cursor-pointer group">
-              <div className="text-right"><p className="text-sm font-black text-slate-900 italic">{companyInfo.name} <span className="text-[10px] text-blue-500 opacity-60">HQ</span></p><p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">{user.email}</p></div>
-              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-105 ${user.role === 'admin' ? 'bg-slate-950 text-white' : 'bg-blue-600 text-white'}`}><Users size={24} /></div>
+          <div className="flex items-center gap-6">
+            <div className="p-3 bg-white/5 text-white/40 rounded-2xl hover:text-white transition cursor-pointer">
+              <Bell size={20} />
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-black text-white">
+                  CERT 총괄 관리자
+                </p>
+                <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">
+                  Super User
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-white border border-white/5 shadow-lg">
+                <Shield size={24} />
+              </div>
             </div>
           </div>
         </header>
 
-        <section className="p-12 max-w-7xl mx-auto">
-          {activeTab === 'dashboard' && <UserDashboardView stats={stats} credits={credits} formCount={formsCount} />}
-          {activeTab === 'company_info' && <CompanyInfoView companyInfo={companyInfo} setCompanyInfo={setCompanyInfo} showToast={showToast} />}
-          {activeTab.includes('mgmt') || activeTab.includes('billing') ? (
-            <div className="py-40 text-center space-y-8 animate-in zoom-in"><Lock size={80} className="text-slate-100 mx-auto" /><h3 className="text-4xl font-black text-slate-200 uppercase italic">Engine Polishing...</h3></div>
-          ) : null}
-        </section>
+        <main className="p-12">
+          {/* 주요 지표 대시보드 */}
+          <div className="flex justify-between items-end mb-12">
+            <div>
+              <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic">
+                Control Center
+              </h2>
+              <p className="text-slate-500 mt-2 font-medium">
+                전체 고객사 현황 및 시스템 자원을 실시간으로 감시합니다.
+              </p>
+            </div>
+            <div className="flex gap-4">
+              <div className="bg-white/5 px-6 py-4 rounded-3xl border border-white/5 shadow-sm">
+                <p className="text-[10px] font-black text-slate-500 uppercase mb-1">
+                  Total MRR
+                </p>
+                <p className="text-xl font-black text-white italic">
+                  ₩1,429,000,000
+                </p>
+              </div>
+              <div className="bg-emerald-500/10 px-6 py-4 rounded-3xl border border-emerald-500/20 shadow-sm">
+                <p className="text-[10px] font-black text-emerald-500 uppercase mb-1">
+                  Active Users
+                </p>
+                <p className="text-xl font-black text-emerald-400 italic">
+                  24,582
+                </p>
+              </div>
+            </div>
+          </div>
 
-        <footer className="p-12 border-t bg-white/50 text-center text-[9px] font-black uppercase text-slate-200 tracking-[0.5em]">
-           © 2026 PMS INTEGRATED SECURITY PLATFORM. ALL ASSETS SECURED.
-        </footer>
-      </main>
+          {/* 통합 그래프 및 리소스 현황 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
+            <div className="lg:col-span-2 bg-white/5 p-8 rounded-[3rem] border border-white/5 shadow-sm">
+              <h3 className="text-lg font-black text-white mb-8 flex items-center gap-2">
+                <Activity size={18} className="text-emerald-500" /> 시스템
+                트래픽 분석 (전체 고객사)
+              </h3>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={CHART_DATA}>
+                    <defs>
+                      <linearGradient id="colorSys" x1="0" y1="0" x2="0" y2="1">
+                        <stop
+                          offset="5%"
+                          stopColor="#10b981"
+                          stopOpacity={0.2}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="#10b981"
+                          stopOpacity={0}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      vertical={false}
+                      stroke="rgba(255,255,255,0.05)"
+                    />
+                    <XAxis
+                      dataKey="name"
+                      stroke="rgba(255,255,255,0.2)"
+                      fontSize={11}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      stroke="rgba(255,255,255,0.2)"
+                      fontSize={11}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#111",
+                        border: "none",
+                        borderRadius: "16px",
+                        color: "#fff",
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="api"
+                      stroke="#10b981"
+                      fillOpacity={1}
+                      fill="url(#colorSys)"
+                      strokeWidth={3}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+            {/* 서버 헬스 체크 리스트 */}
+            <div className="bg-white/5 p-8 rounded-[3rem] border border-white/5 shadow-sm">
+              <h3 className="text-lg font-black text-white mb-8 uppercase italic tracking-tight">
+                System Health
+              </h3>
+              <div className="space-y-6">
+                {[
+                  { n: "API 서버 (N.Seoul)", v: 98, c: "text-emerald-500" },
+                  { n: "DB 클러스터", v: 42, c: "text-amber-500" },
+                  { n: "암호화 HSM 모듈", v: 12, c: "text-emerald-500" },
+                  { n: "CDN 엣지 노드", v: 84, c: "text-blue-500" },
+                ].map((s, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between text-xs font-bold mb-2">
+                      <span className="text-slate-500 font-black">{s.n}</span>
+                      <span className={`${s.c} italic`}>{s.v}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full bg-current ${s.c} transition-all duration-1000`}
+                        style={{ width: `${s.v}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 pt-8 border-t border-white/5">
+                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">
+                  Security Status
+                </p>
+                <div className="flex items-center gap-2 text-emerald-500 font-black text-sm uppercase italic">
+                  <CheckCircle size={16} /> All Systems Secured
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+
+  // 4. 인증 관문 화면 (Login / Signup View)
+  const AuthView = ({ type }) => {
+    // 폼 관리를 위한 내부 상태
+    const [authData, setAuthData] = useState({
+      email: "",
+      password: "",
+      name: "",
+    });
+
+    // 모의 로그인 처리 (대표님 지시: 비번 1234 허용)
+    const handleLoginAction = () => {
+      if (
+        authData.password === "1234" ||
+        (authData.email && authData.password)
+      ) {
+        const mockUser = {
+          email: authData.email || "cert@pms.com",
+          name: authData.name || authData.email?.split("@")[0] || "대표 관리자",
+          role: authData.email?.startsWith("admin") ? "admin" : "user",
+        };
+        handleAuthSuccess(mockUser);
+      } else {
+        alert("보안 암호를 확인해주세요. (데모 암호: 1234)");
+      }
+    };
+
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-6 animate-in fade-in duration-500">
+        <div
+          onClick={() => setCurrentScreen("landing")}
+          className="mb-10 flex items-center gap-2 cursor-pointer group"
+        >
+          <div className="bg-blue-600 p-2 rounded-xl text-white group-hover:scale-110 shadow-lg shadow-blue-100 transition">
+            <Shield size={24} />
+          </div>
+          <span className="font-black text-2xl tracking-tighter text-slate-800 uppercase">
+            PMS Center
+          </span>
+        </div>
+
+        <div className="w-full max-w-[440px] bg-white rounded-[3rem] shadow-[0_40px_100px_rgba(0,0,0,0.04)] p-12 border border-slate-100 animate-in zoom-in-95 duration-500">
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2 italic uppercase">
+            {type === "login" ? "Welcome Back" : "Get Started"}
+          </h2>
+          <p className="text-slate-400 font-medium text-sm mb-10">
+            {type === "login"
+              ? "계정 정보를 입력하고 관제 센터에 접속하세요."
+              : "기업 정보를 입력하고 보안 서비스를 즉시 시작하세요."}
+          </p>
+
+          <div className="space-y-5">
+            {type === "signup" && (
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                  Company / User Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="홍길동"
+                  value={authData.name}
+                  onChange={(e) =>
+                    setAuthData({ ...authData, name: e.target.value })
+                  }
+                  className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-sm"
+                />
+              </div>
+            )}
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="admin@pms.com"
+                value={authData.email}
+                onChange={(e) =>
+                  setAuthData({ ...authData, email: e.target.value })
+                }
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+                Password (Demo: 1234)
+              </label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={authData.password}
+                onChange={(e) =>
+                  setAuthData({ ...authData, password: e.target.value })
+                }
+                className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 transition-all font-bold text-sm"
+              />
+            </div>
+
+            <button
+              onClick={handleLoginAction}
+              className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-100 hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 mt-4 uppercase italic tracking-tighter"
+            >
+              {type === "login" ? "승인 및 접속" : "신규 요원 가입"}{" "}
+              <ArrowLeft size={18} className="rotate-180" />
+            </button>
+          </div>
+
+          <div className="mt-10 text-center text-sm font-bold text-slate-300">
+            {type === "login" ? (
+              <>
+                아직 계정이 없으신가요?{" "}
+                <span
+                  onClick={() => setCurrentScreen("signup")}
+                  className="text-blue-600 cursor-pointer ml-1 hover:underline"
+                >
+                  회원가입
+                </span>
+              </>
+            ) : (
+              <>
+                이미 계정이 있으신가요?{" "}
+                <span
+                  onClick={() => setCurrentScreen("login")}
+                  className="text-blue-600 cursor-pointer ml-1 hover:underline"
+                >
+                  로그인
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // --- 조건부 메인 렌더링 스위칭 엔진 ---
+  return (
+    <div className="selection:bg-blue-100">
+      {currentScreen === "landing" && <HomeView />}
+      {currentScreen === "login" && <AuthView type="login" />}
+      {currentScreen === "signup" && <AuthView type="signup" />}
+      {currentScreen === "company_admin" && <CompanyAdminView />}
+      {currentScreen === "system_admin" && <SystemAdminView />}
+
+      {/* 글로벌 폰트 및 트랜지션 스타일링 최적화 */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans KR', sans-serif; overflow-x: hidden; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        html { scroll-behavior: smooth; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #cbd5e1; }
+      `}</style>
     </div>
   );
 }
