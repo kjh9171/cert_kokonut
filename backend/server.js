@@ -354,12 +354,26 @@ app.get('/api/admin/db/stats', async (req, res) => {
       status: 'Secured',
       collections: ['privacy_records', 'pms_users', 'pms_admins']
     });
+      total: records.length,
+      today: todayRecords.length,
+      alerts: admins.filter(a => !a.otpEnabled).length // OTP 미설정 요원을 보안 위협으로 간주
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 서버 리스닝 (도커 컨테이너 내부 8080 포트 사용)
+// 개인정보 자산(기록) 조회
+app.get('/api/admin/records', async (req, res) => {
+  try {
+    const records = await getCollection('privacy_records');
+    res.json(records);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 서버 포트 리스닝
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`[CERT] PMS Backend is patrolling on port ${PORT}! 충성!`);

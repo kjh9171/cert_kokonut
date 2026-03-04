@@ -1,1 +1,26 @@
-{"pms_admins": [], "privacy_records": [], "pms_users": []}
+{
+  "pms_admins": [
+    {
+      "id": "1772598746676",
+      "email": "gimjonghwan319@gmail.com",
+      "password": "$2b$10$/dquV8d.vmHj0efRWA8caepOPcGYbF.8IEMq7Xrh3XNLFn2n0S6RW",
+      "name": "김종환",
+      "role": "admin",
+      "otpSecret": "243fa058f153a159baa516ca0493d3fb:7416c1f86821a2d5d2f0f2509cbfdcf9d1102744401b301acce84d748d7dded825d0406f004cdf4366cfa2df9873dbf7",
+      "otpEnabled": false,
+      "createdAt": "2026-03-04T04:32:26.675Z"
+    },
+    {
+      "id": "1772598802213",
+      "email": "test@test.com",
+      "password": "$2b$10$q7JwY9cPbrFvSX0bcm7EgOoAdgTlayZxbrMF8iXlfMqGQmm7dvm9K",
+      "name": "홍길동",
+      "role": "admin",
+      "otpSecret": "d61f2099634f8cc33d93f968fed9d209:27a1b628a64842a3e24e796df3d6ba885b2f8f2e7938eb19f9307aa48d0196023806d27039fbcc636c4c9c959789d575",
+      "otpEnabled": false,
+      "createdAt": "2026-03-04T04:33:22.212Z"
+    }
+  ],
+  "privacy_records": [],
+  "pms_users": []
+}

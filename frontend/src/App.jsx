@@ -61,22 +61,27 @@ export default function App() {
   const fetchSecurityData = async () => {
     try {
       console.log('[CERT] 보안 자산 데이터 동기화 중...');
-      const res = await fetch('/api/admin/db/stats'); // 샘플 통계
-      const data = await res.json();
       
-      // 실제 데이터 패치 로직 (필요 시 /api/admin/users 등에서 가져옴)
-      setStats({
-        total: 125, // 샘플
-        today: 12,
-        alerts: 3
-      });
+      // 1. 통계 데이터 패치
+      const statsRes = await fetch('/api/admin/db/stats');
+      const statsData = await statsRes.json();
+      if (statsRes.ok) {
+        setStats(statsData);
+      }
       
-      setPrivacyRecords([
-        { id: '1', name: '김철수', email: 'kcs@cert.com', displayDate: new Date().toLocaleString() },
-        { id: '2', name: '이영희', email: 'lyh@cert.com', displayDate: new Date().toLocaleString() }
-      ]);
+      // 2. 보안 기록(자산) 패치
+      const recordsRes = await fetch('/api/admin/records');
+      const recordsData = await recordsRes.json();
+      if (recordsRes.ok) {
+        // 데이터 포맷팅 (날짜 등)
+        const formatted = recordsData.map(r => ({
+          ...r,
+          displayDate: r.createdAt ? new Date(r.createdAt).toLocaleString() : '기록 없음'
+        }));
+        setPrivacyRecords(formatted);
+      }
 
-      // 추가: 요원 목록 패치
+      // 3. 요원 목록 패치
       fetchAdmins();
     } catch (err) {
       console.error('[EROR] 데이터 동기화 실패:', err);
