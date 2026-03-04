@@ -1,13 +1,21 @@
 // Express 프레임워크 로드 (서버리스 API 구축용)
-const express = require('express');
+import express from 'express';
 // 암호화 모듈 로드 (AES-256-CBC 및 해시용)
-const crypto = require('crypto');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const { authenticator } = require('otplib');
-const qrcode = require('qrcode');
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { TOTP } from 'otplib';
+import qrcode from 'qrcode';
 // 파이어베이스 어드민 SDK 로드 (Firestore 연동용)
-const admin = require('firebase-admin');
+import admin from 'firebase-admin';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// otplib v13 대응을 위해 TOTP 인스턴스 생성
+const authenticator = new TOTP();
 
 // Express 앱 초기화
 const app = express();
@@ -143,7 +151,11 @@ app.post('/api/auth/otp-setup', async (req, res) => {
     const otpSecret = userData.otpSecret.split(':')[1]; // 샘플용 (실제는 decrypt 사용)
     
     // Google OTP용 URI 생성
-    const otpUri = authenticator.keyuri(userData.email, 'PMS_CERT', otpSecret);
+    const otpUri = authenticator.toURI({ 
+      label: userData.email, 
+      issuer: 'PMS_CERT', 
+      secret: otpSecret 
+    });
     const qrCodeUrl = await qrcode.toDataURL(otpUri);
 
     res.json({ qrCodeUrl });
@@ -162,7 +174,7 @@ app.post('/api/auth/otp-verify', async (req, res) => {
     const userData = userDoc.data();
 
     const otpSecret = userData.otpSecret.split(':')[1]; // 샘플용
-    const isValid = authenticator.check(otpToken, otpSecret);
+    const isValid = await authenticator.verify({ token: otpToken, secret: otpSecret });
 
     if (!isValid) return res.status(401).json({ error: 'OTP 번호가 일치하지 않습니다.' });
 
