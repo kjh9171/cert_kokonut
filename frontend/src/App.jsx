@@ -6,8 +6,12 @@ import {
 } from 'lucide-react';
 // 파이어베이스 핵심 기능 임포트
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { 
+  getAuth, signInAnonymously, onAuthStateChanged, 
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, 
+  updateProfile, signOut 
+} from 'firebase/auth';
+import { getFirestore, collection, onSnapshot, query, orderBy, setDoc, doc } from 'firebase/firestore';
 
 /**
  * [PMS] 개인정보관리서비스 메인 애플리케이션 컴포넌트
@@ -24,6 +28,12 @@ export default function App() {
   const [loading, setLoading] = useState(true); // 시스템 부팅 상태
   const [stats, setStats] = useState({ total: 0, today: 0, alerts: 0 }); // 실시간 전술 통계
   const [isSignup, setIsSignup] = useState(false); // 신규 요원 등록 모드
+
+  // --- [인증 입력 필드 상태] ---
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [adminName, setAdminName] = useState('');
+  const [authError, setAuthError] = useState('');
 
   // --- [시스템 초기화 및 데이터 연동] ---
   useEffect(() => {
@@ -49,49 +59,46 @@ export default function App() {
 
         // 보안 요원 인증 상태 실시간 감시
         unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-          if (!currentUser) {
-            try { 
-              console.log('[CERT] 자동 보안 세션 수립 시도...');
-              await signInAnonymously(auth); 
-            } catch(e) { 
-              console.error('[EROR] 보안 세션 수립 실패:', e); 
-            }
-          }
           setUser(currentUser);
           setLoading(false);
-          console.log('[CERT] 보안 인증 완료:', currentUser?.uid || '익명 요원');
+          if (currentUser) {
+            console.log('[CERT] 보안 인증 완료:', currentUser.email);
+            // 인증 완료 후 데이터 스트림 연결
+            connectDataStream(db, appId);
+          }
         });
-
-        // 실시간 보안 자산 모니터링
-        const privacyRef = collection(db, 'artifacts', appId, 'public', 'data', 'privacyRecords');
-        const q = query(privacyRef, orderBy('createdAt', 'desc'));
-
-        unsubscribeData = onSnapshot(q, (snapshot) => {
-          const records = snapshot.docs.map(doc => {
-            const data = doc.data();
-            let displayDate = '분석 중...';
-            if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-              displayDate = data.createdAt.toDate().toLocaleString('ko-KR');
-            } else if (data.createdAt) {
-              displayDate = new Date(data.createdAt).toLocaleString('ko-KR');
-            }
-            return { id: doc.id, ...data, displayDate };
-          });
-          setPrivacyRecords(records);
-          setStats(prev => ({
-            ...prev,
-            total: records.length,
-            today: records.filter(r => {
-              try { return new Date(r.displayDate).toDateString() === new Date().toDateString(); }
-              catch(e) { return false; }
-            }).length
-          }));
-        }, (err) => console.error('[EROR] 보안 자산 동기화 실패:', err));
 
       } catch (err) {
         console.error('[EROR] 시스템 치명적 오류:', err);
         setLoading(false);
       }
+    };
+
+    const connectDataStream = (db, appId) => {
+      const privacyRef = collection(db, 'artifacts', appId, 'public', 'data', 'privacyRecords');
+      const q = query(privacyRef, orderBy('createdAt', 'desc'));
+
+      unsubscribeData = onSnapshot(q, (snapshot) => {
+        const records = snapshot.docs.map(doc => {
+          const data = doc.data();
+          let displayDate = '분석 중...';
+          if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+            displayDate = data.createdAt.toDate().toLocaleString('ko-KR');
+          } else if (data.createdAt) {
+            displayDate = new Date(data.createdAt).toLocaleString('ko-KR');
+          }
+          return { id: doc.id, ...data, displayDate };
+        });
+        setPrivacyRecords(records);
+        setStats(prev => ({
+          ...prev,
+          total: records.length,
+          today: records.filter(r => {
+            try { return new Date(r.displayDate).toDateString() === new Date().toDateString(); }
+            catch(e) { return false; }
+          }).length
+        }));
+      }, (err) => console.error('[EROR] 보안 자산 동기화 실패:', err));
     };
 
     bootSystem();
@@ -100,7 +107,52 @@ export default function App() {
       unsubscribeAuth();
       unsubscribeData();
     };
-  }, []); // 무한 루프 방지용 빈 배열 유지
+  }, []);
+
+  // --- [인증 핸들러: 가입 및 로그인] ---
+  const handleAuthAction = async () => {
+    setAuthError('');
+    const auth = getAuth();
+    const db = getFirestore();
+
+    try {
+      if (isSignup) {
+        console.log('[CERT] 신규 요원 등록 작전 개시:', email);
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(userCredential.user, { displayName: adminName });
+        
+        // Firestore에 추가 프로필 데이터 기록 (RBAC 준비)
+        await setDoc(doc(db, 'pms_admins', userCredential.user.uid), {
+          uid: userCredential.user.uid,
+          email,
+          name: adminName,
+          role: 'admin',
+          createdAt: new Date().toISOString()
+        });
+        
+        console.log('[CERT] 신규 요원 등록 성공!');
+        alert('보안 요원 등록이 완료되었습니다. 대표님! 충성!');
+      } else {
+        console.log('[CERT] 보안 구역 접속 시도:', email);
+        await signInWithEmailAndPassword(auth, email, password);
+        console.log('[CERT] 보안 접속 승인됨!');
+      }
+    } catch (error) {
+      console.error('[EROR] 인증 작전 실패:', error.code);
+      let message = '인증에 실패했습니다. 코드를 확인해 주세요.';
+      if (error.code === 'auth/email-already-in-loop') message = '이미 등록된 요원 이메일입니다.';
+      if (error.code === 'auth/invalid-credential') message = '보안 아이디 또는 비밀번호가 일치하지 않습니다.';
+      if (error.code === 'auth/weak-password') message = '비밀번호가 너무 취약합니다. 6자 이상으로 설정해 주십시오.';
+      setAuthError(message);
+    }
+  };
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    await signOut(auth);
+    setUser(null);
+    console.log('[CERT] 보안 구역 퇴거 완료.');
+  };
 
   // --- [UI 조각: 전술 통계 카드] ---
   const StatCard = ({ title, value, icon: Icon, colorClass }) => (
@@ -153,35 +205,69 @@ export default function App() {
           <h1 className="text-4xl font-black text-center text-slate-900 mb-2 tracking-tighter italic">
             PMS <span className="text-blue-600 not-italic">{isSignup ? '요원 등록' : '보안 접속'}</span>
           </h1>
-          <p className="text-center text-slate-500 mb-12 font-bold tracking-widest text-[10px] uppercase">{isSignup ? '신규 마스터 계정 생성' : '관리자 전용 특권 액세스'}</p>
+          <p className="text-center text-slate-500 mb-8 font-bold tracking-widest text-[10px] uppercase">{isSignup ? '신규 마스터 계정 생성' : '관리자 전용 특권 액세스'}</p>
 
-          <div className="space-y-6">
+          <div className="space-y-5">
+            {authError && (
+              <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-black text-center animate-shake">
+                🚨 {authError}
+              </div>
+            )}
+
+            {isSignup && (
+              <div className="group">
+                <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">요원 성함</label>
+                <div className="relative">
+                  <CheckCircle className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input 
+                    type="text" 
+                    value={adminName}
+                    onChange={(e) => setAdminName(e.target.value)}
+                    className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 placeholder:text-slate-300" 
+                    placeholder="홍길동 요원" 
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">보안 아이디 (ID)</label>
+              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">보안 아이디 (이메일)</label>
               <div className="relative">
                 <Users className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input type="text" defaultValue={isSignup ? "" : "admin@cert.com"} className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 placeholder:text-slate-300" placeholder="admin@cert.com" />
+                <input 
+                  type="email" 
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 placeholder:text-slate-300" 
+                  placeholder="admin@cert.com" 
+                />
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">마스터 비밀번호 (PW)</label>
+              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">마스터 비밀번호</label>
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input type="password" defaultValue={isSignup ? "" : "••••••••"} className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 placeholder:text-slate-300" placeholder="••••••••" />
+                <input 
+                  type="password" 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 placeholder:text-slate-300" 
+                  placeholder="••••••••" 
+                />
               </div>
             </div>
 
             <button 
-              onClick={() => setUser({ uid: 'admin', email: 'admin@cert.com' })} 
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-5 rounded-2xl font-black text-xl hover:shadow-xl transition duration-500 active:scale-95 transform"
+              onClick={handleAuthAction} 
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-5 rounded-2xl font-black text-xl hover:shadow-xl transition duration-500 active:scale-95 transform mt-4"
             >
               {isSignup ? '요원 등록 완료' : '보안 접속 승인'}
             </button>
           </div>
 
           <div className="mt-8 text-center border-t border-slate-100 pt-8">
-            <button onClick={() => setIsSignup(!isSignup)} className="text-blue-600 font-black text-xs hover:underline uppercase tracking-tighter">
+            <button onClick={() => { setIsSignup(!isSignup); setAuthError(''); }} className="text-blue-600 font-black text-xs hover:underline uppercase tracking-tighter">
               {isSignup ? '이미 마스터 계정이 있습니까? 로그인' : '신규 마스터 계정이 필요합니까? 요원 등록'}
             </button>
           </div>
@@ -312,27 +398,60 @@ export default function App() {
           {activeTab === 'admins' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-5">
               <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100">
-                <h3 className="text-xl font-black mb-8 border-l-4 border-blue-600 pl-4 italic uppercase">현장 요원 명부</h3>
-                <div className="space-y-4">
-                  {[1, 2].map(i => (
-                    <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-xl font-black border-l-4 border-blue-600 pl-4 italic uppercase">현장 요원 및 이용자 명부</h3>
+                  <button 
+                    onClick={async () => {
+                      const name = prompt('등록할 이용자 성함을 입력하십시오:');
+                      if(!name) return;
+                      const role = prompt('권한 등급을 입력하십시오 (LV.1 ~ LV.3):', 'LV.1');
+                      try {
+                        const res = await fetch('/api/admin/users', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ userData: { name, role, email: 'user@example.com' } })
+                        });
+                        const data = await res.json();
+                        if(data.success) alert('신규 이용자가 성공적으로 전산에 등록되었습니다! 충성!');
+                      } catch(e) { alert('등록 중 통신 오류가 발생했습니다.'); }
+                    }}
+                    className="p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-100"
+                  >
+                    <PlusCircle size={20} />
+                  </button>
+                </div>
+                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                  {privacyRecords.length > 0 ? privacyRecords.slice(0, 5).map((record, i) => (
+                    <div key={record.id} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition">
                       <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 transition">
                         <Users size={20} className="text-blue-600 group-hover:text-white" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-black text-slate-800 text-sm">현장 관리자 {i}호</p>
-                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none mt-1">LV.{3-i} 요원 승인됨</p>
+                        <p className="font-black text-slate-800 text-sm">등록 자산 {record.id.slice(0,5)}</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none mt-1">보안 검증 완료</p>
                       </div>
-                      <button className="text-slate-300 hover:text-blue-600 transition"><Settings size={18} /></button>
+                      <button className="text-slate-300 hover:text-rose-500 transition"><LogOut size={18} /></button>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="py-10 text-center text-slate-300 font-bold">등록된 자산 데이터가 없습니다.</div>
+                  )}
                 </div>
               </div>
               <div className="bg-indigo-900 p-10 rounded-[32px] shadow-2xl text-white relative overflow-hidden group">
                 <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform"><Shield size={150} /></div>
                 <h3 className="text-xl font-black mb-6 italic uppercase">특권 액세스 제어</h3>
                 <p className="text-indigo-300 text-xs font-bold leading-relaxed mb-10">보안 등급별 접근 권한을 실시간으로 수동 제어합니다. 모든 변경 사항은 감사 로그에 영구 박제됩니다.</p>
-                <button className="w-full bg-white/10 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-white/20 transition uppercase text-xs tracking-widest">권한 체계 수정</button>
+                <div className="space-y-4 relative z-10">
+                  <div className="p-5 bg-white/5 rounded-2xl border border-white/10 flex justify-between items-center group/item hover:bg-white/10 transition">
+                    <span className="text-sm font-bold">최상위 관리자 권한</span>
+                    <span className="text-[10px] px-2 py-1 bg-blue-500 rounded-lg font-black">ACTIVE</span>
+                  </div>
+                  <div className="p-5 bg-white/5 rounded-2xl border border-white/10 flex justify-between items-center opacity-50">
+                    <span className="text-sm font-bold">보조 관리자 권한</span>
+                    <span className="text-[10px] px-2 py-1 bg-slate-700 rounded-lg font-black">LOCKED</span>
+                  </div>
+                </div>
+                <button className="w-full mt-10 bg-white/10 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-white/20 transition uppercase text-xs tracking-widest">권한 체계 수정</button>
               </div>
             </div>
           )}
@@ -362,20 +481,28 @@ export default function App() {
                 </div>
                 <div className="p-10 space-y-8">
                   {[
-                    { label: '자동 보안 암호화', desc: '데이터 유입 즉시 AES-256 프로토콜 강제 적용' },
-                    { label: '딥 프록시 통제', desc: '모든 외부 요청을 보안 프록시 서버로 강제 우회' },
-                    { label: '불변 감사 로깅', desc: '관리자의 모든 행위를 수정 불가능한 로그로 기록' }
+                    { key: 'autoEnc', label: '자동 보안 암호화', desc: '데이터 유입 즉시 AES-256 프로토콜 강제 적용' },
+                    { key: 'deepProxy', label: '딥 프록시 통제', desc: '모든 외부 요청을 보안 프록시 서버로 강제 우회' },
+                    { key: 'auditLog', label: '불변 감사 로깅', desc: '관리자의 모든 행위를 수정 불가능한 로그로 기록' }
                   ].map((s, idx) => (
                     <div key={idx} className="flex items-center justify-between group">
                       <div>
                         <p className="font-black text-slate-800 text-sm group-hover:text-blue-600 transition">{s.label}</p>
                         <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{s.desc}</p>
                       </div>
-                      <div className="w-14 h-8 bg-blue-600 rounded-full flex items-center px-1 shadow-inner cursor-pointer">
-                        <div className="w-6 h-6 bg-white rounded-full shadow-lg ml-auto animate-in fade-in duration-500"></div>
+                      <div className="w-14 h-8 bg-blue-600 rounded-full flex items-center px-1 shadow-inner cursor-pointer transition-colors duration-300">
+                        <div className="w-6 h-6 bg-white rounded-full shadow-lg ml-auto animate-in fade-in duration-500 transform transition-transform"></div>
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="p-10 bg-slate-50 border-t border-slate-100">
+                  <button 
+                    onClick={handleLogout}
+                    className="w-full bg-rose-500 text-white py-4 rounded-2xl font-black text-sm hover:bg-rose-600 transition shadow-xl shadow-rose-100 uppercase italic tracking-widest"
+                  >
+                    통합 보안 세션 강제 종료 (Logout)
+                  </button>
                 </div>
               </div>
             </div>
