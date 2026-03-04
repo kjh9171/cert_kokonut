@@ -28,52 +28,60 @@ export default function App() {
 
     const initAll = async () => {
       try {
-        // [보안] 환경 변수에서 파이어베이스 설정 로드
+        console.log('[CERT] PMS 시스템 초기화 시작...');
         const configStr = window.__firebase_config || '{}';
-        const firebaseConfig = JSON.parse(configStr);
+        const firebaseConfig = typeof configStr === 'string' ? JSON.parse(configStr) : configStr;
         const appId = window.__app_id || 'pms-service-id';
 
         if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'stub-api-key') {
-          console.warn('[CERT] Firebase 설정이 샘플 상태입니다. 대시보드 기능이 제한될 수 있습니다.');
-          setLoading(false); // 가짜 데이터라도 보여주기 위해 로딩 해제
+          console.warn('[CERT] Firebase 설정이 샘플 상태입니다.');
+          setLoading(false);
           return;
         }
 
-        // [보안 핵심] Firebase 중복 초기화 방지 프로토콜 적용 (React 18 Strict Mode 대응)
         const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 익명 로그인 세션 시작
-        await signInAnonymously(auth);
-
-        // 인증 상태 감지
-        unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+        // 인증 상태 감지 (익명 로그인 포함)
+        unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
+          if (!currentUser) {
+            try { await signInAnonymously(auth); } catch(e) { console.error('익명로그인실패:', e); }
+          }
           setUser(currentUser);
           setLoading(false);
         });
 
-        // 실시간 데이터 바인딩
+        // 실시간 데이터 바인딩 (인증 여부와 상관없이 시도하거나 Auth 이후로 옮길 수 있음)
         const privacyRef = collection(db, 'artifacts', appId, 'public', 'data', 'privacyRecords');
         const q = query(privacyRef, orderBy('createdAt', 'desc'));
 
         unsubscribeData = onSnapshot(q, (snapshot) => {
-          const records = snapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data(),
-            displayDate: doc.data().createdAt?.toDate().toLocaleString() || '처리 중...'
-          }));
-          setPrivacyRecords(records);
-          setStats({
-            total: records.length,
-            today: records.filter(r => new Date(r.displayDate).toDateString() === new Date().toDateString()).length,
-            alerts: 0
+          const records = snapshot.docs.map(doc => {
+            const data = doc.data();
+            let displayDate = '처리 중...';
+            // Timestamp 변환 시 안전성 확보
+            if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+              displayDate = data.createdAt.toDate().toLocaleString();
+            } else if (data.createdAt) {
+              displayDate = new Date(data.createdAt).toLocaleString();
+            }
+            return { id: doc.id, ...data, displayDate };
           });
+          setPrivacyRecords(records);
+          setStats(prev => ({
+            ...prev,
+            total: records.length,
+            today: records.filter(r => {
+              try { return new Date(r.displayDate).toDateString() === new Date().toDateString(); }
+              catch(e) { return false; }
+            }).length
+          }));
         }, (err) => console.error('[EROR] 데이터 동기화 에러:', err));
 
       } catch (err) {
         console.error('[EROR] PMS 초기화 실패:', err);
-        setLoading(false); // 에러가 나도 화면은 띄워줌 (White Screen 방어)
+        setLoading(false);
       }
     };
 
@@ -83,7 +91,7 @@ export default function App() {
       unsubscribeAuth();
       unsubscribeData();
     };
-  }, [user]);
+  }, []); // 의존성 배열을 []로 수정하여 무한 루프 방지
 
   // --- [UI 서브 컴포넌트: 통계 카드] ---
   const StatCard = ({ title, value, icon: Icon, colorClass }) => (
