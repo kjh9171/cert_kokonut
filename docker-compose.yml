@@ -11,10 +11,8 @@ services:
       - NODE_ENV=production
       - APP_ID=pms-service-id
       - ENCRYPTION_KEY=cert_total_manager_secure_key_256
-      # 파이어베이스 인증을 위한 서비스 계정 경로 (볼륨 마운트 권장)
-      - GOOGLE_APPLICATION_CREDENTIALS=/app/service-account.json
     volumes:
-      - ./backend/service-account.json:/app/service-account.json:ro
+      - ./backend/local_db.json:/app/local_db.json
     networks:
       - pms-network
 

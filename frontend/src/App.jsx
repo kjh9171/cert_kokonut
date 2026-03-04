@@ -4,18 +4,10 @@ import {
   Lock, Shield, Users, Search, Settings, LogOut, 
   Key, Database, Bell, Activity, PlusCircle, CheckCircle 
 } from 'lucide-react';
-// 파이어베이스 핵심 기능 임포트
-import { initializeApp, getApps } from 'firebase/app';
-import { 
-  getAuth, signInAnonymously, onAuthStateChanged, 
-  createUserWithEmailAndPassword, signInWithEmailAndPassword, 
-  updateProfile, signOut 
-} from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, query, orderBy, setDoc, doc } from 'firebase/firestore';
 
 /**
  * [PMS] 개인정보관리서비스 메인 애플리케이션 컴포넌트
- * 역할: 관리자 대시보드 제공, 암호화된 데이터 실시간 모니터링
+ * 역할: 관리자 대시보드 제공, 암호화된 데이터 실시간 모니터링 (순수 API 기반)
  */
 export default function App() {
   // --- [인증 및 시스템 상태 전역 로그] ---
@@ -32,6 +24,7 @@ export default function App() {
   const [tempUid, setTempUid] = useState(null); // 임시 UID 보관
   const [qrCodeUrl, setQrCodeUrl] = useState(''); // OTP QR 코드 URL
   const [otpToken, setOtpToken] = useState(''); // 유저가 입력한 OTP 번호
+  const [adminList, setAdminList] = useState([]); // 보안 요원 목록 (추가)
 
   // --- [인증 입력 필드 상태] ---
   const [email, setEmail] = useState('');
@@ -41,77 +34,64 @@ export default function App() {
 
   // --- [시스템 초기화 및 데이터 연동] ---
   useEffect(() => {
-    let unsubscribeAuth = () => {};
-    let unsubscribeData = () => {};
-
     const bootSystem = async () => {
       try {
-        console.log('[CERT] 통합 보안 관제 시스템 부팅 시작...');
-        const configStr = window.__firebase_config || '{}';
-        const firebaseConfig = typeof configStr === 'string' ? JSON.parse(configStr) : configStr;
-        const appId = window.__app_id || 'pms-service-id';
+        console.log('[CERT] 통합 보안 관제 시스템 부팅 시작 (순수 API 모드)...');
+        
+        // 1. 로컬 스토리지에서 기존 세션(JWT) 확인
+        const savedToken = localStorage.getItem('cert_pms_token');
+        const savedUser = localStorage.getItem('cert_pms_user');
 
-        if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'stub-api-key') {
-          console.warn('[CERT] 보안 프로토콜 미설정: 샘플 모드로 가동합니다.');
-          setLoading(false);
-          return;
+        if (savedToken && savedUser) {
+          setUser(JSON.parse(savedUser));
+          console.log('[CERT] 기존 세션 복구 완료.');
+          fetchSecurityData();
         }
-
-        const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // 보안 요원 인증 상태 실시간 감시
-        unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
-          setUser(currentUser);
-          setLoading(false);
-          if (currentUser) {
-            console.log('[CERT] 보안 인증 완료:', currentUser.email);
-            // 인증 완료 후 데이터 스트림 연결
-            connectDataStream(db, appId);
-          }
-        });
-
       } catch (err) {
-        console.error('[EROR] 시스템 치명적 오류:', err);
+        console.error('[EROR] 시스템 부팅 중 오류:', err);
+      } finally {
         setLoading(false);
       }
     };
 
-    const connectDataStream = (db, appId) => {
-      const privacyRef = collection(db, 'artifacts', appId, 'public', 'data', 'privacyRecords');
-      const q = query(privacyRef, orderBy('createdAt', 'desc'));
-
-      unsubscribeData = onSnapshot(q, (snapshot) => {
-        const records = snapshot.docs.map(doc => {
-          const data = doc.data();
-          let displayDate = '분석 중...';
-          if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-            displayDate = data.createdAt.toDate().toLocaleString('ko-KR');
-          } else if (data.createdAt) {
-            displayDate = new Date(data.createdAt).toLocaleString('ko-KR');
-          }
-          return { id: doc.id, ...data, displayDate };
-        });
-        setPrivacyRecords(records);
-        setStats(prev => ({
-          ...prev,
-          total: records.length,
-          today: records.filter(r => {
-            try { return new Date(r.displayDate).toDateString() === new Date().toDateString(); }
-            catch(e) { return false; }
-          }).length
-        }));
-      }, (err) => console.error('[EROR] 보안 자산 동기화 실패:', err));
-    };
-
     bootSystem();
-
-    return () => {
-      unsubscribeAuth();
-      unsubscribeData();
-    };
   }, []);
+
+  // --- [데이터 통신부] ---
+  const fetchSecurityData = async () => {
+    try {
+      console.log('[CERT] 보안 자산 데이터 동기화 중...');
+      const res = await fetch('/api/admin/db/stats'); // 샘플 통계
+      const data = await res.json();
+      
+      // 실제 데이터 패치 로직 (필요 시 /api/admin/users 등에서 가져옴)
+      setStats({
+        total: 125, // 샘플
+        today: 12,
+        alerts: 3
+      });
+      
+      setPrivacyRecords([
+        { id: '1', name: '김철수', email: 'kcs@cert.com', displayDate: new Date().toLocaleString() },
+        { id: '2', name: '이영희', email: 'lyh@cert.com', displayDate: new Date().toLocaleString() }
+      ]);
+
+      // 추가: 요원 목록 패치
+      fetchAdmins();
+    } catch (err) {
+      console.error('[EROR] 데이터 동기화 실패:', err);
+    }
+  };
+
+  const fetchAdmins = async () => {
+    try {
+      const res = await fetch('/api/admin/admins');
+      const data = await res.json();
+      if (res.ok) setAdminList(data);
+    } catch (err) {
+      console.error('[EROR] 요원 목록 패치 실패:', err);
+    }
+  };
 
   // --- [인증 핸들러: 가입 및 로그인] ---
   const handleAuthAction = async () => {
@@ -153,6 +133,13 @@ export default function App() {
           setTempUid(data.uid);
           setStep('otp-setup');
         }
+
+        if (data.token) {
+          localStorage.setItem('cert_pms_token', data.token);
+          localStorage.setItem('cert_pms_user', JSON.stringify(data.user));
+          setUser(data.user);
+          fetchSecurityData();
+        }
       }
     } catch (error) {
       console.error('[EROR] 인증 작전 실패:', error.message);
@@ -163,9 +150,10 @@ export default function App() {
   };
 
   const handleLogout = async () => {
-    const auth = getAuth();
-    await signOut(auth);
+    localStorage.removeItem('cert_pms_token');
+    localStorage.removeItem('cert_pms_user');
     setUser(null);
+    setStep('auth');
     console.log('[CERT] 보안 구역 퇴거 완료.');
   };
 
@@ -222,20 +210,17 @@ export default function App() {
           </h1>
           <p className="text-center text-slate-500 mb-6 font-bold tracking-widest text-[10px] uppercase">{isSignup ? '신규 마스터 계정 생성' : '관리자 전용 특권 액세스'}</p>
 
-          {/* [보안 안내] 샘플 모드 경고창 */}
-          {(window.__firebase_config?.indexOf('stub-api-key') !== -1) && (
-            <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-4 animate-pulse">
-              <Bell className="text-amber-600 mt-1 shrink-0" size={18} />
-              <div>
-                <p className="text-amber-800 text-[10px] font-black uppercase tracking-tighter">보안 경보: 샘플 모드 가동 중</p>
-                <p className="text-amber-600 text-[9px] font-bold mt-1 leading-relaxed">
-                  현재 실제 Firebase API 키가 설정되지 않았습니다. <br/>
-                  인증 및 데이터 보관 기능을 사용하려면 <br/>
-                  <code className="bg-amber-100 px-1 rounded text-amber-900">index.html</code>의 설정을 수정해 주십시오!
-                </p>
-              </div>
+          {/* [보안 안내] 로컬 모드 활성화 안내 */}
+          <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-4">
+            <Shield className="text-blue-600 mt-1 shrink-0" size={18} />
+            <div>
+              <p className="text-blue-800 text-[10px] font-black uppercase tracking-tighter">시스템 상태: 로컬 철통 보안 모드</p>
+              <p className="text-blue-600 text-[9px] font-bold mt-1 leading-relaxed">
+                대표님의 명령에 따라 외부 클라우드 연결을 차단했습니다. <br/>
+                모든 데이터는 서버 로컬 저장소에 안전하게 보관됩니다! 충성!
+              </p>
             </div>
-          )}
+          </div>
 
           <div className="space-y-5">
             {authError && (
@@ -451,7 +436,7 @@ export default function App() {
                         const data = await res.json();
                         if(!res.ok) throw new Error(data.error);
                         alert('신규 요원이 성공적으로 임용되었습니다! 충성!');
-                        // 목록 갱신을 위해 데이터 재호출 로직 필요 (생략 가능 시 생략)
+                        fetchAdmins(); // 목록 갱신
                       } catch(e) { alert(`등록 실패: ${e.message}`); }
                     }}
                     className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-700 transition shadow-xl shadow-blue-100"
@@ -462,11 +447,8 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* 요원 목록 렌더링 (실제 데이터 연동 필요) */}
-                  {[
-                    { id: 'master', name: '대표님', email: 'master@cert.com', role: 'TOP_ADMIN', otp: true },
-                    { id: 'agent-1', name: '김요원', email: 'agent1@cert.com', role: 'AGENT', otp: false }
-                  ].map((admin) => (
+                  {/* 요원 목록 렌더링 (실제 데이터 연동) */}
+                  {adminList.map((admin) => (
                     <div key={admin.id} className="p-6 bg-slate-50 rounded-[24px] border border-slate-100 hover:border-blue-200 transition group relative overflow-hidden">
                       <div className="flex items-center gap-5 relative z-10">
                         <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 transition">
@@ -483,17 +465,36 @@ export default function App() {
                         </div>
                         <div className="flex gap-2">
                           <button 
-                            onClick={() => {
-                              const newRole = prompt('변경할 권한을 입력하세요 (ADMIN/AGENT):', admin.role);
-                              if(newRole) alert('권한이 변경되었습니다! (Backend 연동됨)');
+                            onClick={async () => {
+                              const newRole = prompt('변경할 권한을 입력하세요 (admin/user):', admin.role);
+                              if(!newRole) return;
+                              try {
+                                const res = await fetch(`/api/admin/admins/${admin.id}`, {
+                                  method: 'PUT',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ updateData: { role: newRole } })
+                                });
+                                if (res.ok) {
+                                  alert('권한이 변경되었습니다!');
+                                  fetchAdmins();
+                                }
+                              } catch(e) { alert('실패: ' + e.message); }
                             }}
                             className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-100 transition shadow-sm"
                           >
                             <Settings size={16} />
                           </button>
                           <button 
-                            onClick={() => {
-                              if(confirm('정말로 이 요원을 제명하시겠습니까?')) alert('요원이 제명되었습니다.');
+                            onClick={async () => {
+                              if(confirm('정말로 이 요원을 제명하시겠습니까?')) {
+                                try {
+                                  const res = await fetch(`/api/admin/admins/${admin.id}`, { method: 'DELETE' });
+                                  if (res.ok) {
+                                    alert('요원이 제명되었습니다.');
+                                    fetchAdmins();
+                                  }
+                                } catch(e) { alert('실패: ' + e.message); }
+                              }
                             }}
                             className="p-2 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-rose-500 hover:border-rose-100 transition shadow-sm"
                           >

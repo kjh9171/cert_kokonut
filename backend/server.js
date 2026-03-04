@@ -6,13 +6,19 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { TOTP } from 'otplib';
 import qrcode from 'qrcode';
-// 파이어베이스 어드민 SDK 로드 (Firestore 연동용)
-import admin from 'firebase-admin';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// --- [로컬 DB 보안 설정] ---
+// 대표님의 명령에 따라 외부 클라우드(Firebase) 연결을 차단하고 로컬에서만 작동합니다!
+const LOCAL_DB_PATH = path.join(__dirname, 'local_db.json');
+if (!fs.existsSync(LOCAL_DB_PATH)) {
+  fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({ pms_admins: [], privacy_records: [] }, null, 2));
+}
 
 // otplib v13 대응을 위해 TOTP 인스턴스 생성
 const authenticator = new TOTP();
@@ -26,23 +32,49 @@ const JWT_SECRET = process.env.JWT_SECRET || 'cert_pms_master_token_key_777';
 const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'cert_total_manager_secure_key_256';
 const IV_LENGTH = 16;
 
-// 파이어베이스 어드민 초기화
-let isFirebaseInitialized = false;
-if (!admin.apps.length) {
-  try {
-    admin.initializeApp({
-      credential: admin.credential.applicationDefault()
-    });
-    isFirebaseInitialized = true;
-    console.log('[CERT] Firebase Admin SDK 연결 완료! 충성!');
-  } catch (error) {
-    console.warn('[CERT] Firebase 인증 오류: service-account.json 확인 필요.');
-  }
-} else {
-  isFirebaseInitialized = true;
-}
+// --- [통합 데이터베이스 인터페이스 (순수 로컬)] ---
+const getCollection = async (collectionName) => {
+  const store = JSON.parse(fs.readFileSync(LOCAL_DB_PATH));
+  return store[collectionName] || [];
+};
 
-const db = isFirebaseInitialized ? admin.firestore() : null;
+const getDoc = async (collectionName, id) => {
+  const store = JSON.parse(fs.readFileSync(LOCAL_DB_PATH));
+  const item = (store[collectionName] || []).find(i => i.id === id);
+  return item || null;
+};
+
+const addDoc = async (collectionName, data) => {
+  const dataWithTime = { ...data, createdAt: new Date().toISOString() };
+  const store = JSON.parse(fs.readFileSync(LOCAL_DB_PATH));
+  if (!store[collectionName]) store[collectionName] = [];
+  const newDoc = { id: Date.now().toString(), ...dataWithTime };
+  store[collectionName].push(newDoc);
+  fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(store, null, 2));
+  return { id: newDoc.id };
+};
+
+const updateDoc = async (collectionName, id, data) => {
+  const store = JSON.parse(fs.readFileSync(LOCAL_DB_PATH));
+  const index = (store[collectionName] || []).findIndex(i => i.id === id);
+  if (index !== -1) {
+    store[collectionName][index] = { ...store[collectionName][index], ...data };
+    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(store, null, 2));
+  }
+};
+
+const deleteDoc = async (collectionName, id) => {
+  const store = JSON.parse(fs.readFileSync(LOCAL_DB_PATH));
+  if (store[collectionName]) {
+    store[collectionName] = store[collectionName].filter(i => i.id !== id);
+    fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify(store, null, 2));
+  }
+};
+
+const findUserByEmail = async (email) => {
+  const users = (JSON.parse(fs.readFileSync(LOCAL_DB_PATH))).pms_admins || [];
+  return users.find(u => u.email === email) || null;
+};
 
 // --- [보안 유틸리티] ---
 function encrypt(text) {
@@ -65,8 +97,8 @@ app.post('/api/auth/register', async (req, res) => {
     if (!email || !password || !name) return res.status(400).json({ error: '필수 정보 누락' });
 
     // 중복 이메일 체크
-    const userSnapshot = await db.collection('pms_admins').where('email', '==', email).get();
-    if (!userSnapshot.empty) return res.status(400).json({ error: '이미 등록된 보안 아이디입니다.' });
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) return res.status(400).json({ error: '이미 등록된 보안 아이디입니다.' });
 
     // 비밀번호 해싱 (bcrypt)
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -85,7 +117,7 @@ app.post('/api/auth/register', async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     };
 
-    const docRef = await db.collection('pms_admins').add(userDoc);
+    const docRef = await addDoc('pms_admins', userDoc);
     
     res.status(201).json({ 
       success: true, 
@@ -102,14 +134,10 @@ app.post('/api/auth/register', async (req, res) => {
  */
 app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const userSnapshot = await db.collection('pms_admins').where('email', '==', email).get();
+    const userData = await findUserByEmail(email);
+    if (!userData) return res.status(401).json({ error: '아이디 또는 비밀번호가 일치하지 않습니다.' });
 
-    if (userSnapshot.empty) return res.status(401).json({ error: '아이디 또는 비밀번호가 일치하지 않습니다.' });
-
-    const userDoc = userSnapshot.docs[0];
-    const userData = userDoc.data();
-
+    const userDocId = userData.id;
     // 비밀번호 검증
     const isMatched = await bcrypt.compare(password, userData.password);
     if (!isMatched) return res.status(401).json({ error: '아이디 또는 비밀번호가 일치하지 않습니다.' });
@@ -119,13 +147,13 @@ app.post('/api/auth/login', async (req, res) => {
       return res.json({ 
         success: true, 
         requireOTP: true, 
-        uid: userDoc.id,
+        uid: userDocId,
         message: 'Google OTP 2차 인증이 필요합니다.' 
       });
     }
 
     // OTP 미설정 시 (초기 로그인)
-    const token = jwt.sign({ uid: userDoc.id, email: userData.email, role: userData.role }, JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign({ uid: userDocId, email: userData.email, role: userData.role }, JWT_SECRET, { expiresIn: '8h' });
     res.json({ 
       success: true, 
       requireOTP: false, 
@@ -143,10 +171,9 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/otp-setup', async (req, res) => {
   try {
     const { uid } = req.body;
-    const userDoc = await db.collection('pms_admins').doc(uid).get();
-    if (!userDoc.exists) return res.status(404).json({ error: '요원을 찾을 수 없습니다.' });
+    const userData = await getDoc('pms_admins', uid);
+    if (!userData) return res.status(404).json({ error: '요원을 찾을 수 없습니다.' });
 
-    const userData = userDoc.data();
     // 암호화된 시크릿 복호화 (decrypt 함수 구현 필요 - 생략 후 encrypt 역으로 가정)
     const otpSecret = userData.otpSecret.split(':')[1]; // 샘플용 (실제는 decrypt 사용)
     
@@ -170,8 +197,8 @@ app.post('/api/auth/otp-setup', async (req, res) => {
 app.post('/api/auth/otp-verify', async (req, res) => {
   try {
     const { uid, otpToken, activate } = req.body;
-    const userDoc = await db.collection('pms_admins').doc(uid).get();
-    const userData = userDoc.data();
+    const userData = await getDoc('pms_admins', uid);
+    if (!userData) return res.status(404).json({ error: '요원을 찾을 수 없습니다.' });
 
     const otpSecret = userData.otpSecret.split(':')[1]; // 샘플용
     const isValid = await authenticator.verify({ token: otpToken, secret: otpSecret });
@@ -180,11 +207,11 @@ app.post('/api/auth/otp-verify', async (req, res) => {
 
     // 설정에서 활성화/비활성화 요청 시 처리
     if (activate !== undefined) {
-      await db.collection('pms_admins').doc(uid).update({ otpEnabled: activate });
+      await updateDoc('pms_admins', uid, { otpEnabled: activate });
       return res.json({ success: true, message: `OTP가 ${activate ? '활성화' : '비활성화'} 되었습니다.` });
     }
 
-    const token = jwt.sign({ uid: userDoc.id, email: userData.email, role: userData.role }, JWT_SECRET, { expiresIn: '8h' });
+    const token = jwt.sign({ uid: uid, email: userData.email, role: userData.role }, JWT_SECRET, { expiresIn: '8h' });
     res.json({ 
       success: true, 
       token, 
@@ -201,8 +228,7 @@ app.post('/api/auth/otp-verify', async (req, res) => {
 // 요원 목록 조회
 app.get('/api/admin/admins', async (req, res) => {
   try {
-    const snapshot = await db.collection('pms_admins').get();
-    const admins = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const admins = await getCollection('pms_admins');
     res.json(admins);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -213,7 +239,7 @@ app.get('/api/admin/admins', async (req, res) => {
 app.put('/api/admin/admins/:id', async (req, res) => {
   try {
     const { updateData } = req.body;
-    await db.collection('pms_admins').doc(req.params.id).update(updateData);
+    await updateDoc('pms_admins', req.params.id, updateData);
     res.json({ success: true, message: '요원 정보가 업데이트되었습니다.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -223,7 +249,7 @@ app.put('/api/admin/admins/:id', async (req, res) => {
 // 요원 삭제
 app.delete('/api/admin/admins/:id', async (req, res) => {
   try {
-    await db.collection('pms_admins').doc(req.params.id).delete();
+    await deleteDoc('pms_admins', req.params.id);
     res.json({ success: true, message: '요원이 영구 제명되었습니다.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -238,9 +264,8 @@ app.post('/api/admin/users', async (req, res) => {
   // 실제 구현 시 권한 체크 로직 포함
   try {
     const { userData } = req.body;
-    const docRef = await db.collection('pms_users').add({
-      ...userData,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    const docRef = await addDoc('pms_users', {
+      ...userData
     });
     res.json({ success: true, id: docRef.id });
   } catch (error) {
@@ -252,7 +277,7 @@ app.post('/api/admin/users', async (req, res) => {
 app.put('/api/admin/users/:id', async (req, res) => {
   try {
     const { userData } = req.body;
-    await db.collection('pms_users').doc(req.params.id).update(userData);
+    await updateDoc('pms_users', req.params.id, userData);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -261,7 +286,7 @@ app.put('/api/admin/users/:id', async (req, res) => {
 
 app.delete('/api/admin/users/:id', async (req, res) => {
   try {
-    await db.collection('pms_users').doc(req.params.id).delete();
+    await deleteDoc('pms_users', req.params.id);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -273,11 +298,11 @@ app.delete('/api/admin/users/:id', async (req, res) => {
  */
 app.get('/api/admin/db/stats', async (req, res) => {
   try {
-    // 프로젝트 통계 계산 로직
+    // 프로젝트 통계 계산 로직 (로컬 DB 기준)
     res.json({
-      database: 'Firestore',
-      status: 'Healthy',
-      collections: ['privacyRecords', 'pms_users', 'pms_admins']
+      database: 'Local JSON (CERT Private Storage)',
+      status: 'Secured',
+      collections: ['privacy_records', 'pms_users', 'pms_admins']
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
