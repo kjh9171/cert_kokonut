@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
+// SecurityVault 독립 컴포넌트 임포트 (선택형 암호화 및 엑셀 처리 엔진)
+import SecurityVault from './SecurityVault.jsx';
 // 보안 및 UI 구성을 위한 아이콘 세트 (lucide-react)
 import { 
   Shield, Users, Database, Key, FileText, Settings, 
@@ -20,6 +22,7 @@ import {
 const COMPANY_MENU = [
   { id: 'dashboard', label: '운영 대시보드', icon: LayoutDashboard },
   { id: 'member_db', label: '회원 DB 관리', icon: Database },
+  { id: 'security_vault', label: '보안 금고 (암호화)', icon: Lock },
   { id: 'provision_status', label: '외부 제공 현황', icon: Share2 },
   { id: 'policy_manage', label: '약관/처리방침 관리', icon: Scale },
   { id: 'api_keys', label: 'API 연동관리', icon: Key },
@@ -303,6 +306,9 @@ export default function App() {
               </div>
             </div>
           );
+        case 'security_vault':
+          // 선택형 암호화 및 엑셀 보안 처리 모듈 렌더링
+          return <SecurityVault />;
         case 'member_db':
           return (
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm animate-in zoom-in-95 duration-500">
