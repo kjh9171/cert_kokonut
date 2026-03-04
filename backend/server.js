@@ -20,9 +20,11 @@ if (!fs.existsSync(LOCAL_DB_PATH)) {
   fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({ pms_admins: [], privacy_records: [] }, null, 2));
 }
 
-// otplib v13 대응을 위해 TOTP 인스턴스 생성
-const authenticator = new TOTP();
-
+/**
+ * [보안 패치] otplib v13 ESM 호환성 해결
+ * Node.js의 내장 crypto 엔진을 직접 연결하여 TOTP 인스턴스를 생성합니다!
+ */
+const authenticator = new TOTP({ crypto });
 // Express 앱 초기화
 const app = express();
 app.use(express.json());
@@ -83,6 +85,21 @@ function encrypt(text) {
   let encrypted = cipher.update(text);
   encrypted = Buffer.concat([encrypted, cipher.final()]);
   return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
+
+function decrypt(text) {
+  try {
+    const [ivHex, encryptedHex] = text.split(':');
+    const iv = Buffer.from(ivHex, 'hex');
+    const encryptedText = Buffer.from(encryptedHex, 'hex');
+    let decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY.padEnd(32, '0').slice(0, 32)), iv);
+    let decrypted = decipher.update(encryptedText);
+    decrypted = Buffer.concat([decrypted, decipher.final()]);
+    return decrypted.toString();
+  } catch (err) {
+    console.error('[EROR] 복호화 실패:', err.message);
+    return null;
+  }
 }
 
 // --- [독자 인증 API] ---
@@ -194,15 +211,12 @@ app.post('/api/auth/otp-setup', async (req, res) => {
     const userData = await getDoc('pms_admins', uid);
     if (!userData) return res.status(404).json({ error: '요원을 찾을 수 없습니다.' });
 
-    // 암호화된 시크릿 복호화 (decrypt 함수 구현 필요 - 생략 후 encrypt 역으로 가정)
-    const otpSecret = userData.otpSecret.split(':')[1]; // 샘플용 (실제는 decrypt 사용)
+    // 암호화된 시크릿 복호화
+    const otpSecret = decrypt(userData.otpSecret);
+    if (!otpSecret) return res.status(500).json({ error: '보안 키 복원 실패' });
     
     // Google OTP용 URI 생성
-    const otpUri = authenticator.toURI({ 
-      label: userData.email, 
-      issuer: 'PMS_CERT', 
-      secret: otpSecret 
-    });
+    const otpUri = authenticator.keyuri(userData.email, 'PMS_CERT', otpSecret);
     const qrCodeUrl = await qrcode.toDataURL(otpUri);
 
     res.json({ qrCodeUrl });
@@ -220,8 +234,10 @@ app.post('/api/auth/otp-verify', async (req, res) => {
     const userData = await getDoc('pms_admins', uid);
     if (!userData) return res.status(404).json({ error: '요원을 찾을 수 없습니다.' });
 
-    const otpSecret = userData.otpSecret.split(':')[1]; // 샘플용
-    const isValid = await authenticator.verify({ token: otpToken, secret: otpSecret });
+    const otpSecret = decrypt(userData.otpSecret);
+    if (!otpSecret) return res.status(500).json({ error: '보안 키 복원 실패' });
+    
+    const isValid = authenticator.verify({ token: otpToken, secret: otpSecret });
 
     if (!isValid) return res.status(401).json({ error: 'OTP 번호가 일치하지 않습니다.' });
 
