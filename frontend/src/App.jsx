@@ -112,12 +112,28 @@ export default function App() {
   // --- [인증 핸들러: 가입 및 로그인] ---
   const handleAuthAction = async () => {
     setAuthError('');
-    const auth = getAuth();
-    const db = getFirestore();
+    
+    // [보안 점검] 현재 시스템이 샘플 모드인지 확인
+    const configStr = window.__firebase_config || '{}';
+    const firebaseConfig = typeof configStr === 'string' ? JSON.parse(configStr) : configStr;
+    
+    if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'stub-api-key') {
+      console.warn('[CERT] 보안 프로토콜 미설정 모드 (Stub Mode)');
+      setAuthError('현재 시스템이 [샘플 모드]로 가동 중입니다. 실제 요원 등록을 위해서는 Firebase API 키 설정이 필요합니다.');
+      return;
+    }
 
     try {
+      const auth = getAuth();
+      const db = getFirestore();
+
       if (isSignup) {
         console.log('[CERT] 신규 요원 등록 작전 개시:', email);
+        if (!email || !password || !adminName) {
+          setAuthError('모든 보안 필드(이름, 이메일, 비밀번호)를 채워 주십시오.');
+          return;
+        }
+
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: adminName });
         
@@ -138,11 +154,12 @@ export default function App() {
         console.log('[CERT] 보안 접속 승인됨!');
       }
     } catch (error) {
-      console.error('[EROR] 인증 작전 실패:', error.code);
-      let message = '인증에 실패했습니다. 코드를 확인해 주세요.';
-      if (error.code === 'auth/email-already-in-loop') message = '이미 등록된 요원 이메일입니다.';
+      console.error('[EROR] 인증 작전 실패:', error.code, error.message);
+      let message = `인증 오류: ${error.code}`;
+      if (error.code === 'auth/email-already-in-use') message = '이미 등록된 요원 이메일입니다.';
       if (error.code === 'auth/invalid-credential') message = '보안 아이디 또는 비밀번호가 일치하지 않습니다.';
       if (error.code === 'auth/weak-password') message = '비밀번호가 너무 취약합니다. 6자 이상으로 설정해 주십시오.';
+      if (error.code === 'auth/invalid-email') message = '유효하지 않은 보안 아이디(이메일) 형식입니다.';
       setAuthError(message);
     }
   };
@@ -205,7 +222,22 @@ export default function App() {
           <h1 className="text-4xl font-black text-center text-slate-900 mb-2 tracking-tighter italic">
             PMS <span className="text-blue-600 not-italic">{isSignup ? '요원 등록' : '보안 접속'}</span>
           </h1>
-          <p className="text-center text-slate-500 mb-8 font-bold tracking-widest text-[10px] uppercase">{isSignup ? '신규 마스터 계정 생성' : '관리자 전용 특권 액세스'}</p>
+          <p className="text-center text-slate-500 mb-6 font-bold tracking-widest text-[10px] uppercase">{isSignup ? '신규 마스터 계정 생성' : '관리자 전용 특권 액세스'}</p>
+
+          {/* [보안 안내] 샘플 모드 경고창 */}
+          {(window.__firebase_config?.indexOf('stub-api-key') !== -1) && (
+            <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-4 animate-pulse">
+              <Bell className="text-amber-600 mt-1 shrink-0" size={18} />
+              <div>
+                <p className="text-amber-800 text-[10px] font-black uppercase tracking-tighter">보안 경보: 샘플 모드 가동 중</p>
+                <p className="text-amber-600 text-[9px] font-bold mt-1 leading-relaxed">
+                  현재 실제 Firebase API 키가 설정되지 않았습니다. <br/>
+                  인증 및 데이터 보관 기능을 사용하려면 <br/>
+                  <code className="bg-amber-100 px-1 rounded text-amber-900">index.html</code>의 설정을 수정해 주십시오!
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="space-y-5">
             {authError && (
