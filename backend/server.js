@@ -4,7 +4,10 @@ import express from 'express';
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { TOTP, NobleCryptoPlugin, ScureBase32Plugin } from 'otplib';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const speakeasy = require('speakeasy');
+
 import qrcode from 'qrcode';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -14,20 +17,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // --- [로컬 DB 보안 설정] ---
-// 대표님의 명령에 따라 외부 클라우드(Firebase) 연결을 차단하고 로컬에서만 작동합니다!
 const LOCAL_DB_PATH = path.join(__dirname, 'local_db.json');
 if (!fs.existsSync(LOCAL_DB_PATH)) {
   fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({ pms_admins: [], privacy_records: [], pms_users: [] }, null, 2));
 }
 
 /**
- * [보안 패치] otplib v13 전체 플러그인 이식
- * Crypto 및 Base32 플러그인을 명시적으로 연결하여 모든 환경적 변수를 제거합니다!
+ * [보안 패회 마스터피스 - 최종] 무결점 speakeasy 엔진 가동
+ * 변덕스러운 otplib 대신, 가장 안정적인 speakeasy를 사용하여 보안을 확립합니다!
  */
-const authenticator = new TOTP({
-  crypto: NobleCryptoPlugin,
-  base32: ScureBase32Plugin
-});
+// speakeasy는 직접 함수를 호출하여 사용합니다.
 // Express 앱 초기화
 const app = express();
 app.use(express.json());
@@ -130,10 +129,11 @@ app.post('/api/auth/register', async (req, res) => {
     // 비밀번호 해싱 (bcrypt)
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // OTP 시크릿 생성 (최초 1회)
-    const otpSecret = authenticator.generateSecret();
+    // OTP 시크릿 생성 (Speakeasy 방식)
+    const secret = speakeasy.generateSecret({ length: 20 });
+    const otpSecret = secret.base32;
 
-    // 로컬 DB 저장 객체 생성 (admin.firestore 제거)
+    // 로컬 DB 저장 객체 생성
     const userDoc = {
       email,
       password: hashedPassword,
@@ -218,11 +218,12 @@ app.post('/api/auth/otp-setup', async (req, res) => {
     const otpSecret = decrypt(userData.otpSecret);
     if (!otpSecret) return res.status(500).json({ error: '보안 키 복원 실패' });
     
-    // Google OTP용 URI 생성 (v13 명세 적용)
-    const otpUri = authenticator.generateURI({ 
-      label: userData.email, 
-      issuer: 'PMS_CERT', 
-      secret: otpSecret 
+    // Google OTP용 URI 생성 (Speakeasy 방식)
+    const otpUri = speakeasy.otpauthURL({
+      secret: otpSecret,
+      label: userData.email,
+      issuer: 'PMS_CERT',
+      encoding: 'base32'
     });
     const qrCodeUrl = await qrcode.toDataURL(otpUri);
 
@@ -244,8 +245,13 @@ app.post('/api/auth/otp-verify', async (req, res) => {
     const otpSecret = decrypt(userData.otpSecret);
     if (!otpSecret) return res.status(500).json({ error: '보안 키 복원 실패' });
     
-    // v13 비동기 검증 대응
-    const isValid = await authenticator.verify({ token: otpToken, secret: otpSecret });
+    // Speakeasy 검증 방식 적용
+    const isValid = speakeasy.totp.verify({
+      secret: otpSecret,
+      encoding: 'base32',
+      token: otpToken,
+      window: 1 // 상하 30초 허용 범위인 윈도우 1 설정
+    });
 
     if (!isValid) return res.status(401).json({ error: 'OTP 번호가 일치하지 않습니다.' });
 
