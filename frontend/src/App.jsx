@@ -2,8 +2,203 @@ import React, { useState, useEffect } from 'react';
 // 보안 및 UI 구성을 위한 아이콘 라이브러리 (Lucide React)
 import { 
   Lock, Shield, Users, Search, Settings, LogOut, 
-  Key, Database, Bell, Activity, PlusCircle, CheckCircle 
+  Key, Database, Bell, Activity, PlusCircle, CheckCircle,
+  FileText, History, Mail, CreditCard, HelpCircle, Eye, ShieldCheck,
+  Menu, X, Download, Plus, LayoutDashboard, PlayCircle
 } from 'lucide-react';
+import { 
+  LineChart, Line, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, AreaChart, Area,
+  BarChart, Bar, Cell, PieChart, Pie
+} from 'recharts';
+
+/**
+ * [PMS] 개인정보관리서비스 메인 애플리케이션 컴포넌트 부속 하위 섹션들
+ */
+
+// --- [공통 보조 컴포넌트: 전술 통계 카드] ---
+const StatCard = ({ title, value, icon: Icon, colorClass }) => (
+  <div className={`${colorClass} p-8 rounded-[32px] shadow-2xl relative overflow-hidden group`}>
+    <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform"><Icon size={80} /></div>
+    <div className="relative z-10">
+      <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-2">{title}</p>
+      <div className="flex items-baseline gap-2">
+        <span className="text-4xl font-black italic">{value}</span>
+        <span className="text-xs font-bold opacity-60">건</span>
+      </div>
+    </div>
+  </div>
+);
+
+// --- [기업 관리자 전용 섹션들] ---
+
+// 1. 대시보드 (통계 시각화)
+const UserDashboardView = ({ user, stats }) => {
+  const chartData = [
+    { name: '03-01', count: 400 },
+    { name: '03-02', count: 300 },
+    { name: '03-03', count: 600 },
+    { name: '03-04', count: 800 },
+    { name: '03-05', count: 500 },
+  ];
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="p-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[40px] text-white shadow-2xl relative overflow-hidden">
+        <div className="relative z-10">
+          <h3 className="text-3xl font-black italic mb-4">반갑습니다, {user?.name} 관리자님!</h3>
+          <p className="font-bold opacity-80 max-w-lg mb-8">현재 귀사의 개인정보 보안 등계는 <span className="text-emerald-400 underline decoration-double">AAA 최고수준</span>으로 유지되고 있습니다. 실시간 관제를 시작합니다!</p>
+          <div className="flex gap-4">
+            <div className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl font-black text-xs uppercase">보안 상태: 정상</div>
+            <div className="px-6 py-3 bg-emerald-500 rounded-2xl font-black text-xs uppercase">데이터 무결성 검증 완료</div>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 p-10 opacity-10"><Shield size={200} /></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[
+          { label: '전체 회원수', value: '1,284', unit: '명', icon: Users, color: 'bg-white text-blue-600' },
+          { label: 'DB 사용량', value: '42.8', unit: 'MB', icon: Database, color: 'bg-white text-indigo-600' },
+          { label: '암호화 항목', value: '14', unit: '개', icon: ShieldCheck, color: 'bg-white text-emerald-600' },
+          { label: '금일 API 호출', value: '8,421', unit: '건', icon: Key, color: 'bg-white text-amber-600' },
+        ].map((stat, idx) => (
+          <div key={idx} className={`${stat.color} p-6 rounded-[24px] shadow-sm border border-slate-100`}>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{stat.label}</span>
+              <stat.icon size={20} />
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-slate-900 italic">{stat.value}</span>
+              <span className="text-slate-400 text-[10px] font-bold">{stat.unit}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-white p-10 rounded-[40px] shadow-xl border border-slate-50">
+          <h3 className="font-black text-slate-800 mb-8 flex items-center gap-3 italic uppercase tracking-tighter">
+            <Activity size={24} className="text-blue-500" /> 개인정보 수집 및 처리 추이
+          </h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip overlayStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
+                <Area type="monotone" dataKey="count" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCount)" strokeWidth={3} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        <div className="bg-slate-900 p-10 rounded-[40px] shadow-xl text-white relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 p-10 opacity-5 group-hover:scale-110 transition-transform"><Bell size={150} /></div>
+          <h3 className="font-black mb-8 flex items-center gap-3 italic uppercase tracking-tighter">
+            <Bell size={24} className="text-amber-500" /> 최근 보안 알림
+          </h3>
+          <div className="space-y-4 relative z-10">
+            {[
+              { type: 'access', msg: '미등록 IP에서 관리자 로그인 시도', time: '방금 전', color: 'bg-rose-500/20 text-rose-300' },
+              { type: 'api', msg: 'API 호출 한도 80% 초과', time: '1시간 전', color: 'bg-amber-500/20 text-amber-300' },
+              { type: 'policy', msg: '처리방침 정기 검토 필요', time: '2시간 전', color: 'bg-blue-500/20 text-blue-300' },
+            ].map((noti, i) => (
+              <div key={i} className={`flex gap-4 p-5 rounded-2xl ${noti.color} border border-white/5`}>
+                <div className="mt-1"><Shield size={14} /></div>
+                <div>
+                  <p className="font-bold text-xs">{noti.msg}</p>
+                  <p className="text-[10px] opacity-60 mt-1 uppercase font-black tracking-widest">{noti.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 2. 회원 DB 관리
+const MemberDBView = ({ privacyRecords, fetchSecurityData }) => {
+  const [searchTerm, setSearchTerm] = React.useState('');
+  
+  return (
+    <div className="bg-white rounded-[40px] shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom-5 duration-700">
+      <div className="p-10 border-b border-slate-50 flex flex-wrap justify-between items-center gap-6 bg-slate-50/50">
+        <div className="flex gap-4 items-center flex-1 min-w-[300px]">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="회원명, 이메일 식별 정보 검색..." 
+              className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition font-bold text-sm"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={() => fetchSecurityData()} className="px-6 py-4 bg-white border border-slate-200 rounded-2xl font-black text-xs text-slate-600 hover:bg-slate-50 transition uppercase tracking-widest shadow-sm">동기화</button>
+          <button className="flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition uppercase tracking-widest">
+            <Download size={16} /> 자산 내보내기
+          </button>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-white text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-50">
+            <tr>
+              <th className="px-10 py-6">식별 대상자</th>
+              <th className="px-10 py-6">암호화 인덱스</th>
+              <th className="px-10 py-6">보안 적용 상태</th>
+              <th className="px-10 py-6">최종 수집/갱신</th>
+              <th className="px-10 py-6 text-right">상세 관제</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {privacyRecords.length > 0 ? privacyRecords.filter(r => r.name.includes(searchTerm)).map((record) => (
+              <tr key={record.id} className="hover:bg-slate-50 transition duration-300">
+                <td className="px-10 py-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-black text-xs italic border border-blue-100">
+                      {record.name.slice(0, 1)}
+                    </div>
+                    <div>
+                      <span className="font-black text-slate-900 text-sm italic">{record.name}</span>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter italic">Common Citizen</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-10 py-8 text-slate-400 font-mono text-[10px] truncate max-w-[150px]">{record.id}</td>
+                <td className="px-10 py-8">
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-black ring-1 ring-emerald-100 uppercase tracking-tighter">
+                    AES-256 Protected
+                  </span>
+                </td>
+                <td className="px-10 py-8 text-slate-400 text-[10px] font-bold italic">{new Date(record.createdAt).toLocaleString()}</td>
+                <td className="px-10 py-8 text-right">
+                  <button className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-200 transition shadow-sm"><Eye size={16}/></button>
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan="5" className="px-10 py-32 text-center text-slate-300 font-black italic">보안 구역 내에 보관된 자산이 없습니다.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 
 /**
  * [PMS] 개인정보관리서비스 메인 애플리케이션 컴포넌트
@@ -313,20 +508,29 @@ export default function App() {
         <nav className="flex-1 p-6 space-y-2">
           {/* 권한별 메뉴 구성 */}
           {(user?.role === 'admin' ? [
-            { id: 'dashboard', label: '운영 대시보드', icon: Database },
-            { id: 'search', label: '정보 검색/열람', icon: Search },
-            { id: 'admins', label: '시스템 관리자', icon: Users },
-            { id: 'api', label: '인증/API 관리', icon: Key },
+            { id: 'dashboard', label: '통합 관제실', icon: Database },
+            { id: 'search', label: '자산 검색', icon: Search },
+            { id: 'admins', label: '요원 관리', icon: Users },
+            { id: 'api', label: 'API 통제', icon: Key },
             { id: 'settings', label: '시스템 설정', icon: Settings },
           ] : [
-            { id: 'user-dashboard', label: '개인정보 보호 현황', icon: Shield },
-            { id: 'user-profile', label: '본인 정보 관리', icon: Users },
-            { id: 'user-security', label: '보안 설정', icon: Key },
+            { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
+            { id: 'member_db', label: '회원 DB 관리', icon: Database },
+            { id: 'privacy_items', label: '개인정보 항목', icon: FileText },
+            { id: 'api_keys', label: 'API 연동관리', icon: Key },
+            { id: 'policy', label: '처리방침 관리', icon: ShieldCheck },
+            { id: 'admins', label: '관리자 현황', icon: Users },
+            { id: 'history', label: '활동 이력', icon: History },
+            { id: 'email', label: '이메일 관리', icon: Mail },
+            { id: 'subscription', label: '구독 관리', icon: CreditCard },
+            { id: 'settings', label: '환경 설정', icon: Settings },
           ]).map((menu) => (
             <button key={menu.id} onClick={() => setActiveTab(menu.id)} className={`w-full flex items-center gap-4 p-4 rounded-xl font-bold transition duration-300 ${activeTab === menu.id ? 'bg-blue-600 text-white shadow-xl shadow-blue-900/40' : 'text-slate-500 hover:text-white hover:bg-slate-900'}`}>
               <menu.icon size={20} /> {menu.label}
             </button>
           ))}
+
+          {/* 프리미엄 서비스 섹션 (제거됨) */}
         </nav>
         <div className="p-6 border-t border-slate-900">
           <button onClick={() => setUser(null)} className="w-full flex items-center gap-4 p-4 text-slate-500 hover:text-rose-500 font-bold transition transform hover:translate-x-1">
@@ -339,16 +543,17 @@ export default function App() {
         <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-6 px-10 flex justify-between items-center sticky top-0 z-10 shadow-sm">
           <div>
             <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
-              {activeTab === 'dashboard' ? '대시보드' : 
-               activeTab === 'search' ? '검색 및 감사' :
-               activeTab === 'admins' ? '관리자 설정' :
-               activeTab === 'api' ? 'API 통제' : '시스템 설정'} 모듈
+              {activeTab === 'dashboard' ? '운영 관제실' : 
+               activeTab === 'search' ? '자산 검색' :
+               activeTab === 'admins' ? '요원 통제' :
+               activeTab === 'api' ? '인증 통제' :
+               activeTab === 'api' ? '인증 통제' : '보안 리포트'} 마듈
             </h2>
             <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1 italic">공인된 요원 전용 구역</p>
           </div>
           <div className="flex items-center gap-6">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-black text-slate-900">대표님 (최상위 관리자)</p>
+              <p className="text-sm font-black text-slate-900">대표님 {user?.role === 'admin' ? '(시스템관리자)' : '(기업관리자)'}</p>
               <div className="flex items-center justify-end gap-1.5 mt-0.5">
                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
                 <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">상태: 보안 유지</span>
@@ -361,101 +566,71 @@ export default function App() {
         </header>
 
         <section className="p-10 flex-1">
-          {activeTab === 'user-dashboard' && (
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
-              <div className="p-8 bg-blue-600 rounded-[32px] text-white shadow-2xl relative overflow-hidden">
-                <div className="relative z-10">
-                  <h3 className="text-3xl font-black italic mb-4">안녕하세요, {user?.name}님!</h3>
-                  <p className="font-bold opacity-80 max-w-lg mb-8">현재 귀하의 개인정보는 AES-256 프로토콜로 철저히 보호되고 있습니다. 안심하고 서비스를 이용해 주십시오!</p>
-                  <div className="flex gap-4">
-                    <div className="px-6 py-3 bg-white/20 backdrop-blur-md rounded-2xl font-black text-sm uppercase">보안 유지 중</div>
-                    <div className="px-6 py-3 bg-emerald-500 rounded-2xl font-black text-sm uppercase">데이터 무결성 확인</div>
+          {/* --- [기업 관리자 (USER) 섹션 모음] --- */}
+          {user?.role === 'user' && (
+            <div className="animate-in fade-in duration-700">
+              {activeTab === 'dashboard' && <UserDashboardView user={user} stats={stats} />}
+              {activeTab === 'member_db' && <MemberDBView privacyRecords={privacyRecords} fetchSecurityData={fetchSecurityData} />}
+              {/* 기획안의 나머지 메뉴들 대응 (Placeholders) */}
+              {['privacy_items', 'api_keys', 'policy', 'admins', 'history', 'email', 'subscription', 'settings'].includes(activeTab) && (
+                <div className="bg-white rounded-3xl p-24 text-center border border-dashed border-slate-200">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Shield size={32} className="text-slate-300" />
                   </div>
+                  <h3 className="text-xl font-bold text-slate-800 mb-2">{activeTab.toUpperCase()} 모듈 보안 검수 중</h3>
+                  <p className="text-slate-500">대표님, 본 모듈은 현재 기획안 1.5 버전에 따라 보안 무결성 검사 중입니다.</p>
+                  <button onClick={() => setActiveTab('dashboard')} className="mt-8 px-6 py-2 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition">대시보드로 귀환</button>
                 </div>
-                <div className="absolute top-0 right-0 p-10 opacity-20"><Shield size={180} /></div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-100 italic font-black">
-                  <Activity size={32} className="text-blue-600 mb-4" />
-                  <p className="text-slate-400 text-[10px] uppercase mb-1">나의 데이터 사용 이력</p>
-                  <p className="text-2xl text-slate-900">최근 30일간 0회의 접근 요청이 있었습니다.</p>
-                </div>
-                <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-100 italic font-black">
-                   <Lock size={32} className="text-emerald-500 mb-4" />
-                   <p className="text-slate-400 text-[10px] uppercase mb-1">보안 강화 추천</p>
-                   <p className="text-2xl text-slate-900">2차 인증이 활성화되어 있습니다.</p>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
-          {activeTab === 'dashboard' && user?.role === 'admin' && (
+          {/* --- [시스템 관리자 (ADMIN) 섹션 모음] --- */}
+          {user?.role === 'admin' && (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
-              {/* 상단 전술 통계 카드 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
-                <StatCard title="총 보관 자산" value={stats.total} icon={Database} colorClass="bg-blue-600 shadow-blue-200" />
-                <StatCard title="금일 신규 등록" value={stats.today} icon={PlusCircle} colorClass="bg-emerald-600 shadow-emerald-200" />
-                <StatCard title="보안 위협 감지" value={stats.alerts} icon={Shield} colorClass="bg-rose-600 shadow-rose-200" />
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                {/* 실시간 보안 처리 로그 (2/3 영역) */}
-                <div className="lg:col-span-2 bg-white rounded-[32px] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden flex flex-col">
-                  <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
-                      <h3 className="font-black text-xl text-slate-900 tracking-tighter italic">실시간 보안 자산 감시 로그</h3>
-                    </div>
-                    <button onClick={() => fetchSecurityData()} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 hover:bg-slate-50 transition shadow-sm uppercase">데이터 동기화</button>
+              {activeTab === 'dashboard' && (
+                <div className="space-y-10">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
+                    <StatCard title="전사 보관 자산" value={stats.total} icon={Database} colorClass="bg-indigo-600 shadow-indigo-200" />
+                    <StatCard title="금일 신규 유입" value={stats.today} icon={PlusCircle} colorClass="bg-emerald-600 shadow-emerald-200" />
+                    <StatCard title="전역 보안 위협" value={stats.alerts} icon={Shield} colorClass="bg-rose-600 shadow-rose-200" />
                   </div>
-                  <div className="flex-1 overflow-x-auto scrollbar-hide">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-50">
-                          <th className="px-10 py-5">이름/대상</th>
-                          <th className="px-10 py-5">회사/조직</th>
-                          <th className="px-10 py-5">등록 일시</th>
-                          <th className="px-10 py-5 text-right">상태/제어</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-50">
-                        {privacyRecords.length > 0 ? privacyRecords.map((item) => (
-                          <tr key={item.id} className="hover:bg-slate-50 transition duration-300 group">
-                            <td className="px-10 py-6">
-                              <div className="flex flex-col">
-                                <span className="font-bold text-slate-900 text-sm">{item.name}</span>
-                                <span className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {item.id.slice(-6)}</span>
-                              </div>
-                            </td>
-                            <td className="px-10 py-6 text-slate-600 text-xs font-bold">{item.company}</td>
-                            <td className="px-10 py-6 text-slate-400 text-[10px] font-medium">{item.displayDate}</td>
-                            <td className="px-10 py-6 text-right">
-                              <div className="flex items-center justify-end gap-3">
-                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black ring-1 ring-blue-100 uppercase">AES-256 보호</span>
-                                <button 
-                                  onClick={async () => {
-                                    if(confirm('이 자산을 영구 파기하시겠습니까?')) {
-                                      const res = await fetch(`/api/admin/records/${item.id}`, { method: 'DELETE' });
-                                      if(res.ok) fetchSecurityData();
-                                    }
-                                  }}
-                                  className="p-2 text-slate-300 hover:text-rose-500 transition opacity-0 group-hover:opacity-100"
-                                >
-                                  <LogOut size={16} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        )) : (
-                          <tr>
-                            <td colSpan="4" className="px-10 py-20 text-center text-slate-300 font-bold italic">현재 감시 중인 데이터가 없습니다.</td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                  
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                    <div className="lg:col-span-2 bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden flex flex-col">
+                      <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                          <h3 className="font-black text-xl text-slate-900 tracking-tighter italic">시스템 통합 보안 자산 감시</h3>
+                        </div>
+                        <button onClick={() => fetchSecurityData()} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 hover:bg-slate-50">동기화</button>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                          <thead>
+                            <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-50">
+                              <th className="px-10 py-5">이름</th>
+                              <th className="px-10 py-5">회사</th>
+                              <th className="px-10 py-5">등록일</th>
+                              <th className="px-10 py-5 text-right">상태</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {privacyRecords.map(item => (
+                              <tr key={item.id} className="hover:bg-slate-50 transition border-b border-slate-50">
+                                <td className="px-10 py-6 font-bold text-slate-900 text-sm">{item.name}</td>
+                                <td className="px-10 py-6 text-slate-600 text-xs font-bold">{item.company}</td>
+                                <td className="px-10 py-6 text-slate-400 text-[10px] font-medium">{item.displayDate}</td>
+                                <td className="px-10 py-6 text-right"><span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black uppercase">AES-256</span></td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              )}
 
                 {/* 자산 등록 센터 (1/3 영역) */}
                 <div className="bg-slate-950 rounded-[32px] p-8 text-white shadow-2xl relative overflow-hidden group">
@@ -733,6 +908,465 @@ export default function App() {
           )}
         </section>
       </main>
+
+// --- [공통 보조 컴포넌트: 전술 통계 카드] ---
+const StatCard = ({ title, value, icon: Icon, colorClass }) => (
+  <div className={`${colorClass} p-8 rounded-[32px] shadow-2xl relative overflow-hidden group`}>
+    <div className="absolute top-0 right-0 p-8 opacity-20 group-hover:scale-110 transition-transform"><Icon size={80} /></div>
+    <div className="relative z-10">
+      <p className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-2">{title}</p>
+      <div className="flex items-baseline gap-2">
+        <span className="text-4xl font-black italic">{value}</span>
+        <span className="text-xs font-bold opacity-60">건</span>
+      </div>
+    </div>
+  </div>
+);
+
+// --- [기업 관리자 전용 섹션들] ---
+
+// 1. 대시보드 (통계 시각화)
+const UserDashboardView = ({ user, stats }) => {
+  const chartData = [
+    { name: '03-01', count: 400 },
+    { name: '03-02', count: 300 },
+    { name: '03-03', count: 600 },
+    { name: '03-04', count: 800 },
+    { name: '03-05', count: 500 },
+  ];
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="p-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[40px] text-white shadow-2xl relative overflow-hidden">
+        <div className="relative z-10">
+          <h3 className="text-3xl font-black italic mb-4">반갑습니다, {user?.name} 관리자님!</h3>
+          <p className="font-bold opacity-80 max-w-lg mb-8">현재 귀사의 개인정보 보안 등계는 <span className="text-emerald-400 underline decoration-double">AAA 최고수준</span>으로 유지되고 있습니다. 실시간 관제를 시작합니다!</p>
+          <div className="flex gap-4">
+            <div className="px-6 py-3 bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl font-black text-xs uppercase">보안 상태: 정상</div>
+            <div className="px-6 py-3 bg-emerald-500 rounded-2xl font-black text-xs uppercase">데이터 무결성 검증 완료</div>
+          </div>
+        </div>
+        <div className="absolute top-0 right-0 p-10 opacity-10"><Shield size={200} /></div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[
+          { label: '전체 회원수', value: '1,284', unit: '명', icon: Users, color: 'bg-white text-blue-600' },
+          { label: 'DB 사용량', value: '42.8', unit: 'MB', icon: Database, color: 'bg-white text-indigo-600' },
+          { label: '암호화 항목', value: '14', unit: '개', icon: ShieldCheck, color: 'bg-white text-emerald-600' },
+          { label: '금일 API 호출', value: '8,421', unit: '건', icon: Key, color: 'bg-white text-amber-600' },
+        ].map((stat, idx) => (
+          <div key={idx} className={`${stat.color} p-6 rounded-[24px] shadow-sm border border-slate-100`}>
+            <div className="flex justify-between items-start mb-4">
+              <span className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{stat.label}</span>
+              <stat.icon size={20} />
+            </div>
+            <div className="flex items-baseline gap-1">
+              <span className="text-2xl font-black text-slate-900 italic">{stat.value}</span>
+              <span className="text-slate-400 text-[10px] font-bold">{stat.unit}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-white p-10 rounded-[40px] shadow-xl border border-slate-50">
+          <h3 className="font-black text-slate-800 mb-8 flex items-center gap-3 italic uppercase tracking-tighter">
+            <Activity size={24} className="text-blue-500" /> 개인정보 수집 및 처리 추이
+          </h3>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.1}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip overlayStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
+                <Area type="monotone" dataKey="count" stroke="#3b82f6" fillOpacity={1} fill="url(#colorCount)" strokeWidth={3} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+        
+        <div className="bg-slate-900 p-10 rounded-[40px] shadow-xl text-white relative overflow-hidden group">
+          <div className="absolute -top-10 -right-10 p-10 opacity-5 group-hover:scale-110 transition-transform"><Bell size={150} /></div>
+          <h3 className="font-black mb-8 flex items-center gap-3 italic uppercase tracking-tighter">
+            <Bell size={24} className="text-amber-500" /> 최근 보안 알림
+          </h3>
+          <div className="space-y-4 relative z-10">
+            {[
+              { type: 'access', msg: '미등록 IP에서 관리자 로그인 시도', time: '방금 전', color: 'bg-rose-500/20 text-rose-300' },
+              { type: 'api', msg: 'API 호출 한도 80% 초과', time: '1시간 전', color: 'bg-amber-500/20 text-amber-300' },
+              { type: 'policy', msg: '처리방침 정기 검토 필요', time: '2시간 전', color: 'bg-blue-500/20 text-blue-300' },
+            ].map((noti, i) => (
+              <div key={i} className={`flex gap-4 p-5 rounded-2xl ${noti.color} border border-white/5`}>
+                <div className="mt-1"><Shield size={14} /></div>
+                <div>
+                  <p className="font-bold text-xs">{noti.msg}</p>
+                  <p className="text-[10px] opacity-60 mt-1 uppercase font-black tracking-widest">{noti.time}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+// 2. 회원 DB 관리
+const MemberDBView = ({ privacyRecords, fetchSecurityData }) => {
+  const [searchTerm, setSearchTerm] = React.useState('');
+  
+  return (
+    <div className="bg-white rounded-[40px] shadow-2xl border border-slate-100 overflow-hidden animate-in slide-in-from-bottom-5 duration-700">
+      <div className="p-10 border-b border-slate-50 flex flex-wrap justify-between items-center gap-6 bg-slate-50/50">
+        <div className="flex gap-4 items-center flex-1 min-w-[300px]">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="회원명, 이메일 식별 정보 검색..." 
+              className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition font-bold text-sm"
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={() => fetchSecurityData()} className="px-6 py-4 bg-white border border-slate-200 rounded-2xl font-black text-xs text-slate-600 hover:bg-slate-50 transition uppercase tracking-widest shadow-sm">동기화</button>
+          <button className="flex items-center gap-2 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black text-xs hover:bg-blue-700 shadow-xl shadow-blue-900/40 transition uppercase tracking-widest">
+            <Download size={16} /> 자산 내보내기
+          </button>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-white text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] border-b border-slate-50">
+            <tr>
+              <th className="px-10 py-6">식별 대상자</th>
+              <th className="px-10 py-6">암호화 인덱스</th>
+              <th className="px-10 py-6">보안 적용 상태</th>
+              <th className="px-10 py-6">최종 수집/갱신</th>
+              <th className="px-10 py-6 text-right">상세 관제</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {privacyRecords.length > 0 ? privacyRecords.filter(r => r.name.includes(searchTerm)).map((record) => (
+              <tr key={record.id} className="hover:bg-slate-50 transition duration-300">
+                <td className="px-10 py-8">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-black text-xs italic border border-blue-100">
+                      {record.name.slice(0, 1)}
+                    </div>
+                    <div>
+                      <span className="font-black text-slate-900 text-sm italic">{record.name}</span>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter italic">Common Citizen</p>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-10 py-8 text-slate-400 font-mono text-[10px] truncate max-w-[150px]">{record.id}</td>
+                <td className="px-10 py-8">
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-[10px] font-black ring-1 ring-emerald-100 uppercase tracking-tighter">
+                    AES-256 Protected
+                  </span>
+                </td>
+                <td className="px-10 py-8 text-slate-400 text-[10px] font-bold italic">{new Date(record.createdAt).toLocaleString()}</td>
+                <td className="px-10 py-8 text-right">
+                  <button className="p-3 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-blue-600 hover:border-blue-200 transition shadow-sm"><Eye size={16}/></button>
+                </td>
+              </tr>
+            )) : (
+              <tr>
+                <td colSpan="5" className="px-10 py-32 text-center text-slate-300 font-black italic">보안 구역 내에 보관된 자산이 없습니다.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// 3. 뉴스 브리핑 (UserNewsSection)
+const UserNewsSection = () => {
+  const [news, setNews] = useState([]);
+  const [category, setCategory] = useState('news');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/news?category=${category}`);
+        const data = await res.json();
+        if (data.success) setNews(data.data);
+      } catch (err) { console.error(err); }
+      setLoading(false);
+    };
+    fetchNews();
+  }, [category]);
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex justify-between items-center gap-6 overflow-x-auto pb-4 scrollbar-hide">
+        {['news', 'politics', 'economy', 'society', 'international', 'culture', 'entertainment', 'sports'].map(c => (
+          <button key={c} onClick={() => setCategory(c)} className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest whitespace-nowrap transition ${category === c ? 'bg-blue-600 text-white shadow-xl shadow-blue-900/40' : 'bg-white text-slate-500 border border-slate-100 hover:border-blue-200'}`}>
+            {c}
+          </button>
+        ))}
+      </div>
+      {loading ? (
+        <div className="py-40 text-center font-black italic text-slate-300 animate-pulse">데이터 스캔 중... (RSS Connection)</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {news.map((item, idx) => (
+            <div key={idx} className="bg-white rounded-[32px] overflow-hidden shadow-xl border border-slate-100 group hover:translate-y-[-8px] transition duration-500">
+              {item.thumbnail && (
+                <div className="h-48 overflow-hidden relative">
+                  <img src={item.thumbnail} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent"></div>
+                  <span className="absolute bottom-4 left-4 px-3 py-1 bg-blue-600 text-white text-[8px] font-black uppercase rounded-lg shadow-lg">{item.category}</span>
+                </div>
+              )}
+              <div className="p-8">
+                <p className="text-slate-400 text-[8px] font-black uppercase tracking-widest mb-3">{new Date(item.pubDate).toLocaleString()}</p>
+                <h4 className="font-black text-slate-900 text-lg leading-tight mb-4 group-hover:text-blue-600 transition italic">{item.title}</h4>
+                <p className="text-slate-500 text-xs font-bold leading-relaxed line-clamp-3 mb-6" dangerouslySetInnerHTML={{__html: item.description}}></p>
+                <a href={item.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-tighter hover:underline">외부 보안 망 접근 <PlusCircle size={14}/></a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// 4. 금융 분석 (UserFinanceSection)
+const UserFinanceSection = () => {
+  const [finance, setFinance] = useState([]);
+  const [category, setCategory] = useState('all');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFinance = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/finance?category=${category}`);
+        const data = await res.json();
+        if (data.success) setFinance(data.data);
+      } catch (err) { console.error(err); }
+      setLoading(false);
+    };
+    fetchFinance();
+  }, [category]);
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+        {['all', 'stocks', 'policy', 'bond', 'global'].map(c => (
+          <button key={c} onClick={() => setCategory(c)} className={`px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest whitespace-nowrap transition ${category === c ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-900/40' : 'bg-white text-slate-500 border border-slate-100'}`}>
+            {c} MARKET
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-6">
+        {finance.map((item, idx) => (
+          <div key={idx} className="bg-white p-8 rounded-[32px] shadow-lg border border-slate-50 flex gap-8 items-center group hover:bg-slate-50/50 transition duration-500">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-500">
+              <Activity size={24} />
+            </div>
+            <div className="flex-1">
+              <div className="flex justify-between items-start mb-2">
+                <h4 className="text-lg font-black text-slate-900 leading-tight italic">{item.title}</h4>
+                <span className="text-[10px] font-black text-slate-400 uppercase">{item.pubDate}</span>
+              </div>
+              <p className="text-slate-500 text-xs font-bold line-clamp-2" dangerouslySetInnerHTML={{__html: item.description}}></p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// 5. 아고라 광장 (UserAgoraSection)
+const UserAgoraSection = ({ user }) => {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [newPostContent, setNewPostContent] = useState('');
+  const [newPostTitle, setNewPostTitle] = useState('');
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/posts');
+      const data = await res.json();
+      if (data.success) setPosts(data.posts);
+    } catch (err) { console.error(err); }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchPosts(); }, []);
+
+  const handlePostSubmit = async () => {
+    if (!newPostTitle || !newPostContent) return alert('제목과 내용을 입력하십시오!');
+    try {
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: newPostTitle,
+          content: newPostContent,
+          author_name: user?.name,
+          author_id: user?.id
+        })
+      });
+      if (res.ok) {
+        setNewPostTitle('');
+        setNewPostContent('');
+        fetchPosts();
+        alert('아고라에 글을 남겼습니다! 충성!');
+      }
+    } catch (e) { alert(e.message); }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 animate-in fade-in duration-700">
+      <div className="lg:col-span-2 space-y-6">
+        <div className="bg-white p-10 rounded-[40px] shadow-2xl border border-slate-50">
+          <h3 className="text-xl font-black mb-6 italic uppercase flex items-center gap-3">
+             <Plus size={24} className="text-blue-600" /> 새로운 담론 제기
+          </h3>
+          <div className="space-y-4">
+            <input 
+              value={newPostTitle}
+              onChange={(e) => setNewPostTitle(e.target.value)}
+              placeholder="주제를 입력하십시오 (예: 개인정보 유출 대응 방안)" 
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-bold text-sm focus:bg-white focus:border-blue-500 transition outline-none"
+            />
+            <textarea 
+              value={newPostContent}
+              onChange={(e) => setNewPostContent(e.target.value)}
+              rows="5" 
+              placeholder="내용을 상세히 기술하십시오..." 
+              className="w-full bg-slate-50 border border-slate-100 rounded-3xl p-6 font-bold text-sm focus:bg-white focus:border-blue-500 transition outline-none resize-none"
+            ></textarea>
+            <div className="flex justify-end">
+              <button 
+                onClick={handlePostSubmit}
+                className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase shadow-xl shadow-blue-900/40 hover:bg-blue-700 transition"
+              >
+                광장에 게시 (Post to Agora)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-20 font-black italic text-slate-300">토론 내역 스캔 중...</div>
+        ) : (
+          <div className="space-y-6">
+            {posts.map(post => (
+              <div key={post.id} className="bg-white p-8 rounded-[40px] shadow-xl border border-slate-50 group hover:border-blue-100 transition duration-500">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 font-black text-xs border border-slate-100 group-hover:bg-blue-600 group-hover:text-white transition duration-500 uppercase italic">
+                      {post.author_name?.slice(0, 1)}
+                    </div>
+                    <div>
+                      <p className="font-black text-slate-900 text-sm italic">{post.title}</p>
+                      <p className="text-[10px] text-slate-400 font-bold mt-1 italic uppercase tracking-widest">{post.author_name} 요원 | {new Date(post.createdAt).toLocaleDateString()}</p>
+                    </div>
+                  </div>
+                  <span className="px-3 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-tighter">{post.category}</span>
+                </div>
+                <p className="text-slate-500 text-xs font-bold leading-relaxed line-clamp-4">{post.content}</p>
+                <div className="mt-8 pt-6 border-t border-slate-50 flex gap-6">
+                  <button className="flex items-center gap-2 text-slate-400 hover:text-blue-600 transition font-black text-[10px] uppercase">추천 {post.likes_count}</button>
+                  <button className="flex items-center gap-2 text-slate-400 hover:text-rose-600 transition font-black text-[10px] uppercase">비추천 {post.dislikes_count}</button>
+                  <button className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition font-black text-[10px] uppercase ml-auto">댓글 {post.comment_count}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="space-y-8">
+        <div className="bg-slate-900 p-10 rounded-[40px] shadow-2xl text-white relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform"><Users size={120} /></div>
+          <h3 className="text-xl font-black mb-8 italic uppercase tracking-tighter">아고라 가이드라인</h3>
+          <ul className="space-y-4 relative z-10">
+            {[
+              '상호 존중의 원칙을 수호하십시오.',
+              '보안 기밀 누설은 제명 사유입니다.',
+              '익명 보장 프로토콜이 가동 중입니다.',
+              '모든 글은 암호화되어 보관됩니다.'
+            ].map((text, i) => (
+              <li key={i} className="flex gap-4 text-xs font-bold text-slate-400">
+                <div className="mt-1 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                {text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// 6. 미디어 랩 (UserMediaSection)
+const UserMediaSection = () => {
+  const [mediaItems, setMediaItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchMedia = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/media');
+        const data = await res.json();
+        if (data.success) setMediaItems(data.data);
+      } catch (err) { console.error(err); }
+      setLoading(false);
+    };
+    fetchMedia();
+  }, []);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-700">
+      {loading ? (
+        <div className="col-span-full py-40 text-center font-black italic text-slate-300">미디어 라이브러리 스캔 중...</div>
+      ) : (
+        mediaItems.map((item, idx) => (
+          <div key={idx} className="bg-white rounded-[40px] overflow-hidden shadow-2xl border border-slate-100 group">
+            <div className="h-56 bg-slate-900 relative flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-blue-900/20 mix-blend-overlay"></div>
+              <PlayCircle size={64} className="text-white opacity-40 group-hover:opacity-100 transition duration-500 group-hover:scale-110 cursor-pointer" />
+              <div className="absolute top-6 right-6">
+                <span className="px-3 py-1 bg-blue-600 text-white text-[8px] font-black uppercase rounded-lg shadow-lg italic">{item.type}</span>
+              </div>
+            </div>
+            <div className="p-8">
+              <h4 className="font-black text-slate-900 text-lg mb-2 italic group-hover:text-blue-600 transition">{item.title}</h4>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-6">{item.artist}</p>
+              <div className="flex justify-between items-center bg-slate-50 p-4 rounded-2xl">
+                <div className="flex items-center gap-2">
+                  <Activity size={14} className="text-blue-600" />
+                  <span className="text-[10px] font-black text-slate-600 uppercase">Played {item.play_count}회</span>
+                </div>
+                <button className="text-[10px] font-black text-blue-600 uppercase hover:underline italic">즉각 재생</button>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+};
