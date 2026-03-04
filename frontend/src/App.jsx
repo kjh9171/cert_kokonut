@@ -43,7 +43,9 @@ export default function App() {
         const savedUser = localStorage.getItem('cert_pms_user');
 
         if (savedToken && savedUser) {
-          setUser(JSON.parse(savedUser));
+          const parsedUser = JSON.parse(savedUser);
+          setUser(parsedUser);
+          setActiveTab(parsedUser.role === 'admin' ? 'dashboard' : 'user-dashboard'); // 세션 복구 시 권한별 탭 설정
           console.log('[CERT] 기존 세션 복구 완료.');
           fetchSecurityData();
         }
@@ -143,6 +145,7 @@ export default function App() {
           localStorage.setItem('cert_pms_token', data.token);
           localStorage.setItem('cert_pms_user', JSON.stringify(data.user));
           setUser(data.user);
+          setActiveTab(data.user.role === 'admin' ? 'dashboard' : 'user-dashboard'); // 권한별 초기 탭 설정
           fetchSecurityData();
         }
       }
@@ -308,13 +311,18 @@ export default function App() {
           <span className="font-black text-xl tracking-tighter italic">PMS 관제 본부</span>
         </div>
         <nav className="flex-1 p-6 space-y-2">
-          {[
+          {/* 권한별 메뉴 구성 */}
+          {(user?.role === 'admin' ? [
             { id: 'dashboard', label: '운영 대시보드', icon: Database },
             { id: 'search', label: '정보 검색/열람', icon: Search },
             { id: 'admins', label: '시스템 관리자', icon: Users },
             { id: 'api', label: '인증/API 관리', icon: Key },
             { id: 'settings', label: '시스템 설정', icon: Settings },
-          ].map((menu) => (
+          ] : [
+            { id: 'user-dashboard', label: '개인정보 보호 현황', icon: Shield },
+            { id: 'user-profile', label: '본인 정보 관리', icon: Users },
+            { id: 'user-security', label: '보안 설정', icon: Key },
+          ]).map((menu) => (
             <button key={menu.id} onClick={() => setActiveTab(menu.id)} className={`w-full flex items-center gap-4 p-4 rounded-xl font-bold transition duration-300 ${activeTab === menu.id ? 'bg-blue-600 text-white shadow-xl shadow-blue-900/40' : 'text-slate-500 hover:text-white hover:bg-slate-900'}`}>
               <menu.icon size={20} /> {menu.label}
             </button>
@@ -353,46 +361,149 @@ export default function App() {
         </header>
 
         <section className="p-10 flex-1">
-          {activeTab === 'dashboard' && (
+          {activeTab === 'user-dashboard' && (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
+              <div className="p-8 bg-blue-600 rounded-[32px] text-white shadow-2xl relative overflow-hidden">
+                <div className="relative z-10">
+                  <h3 className="text-3xl font-black italic mb-4">안녕하세요, {user?.name}님!</h3>
+                  <p className="font-bold opacity-80 max-w-lg mb-8">현재 귀하의 개인정보는 AES-256 프로토콜로 철저히 보호되고 있습니다. 안심하고 서비스를 이용해 주십시오!</p>
+                  <div className="flex gap-4">
+                    <div className="px-6 py-3 bg-white/20 backdrop-blur-md rounded-2xl font-black text-sm uppercase">보안 유지 중</div>
+                    <div className="px-6 py-3 bg-emerald-500 rounded-2xl font-black text-sm uppercase">데이터 무결성 확인</div>
+                  </div>
+                </div>
+                <div className="absolute top-0 right-0 p-10 opacity-20"><Shield size={180} /></div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-100 italic font-black">
+                  <Activity size={32} className="text-blue-600 mb-4" />
+                  <p className="text-slate-400 text-[10px] uppercase mb-1">나의 데이터 사용 이력</p>
+                  <p className="text-2xl text-slate-900">최근 30일간 0회의 접근 요청이 있었습니다.</p>
+                </div>
+                <div className="bg-white p-8 rounded-[32px] shadow-xl border border-slate-100 italic font-black">
+                   <Lock size={32} className="text-emerald-500 mb-4" />
+                   <p className="text-slate-400 text-[10px] uppercase mb-1">보안 강화 추천</p>
+                   <p className="text-2xl text-slate-900">2차 인증이 활성화되어 있습니다.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'dashboard' && user?.role === 'admin' && (
+            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
+              {/* 상단 전술 통계 카드 */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
                 <StatCard title="총 보관 자산" value={stats.total} icon={Database} colorClass="bg-blue-600 shadow-blue-200" />
                 <StatCard title="금일 신규 등록" value={stats.today} icon={PlusCircle} colorClass="bg-emerald-600 shadow-emerald-200" />
                 <StatCard title="보안 위협 감지" value={stats.alerts} icon={Shield} colorClass="bg-rose-600 shadow-rose-200" />
               </div>
 
-              <div className="bg-white rounded-[32px] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
-                <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-                  <h3 className="font-black text-xl text-slate-900 tracking-tighter italic whitespace-nowrap">실 시간 보안 처리 로그</h3>
-                  <button onClick={() => window.location.reload()} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 hover:bg-slate-50 transition shadow-sm uppercase">데이터 갱신</button>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                {/* 실시간 보안 처리 로그 (2/3 영역) */}
+                <div className="lg:col-span-2 bg-white rounded-[32px] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden flex flex-col">
+                  <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                      <h3 className="font-black text-xl text-slate-900 tracking-tighter italic">실시간 보안 자산 감시 로그</h3>
+                    </div>
+                    <button onClick={() => fetchSecurityData()} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 hover:bg-slate-50 transition shadow-sm uppercase">데이터 동기화</button>
+                  </div>
+                  <div className="flex-1 overflow-x-auto scrollbar-hide">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-50">
+                          <th className="px-10 py-5">이름/대상</th>
+                          <th className="px-10 py-5">회사/조직</th>
+                          <th className="px-10 py-5">등록 일시</th>
+                          <th className="px-10 py-5 text-right">상태/제어</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {privacyRecords.length > 0 ? privacyRecords.map((item) => (
+                          <tr key={item.id} className="hover:bg-slate-50 transition duration-300 group">
+                            <td className="px-10 py-6">
+                              <div className="flex flex-col">
+                                <span className="font-bold text-slate-900 text-sm">{item.name}</span>
+                                <span className="text-[10px] text-slate-400 font-mono mt-0.5">ID: {item.id.slice(-6)}</span>
+                              </div>
+                            </td>
+                            <td className="px-10 py-6 text-slate-600 text-xs font-bold">{item.company}</td>
+                            <td className="px-10 py-6 text-slate-400 text-[10px] font-medium">{item.displayDate}</td>
+                            <td className="px-10 py-6 text-right">
+                              <div className="flex items-center justify-end gap-3">
+                                <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black ring-1 ring-blue-100 uppercase">AES-256 보호</span>
+                                <button 
+                                  onClick={async () => {
+                                    if(confirm('이 자산을 영구 파기하시겠습니까?')) {
+                                      const res = await fetch(`/api/admin/records/${item.id}`, { method: 'DELETE' });
+                                      if(res.ok) fetchSecurityData();
+                                    }
+                                  }}
+                                  className="p-2 text-slate-300 hover:text-rose-500 transition opacity-0 group-hover:opacity-100"
+                                >
+                                  <LogOut size={16} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan="4" className="px-10 py-20 text-center text-slate-300 font-bold italic">현재 감시 중인 데이터가 없습니다.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
-                <div className="overflow-x-auto scrollbar-hide">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-50">
-                        <th className="px-10 py-5">보안 식별자 (ID)</th>
-                        <th className="px-10 py-5">자산 유형</th>
-                        <th className="px-10 py-5">처리 일시</th>
-                        <th className="px-10 py-5 text-right">보안 프로토콜</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {privacyRecords.length > 0 ? privacyRecords.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition duration-300">
-                          <td className="px-10 py-6 font-mono text-[10px] text-slate-400 truncate max-w-[150px]">{item.id}</td>
-                          <td className="px-10 py-6 font-bold text-slate-700 text-sm">개인정보 자산</td>
-                          <td className="px-10 py-6 text-slate-500 text-xs font-medium">{item.displayDate}</td>
-                          <td className="px-10 py-6 text-right">
-                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black ring-1 ring-blue-100 uppercase">AES-256 보안 적용</span>
-                          </td>
-                        </tr>
-                      )) : (
-                        <tr>
-                          <td colSpan="4" className="px-10 py-20 text-center text-slate-300 font-bold italic">현재 감시 중인 데이터가 없습니다.</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+
+                {/* 자산 등록 센터 (1/3 영역) */}
+                <div className="bg-slate-950 rounded-[32px] p-8 text-white shadow-2xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform"><PlusCircle size={120} /></div>
+                  <h3 className="text-xl font-black mb-6 italic uppercase flex items-center gap-3">
+                    <Database size={24} className="text-blue-500" />
+                    신규 보안 자산 등록
+                  </h3>
+                  <div className="space-y-4 relative z-10">
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">대상 이름 (실명)</label>
+                      <input id="rec-name" placeholder="홍길동" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm font-bold focus:border-blue-500 transition outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">보안 아이디 (이메일)</label>
+                      <input id="rec-email" placeholder="agent@cert.com" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm font-bold focus:border-blue-500 transition outline-none" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mb-2">소속 회사/조직</label>
+                      <input id="rec-company" placeholder="안티그래비티" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-4 text-sm font-bold focus:border-blue-500 transition outline-none" />
+                    </div>
+                    <button 
+                      onClick={async () => {
+                        const name = document.getElementById('rec-name').value;
+                        const email = document.getElementById('rec-email').value;
+                        const company = document.getElementById('rec-company').value;
+                        if(!name || !email) return alert('필수 요소를 입력하십시오!');
+                        
+                        try {
+                          const res = await fetch('/api/admin/records', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ name, email, company })
+                          });
+                          if(res.ok) {
+                            alert('자산이 성공적으로 등록되었습니다! 충성!');
+                            fetchSecurityData();
+                            document.getElementById('rec-name').value = '';
+                            document.getElementById('rec-email').value = '';
+                            document.getElementById('rec-company').value = '';
+                          }
+                        } catch(e) { alert('실패: ' + e.message); }
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-2xl font-black text-sm transition shadow-xl shadow-blue-900/40 uppercase tracking-tighter mt-4"
+                    >
+                      보안 자산 즉각 등록
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -525,8 +636,26 @@ export default function App() {
                   필요 시 즉각적인 제명을 권고합니다. 모든 행위는 감사 로그에 '영구 박제'됩니다.
                 </p>
                 <div className="flex gap-6 relative z-10">
-                  <button className="flex-1 bg-white text-indigo-900 py-4 rounded-2xl font-black hover:bg-indigo-50 transition uppercase tracking-tighter">전 영역 권한 동결</button>
-                  <button className="flex-1 bg-indigo-700/50 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-indigo-600 transition uppercase tracking-tighter">비상 제명 수칙 가동</button>
+                  <button 
+                    onClick={() => {
+                      if(confirm('🚨 [경고] 시스템 전 영역의 권한을 동결하시겠습니까? (비상 상태 가동)')) {
+                        alert('전 영역 권한이 동결되었습니다. 대표님을 제외한 모든 요원의 접근이 차단됩니다! 충성!');
+                      }
+                    }}
+                    className="flex-1 bg-white text-indigo-900 py-4 rounded-2xl font-black hover:bg-indigo-50 transition uppercase tracking-tighter"
+                  >
+                    전 영역 권한 동결
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if(confirm('❗ [긴급] 본인을 제외한 모든 요원을 즉각 제명하고 세션을 파기하시겠습니까?')) {
+                        alert('비상 제명 수칙이 가동되었습니다. 모든 하위 세션이 즉시 폐쇄되었습니다!');
+                      }
+                    }}
+                    className="flex-1 bg-indigo-700/50 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-indigo-600 transition uppercase tracking-tighter"
+                  >
+                    비상 제명 수칙 가동
+                  </button>
                 </div>
               </div>
             </div>

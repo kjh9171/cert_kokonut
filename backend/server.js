@@ -76,8 +76,15 @@ const deleteDoc = async (collectionName, id) => {
 };
 
 const findUserByEmail = async (email) => {
-  const users = (JSON.parse(fs.readFileSync(LOCAL_DB_PATH))).pms_admins || [];
-  return users.find(u => u.email === email) || null;
+  const store = JSON.parse(fs.readFileSync(LOCAL_DB_PATH));
+  // 관리자 및 이용자 통합 검색 (우선순위: 관리자)
+  const admin = (store.pms_admins || []).find(u => u.email === email);
+  if (admin) return { ...admin, _type: 'ADMIN' };
+  
+  const user = (store.pms_users || []).find(u => u.email === email);
+  if (user) return { ...user, _type: 'USER' };
+  
+  return null;
 };
 
 // --- [보안 유틸리티] ---
@@ -134,23 +141,26 @@ app.post('/api/auth/register', async (req, res) => {
     const otpSecret = secret.base32;
 
     // 로컬 DB 저장 객체 생성
-    const userDoc = {
+    const userData = {
       email,
       password: hashedPassword,
       name,
-      role: 'admin',
-      otpSecret: encrypt(otpSecret), // OTP 시크릿은 암호화해서 보관
+      role: email.includes('@cert.com') ? 'admin' : 'user', // cert.com 도메인은 자동 관리자 지정
+      otpSecret: encrypt(otpSecret),
       otpEnabled: false,
       createdAt: new Date().toISOString()
     };
+    
+    userData._type = userData.role === 'admin' ? 'ADMIN' : 'USER';
 
-    const docRef = await addDoc('pms_admins', userDoc);
-    console.log('[CERT] 요원 등록 성공. ID:', docRef.id);
+    const collection = userData._type === 'ADMIN' ? 'pms_admins' : 'pms_users';
+    const docRef = await addDoc(collection, userData);
+    console.log(`[CERT] ${userData._type} 등록 성공. ID:`, docRef.id);
     
     res.status(201).json({ 
       success: true, 
       id: docRef.id,
-      message: '보안 요원 등록 성공! 이제 OTP 설정을 진행하십시오.' 
+      message: `${userData._type === 'ADMIN' ? '관리자' : '이용자'} 등록 성공! 이제 로그인을 진행하십시오.` 
     });
   } catch (error) {
     console.error('[EROR] 회원가입 중 치명적 오류:', error);
@@ -375,6 +385,42 @@ app.get('/api/admin/records', async (req, res) => {
   try {
     const records = await getCollection('privacy_records');
     res.json(records);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 개인정보 자산 신규 등록
+app.post('/api/admin/records', async (req, res) => {
+  try {
+    const { name, email, phone, company, type } = req.body;
+    
+    // 필수 정보 누락 체크
+    if (!name || !email) {
+      return res.status(400).json({ error: '이름과 이메일은 필수 보안 식별 정보입니다.' });
+    }
+
+    const newRecord = {
+      name, // 이름은 검색 편의를 위해 평문 유지 가능 (필요시 encrypt 적용)
+      email: encrypt(email),
+      phone: phone ? encrypt(phone) : null,
+      company: company || '미지정',
+      type: type || 'COMMON',
+      createdAt: new Date().toISOString()
+    };
+
+    const docId = await addDoc('privacy_records', newRecord);
+    res.json({ success: true, id: docId, message: '보안 자산이 안전하게 등록되었습니다! 충성!' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 자산 삭제
+app.delete('/api/admin/records/:id', async (req, res) => {
+  try {
+    await deleteDoc('privacy_records', req.params.id);
+    res.json({ success: true, message: '자산이 파기되었습니다.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
