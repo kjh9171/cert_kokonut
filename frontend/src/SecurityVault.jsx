@@ -65,7 +65,7 @@ export default function SecurityVault({ onProcessComplete }) {
   const [selectedCols, setSelectedCols] = useState(new Set());
   const [selectedRows, setSelectedRows] = useState(new Set());
 
-  // 4. 처리 상태: idle | selecting | processing | done | shredded
+  // 4. 처리 상태: idle | loading | selecting | processing | done | shredded
   const [phase, setPhase] = useState('idle');
   const [processingCell, setProcessingCell] = useState(null); // { row, col }
   const [progress, setProgress] = useState(0);
@@ -77,32 +77,47 @@ export default function SecurityVault({ onProcessComplete }) {
   const [stats, setStats] = useState({ rows: 0, cells: 0 });
 
   // --- 파일 선택/드롭 ---
-  const handleFile = useCallback((file) => {
+  const handleFile = (file) => {
     if (!file) return;
     const ext = file.name.split('.').pop().toLowerCase();
     if (!['xlsx','xls','csv'].includes(ext)) { alert('xlsx, xls, csv 형식만 가능합니다.'); return; }
+    // 파일 선택 직후 로딩 상태로 전환 (사용자에게 시각적 피드백 제공)
     setUploadedFile(file);
-    setPhase('idle');
+    setPhase('loading');
     setResultBlobUrl(null); setKeyBlobUrl(null); setResultData([]);
     setSelectedCols(new Set()); setSelectedRows(new Set());
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = (evt) => {
       try {
-        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const wb = XLSX.read(evt.target.result, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
         setAllData(data);
-        // 기본: 모든 컬럼/행 선택
+        // 기본: 모든 컨럼/행 선택
         if (data.length > 1) {
           setSelectedCols(new Set(data[0].map((_, i) => i)));
           setSelectedRows(new Set(data.slice(1).map((_, i) => i)));
         }
         setPhase('selecting');
-      } catch { setAllData([]); }
+      } catch (err) {
+        // 에러 발생 시 사용자에게 알림 후 idle로 복귀
+        console.error('XLSX 파싱 오류:', err);
+        setAllData([]);
+        setUploadedFile(null);
+        setPhase('idle');
+        alert('파일 파싱 오류: 업로드한 파일이 정상적인 엑셀(xlsx/xls/csv) 파일인지 확인해 주세요.');
+      }
+    };
+    reader.onerror = () => {
+      // FileReader 자체 오류 처리
+      console.error('FileReader 오류');
+      setUploadedFile(null);
+      setPhase('idle');
+      alert('파일 읽기에 실패했습니다. 다시 시도해 주세요.');
     };
     reader.readAsArrayBuffer(file);
-  }, []);
+  };
 
   // --- 컬럼 토글 ---
   const toggleCol = (ci) => {
@@ -296,7 +311,7 @@ export default function SecurityVault({ onProcessComplete }) {
 
           {/* 우측: 파일 업로드 → 선택 → 처리 → 결과 */}
           <div className="xl:col-span-3 space-y-6">
-            {/* 업로드 영역 (idle 상태에서만 표시) */}
+            {/* 업로드 영역 (idle 상태) */}
             {phase === 'idle' && (
               <div
                 onDragOver={e => { e.preventDefault(); setIsDragging(true); }}
@@ -304,10 +319,21 @@ export default function SecurityVault({ onProcessComplete }) {
                 onDrop={e => { e.preventDefault(); setIsDragging(false); handleFile(e.dataTransfer.files[0]); }}
                 onClick={() => fileRef.current?.click()}
                 className={`bg-white rounded-[3rem] border-2 border-dashed p-16 text-center cursor-pointer transition-all ${isDragging ? 'border-blue-400 bg-blue-50' : 'border-slate-200 hover:border-blue-300 hover:bg-blue-50/30'} shadow-sm`}>
-                <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => handleFile(e.target.files[0])} />
+                <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => { handleFile(e.target.files[0]); e.target.value = ''; }} />
                 <Upload size={36} className="mx-auto mb-4 text-blue-400" />
                 <h3 className="font-black text-slate-700 text-xl mb-2 italic uppercase">엑셀 파일 업로드</h3>
                 <p className="text-slate-400 text-sm font-medium">.xlsx, .xls, .csv 드래그 또는 클릭</p>
+              </div>
+            )}
+
+            {/* 파일 로딩 중 표시 */}
+            {phase === 'loading' && (
+              <div className="bg-white rounded-[3rem] border border-slate-100 p-16 text-center shadow-sm animate-in fade-in duration-300">
+                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 animate-spin">
+                  <RefreshCw size={28} className="text-blue-600" />
+                </div>
+                <h3 className="font-black text-slate-700 text-lg mb-2 italic uppercase">파일 분석 중...</h3>
+                <p className="text-slate-400 text-sm font-medium">{uploadedFile?.name} 데이터를 구조 분석하고 있습니다.</p>
               </div>
             )}
 
