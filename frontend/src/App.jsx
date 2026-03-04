@@ -14,27 +14,31 @@ import { getFirestore, collection, onSnapshot, query, orderBy } from 'firebase/f
  * 역할: 관리자 대시보드 제공, 암호화된 데이터 실시간 모니터링
  */
 export default function App() {
-  // --- [상태 관리 정의] ---
-  const [user, setUser] = useState(null); // 로그인한 관리자 정보
-  const [activeTab, setActiveTab] = useState('dashboard'); // 현재 활성화된 메뉴
-  const [privacyRecords, setPrivacyRecords] = useState([]); // 개인정보 레코드 목록
-  const [loading, setLoading] = useState(true); // 전체 로딩 상태
-  const [stats, setStats] = useState({ total: 0, today: 0, alerts: 0 }); // 통계 데이터
+  // --- [인증 및 시스템 상태 전역 로그] ---
+  console.log('[CERT] PMS 보안 엔진 렌더링 중...');
 
-  // --- [인증 및 데이터 연동 로직 (Firebase v9+)] ---
+  // --- [상태 관리 정의] ---
+  const [user, setUser] = useState(null); // 보안 관리자 인적사항
+  const [activeTab, setActiveTab] = useState('dashboard'); // 현재 작전에 투입된 모듈
+  const [privacyRecords, setPrivacyRecords] = useState([]); // 암호화된 개인정보 자산
+  const [loading, setLoading] = useState(true); // 시스템 부팅 상태
+  const [stats, setStats] = useState({ total: 0, today: 0, alerts: 0 }); // 실시간 전술 통계
+  const [isSignup, setIsSignup] = useState(false); // 신규 요원 등록 모드
+
+  // --- [시스템 초기화 및 데이터 연동] ---
   useEffect(() => {
     let unsubscribeAuth = () => {};
     let unsubscribeData = () => {};
 
-    const initAll = async () => {
+    const bootSystem = async () => {
       try {
-        console.log('[CERT] PMS 시스템 초기화 시작...');
+        console.log('[CERT] 통합 보안 관제 시스템 부팅 시작...');
         const configStr = window.__firebase_config || '{}';
         const firebaseConfig = typeof configStr === 'string' ? JSON.parse(configStr) : configStr;
         const appId = window.__app_id || 'pms-service-id';
 
         if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'stub-api-key') {
-          console.warn('[CERT] Firebase 설정이 샘플 상태입니다.');
+          console.warn('[CERT] 보안 프로토콜 미설정: 샘플 모드로 가동합니다.');
           setLoading(false);
           return;
         }
@@ -43,28 +47,33 @@ export default function App() {
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // 인증 상태 감지 (익명 로그인 포함)
+        // 보안 요원 인증 상태 실시간 감시
         unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
           if (!currentUser) {
-            try { await signInAnonymously(auth); } catch(e) { console.error('익명로그인실패:', e); }
+            try { 
+              console.log('[CERT] 자동 보안 세션 수립 시도...');
+              await signInAnonymously(auth); 
+            } catch(e) { 
+              console.error('[EROR] 보안 세션 수립 실패:', e); 
+            }
           }
           setUser(currentUser);
           setLoading(false);
+          console.log('[CERT] 보안 인증 완료:', currentUser?.uid || '익명 요원');
         });
 
-        // 실시간 데이터 바인딩 (인증 여부와 상관없이 시도하거나 Auth 이후로 옮길 수 있음)
+        // 실시간 보안 자산 모니터링
         const privacyRef = collection(db, 'artifacts', appId, 'public', 'data', 'privacyRecords');
         const q = query(privacyRef, orderBy('createdAt', 'desc'));
 
         unsubscribeData = onSnapshot(q, (snapshot) => {
           const records = snapshot.docs.map(doc => {
             const data = doc.data();
-            let displayDate = '처리 중...';
-            // Timestamp 변환 시 안전성 확보
+            let displayDate = '분석 중...';
             if (data.createdAt && typeof data.createdAt.toDate === 'function') {
-              displayDate = data.createdAt.toDate().toLocaleString();
+              displayDate = data.createdAt.toDate().toLocaleString('ko-KR');
             } else if (data.createdAt) {
-              displayDate = new Date(data.createdAt).toLocaleString();
+              displayDate = new Date(data.createdAt).toLocaleString('ko-KR');
             }
             return { id: doc.id, ...data, displayDate };
           });
@@ -77,53 +86,52 @@ export default function App() {
               catch(e) { return false; }
             }).length
           }));
-        }, (err) => console.error('[EROR] 데이터 동기화 에러:', err));
+        }, (err) => console.error('[EROR] 보안 자산 동기화 실패:', err));
 
       } catch (err) {
-        console.error('[EROR] PMS 초기화 실패:', err);
+        console.error('[EROR] 시스템 치명적 오류:', err);
         setLoading(false);
       }
     };
 
-    initAll();
+    bootSystem();
 
     return () => {
       unsubscribeAuth();
       unsubscribeData();
     };
-  }, []); // 의존성 배열을 []로 수정하여 무한 루프 방지
+  }, []); // 무한 루프 방지용 빈 배열 유지
 
-  // --- [UI 서브 컴포넌트: 통계 카드] ---
+  // --- [UI 조각: 전술 통계 카드] ---
   const StatCard = ({ title, value, icon: Icon, colorClass }) => (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition">
+    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition group">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-slate-500 text-sm font-semibold uppercase tracking-wider">{title}</h3>
-        <div className={`p-2 rounded-lg ${colorClass}`}>
+        <h3 className="text-slate-500 text-xs font-black uppercase tracking-widest">{title}</h3>
+        <div className={`p-2 rounded-lg transition-transform group-hover:scale-110 ${colorClass}`}>
           <Icon size={20} className="text-white" />
         </div>
       </div>
-      <p className="text-4xl font-black text-slate-800">{value}</p>
-      <div className="mt-2 flex items-center text-xs text-slate-400">
-        <Activity size={12} className="mr-1" />
-        <span>실시간 동기화 중</span>
+      <p className="text-4xl font-black text-slate-800 tracking-tighter">{value}</p>
+      <div className="mt-2 flex items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+        <Activity size={12} className="mr-1 animate-pulse text-green-500" />
+        <span>실시간 보안 전술 데이터 링크 가동 중</span>
       </div>
     </div>
   );
-  // --- [상태 관리 추가] ---
-  const [isSignup, setIsSignup] = useState(false); // 가입 페이지 여부
 
-  // --- [로딩 및 에러 처리 브릿지] ---
+  // --- [시스템 부팅 화면: 로딩] ---
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 font-sans p-6 text-center text-white">
         <div className="relative mb-10">
           <div className="absolute inset-0 bg-blue-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-          <Shield size={80} className="relative animate-bounce" />
+          <Shield size={80} className="relative animate-bounce text-blue-500" />
         </div>
-        <h1 className="text-2xl font-black tracking-widest mb-4 uppercase">PMS Security Analyzing...</h1>
-        <div className="w-64 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+        <h1 className="text-2xl font-black tracking-widest mb-4 uppercase italic">PMS 보안 엔진 분석 중...</h1>
+        <div className="w-64 h-1.5 bg-slate-800 rounded-full overflow-hidden mb-6">
           <div className="h-full bg-blue-500 animate-progress origin-left"></div>
         </div>
+        <p className="text-slate-500 font-bold tracking-widest text-xs uppercase animate-pulse">CERT가 철통 보안 환경을 구축하고 있습니다. 충성!</p>
       </div>
     );
   }
@@ -143,24 +151,24 @@ export default function App() {
           </div>
 
           <h1 className="text-4xl font-black text-center text-slate-900 mb-2 tracking-tighter italic">
-            PMS <span className="text-blue-600 not-italic">{isSignup ? 'SIGNUP' : 'SECURITY'}</span>
+            PMS <span className="text-blue-600 not-italic">{isSignup ? '요원 등록' : '보안 접속'}</span>
           </h1>
-          <p className="text-center text-slate-500 mb-12 font-bold tracking-widest text-xs uppercase">{isSignup ? 'Create Master Account' : 'Administrator Privileged Access'}</p>
+          <p className="text-center text-slate-500 mb-12 font-bold tracking-widest text-[10px] uppercase">{isSignup ? '신규 마스터 계정 생성' : '관리자 전용 특권 액세스'}</p>
 
           <div className="space-y-6">
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">Security ID</label>
+              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">보안 아이디 (ID)</label>
               <div className="relative">
                 <Users className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input type="text" defaultValue={isSignup ? "" : "admin@cert.com"} className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800" placeholder="admin@cert.com" />
+                <input type="text" defaultValue={isSignup ? "" : "admin@cert.com"} className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 placeholder:text-slate-300" placeholder="admin@cert.com" />
               </div>
             </div>
 
             <div className="group">
-              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">Master Password</label>
+              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">마스터 비밀번호 (PW)</label>
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input type="password" defaultValue={isSignup ? "" : "••••••••"} className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800" placeholder="••••••••" />
+                <input type="password" defaultValue={isSignup ? "" : "••••••••"} className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 placeholder:text-slate-300" placeholder="••••••••" />
               </div>
             </div>
 
@@ -168,13 +176,13 @@ export default function App() {
               onClick={() => setUser({ uid: 'admin', email: 'admin@cert.com' })} 
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-5 rounded-2xl font-black text-xl hover:shadow-xl transition duration-500 active:scale-95 transform"
             >
-              {isSignup ? 'CREATE ACCOUNT' : 'SECURE LOGIN'}
+              {isSignup ? '요원 등록 완료' : '보안 접속 승인'}
             </button>
           </div>
 
-          <div className="mt-8 text-center">
-            <button onClick={() => setIsSignup(!isSignup)} className="text-blue-600 font-bold text-sm hover:underline">
-              {isSignup ? 'Already have an account? Login' : 'Need a master account? Signup'}
+          <div className="mt-8 text-center border-t border-slate-100 pt-8">
+            <button onClick={() => setIsSignup(!isSignup)} className="text-blue-600 font-black text-xs hover:underline uppercase tracking-tighter">
+              {isSignup ? '이미 마스터 계정이 있습니까? 로그인' : '신규 마스터 계정이 필요합니까? 요원 등록'}
             </button>
           </div>
         </div>
@@ -191,7 +199,7 @@ export default function App() {
           <div className="p-2 bg-blue-600 rounded-lg shadow-lg shadow-blue-900/40">
             <Shield size={24} className="text-white" />
           </div>
-          <span className="font-black text-xl tracking-tighter italic">PMS OPS</span>
+          <span className="font-black text-xl tracking-tighter italic">PMS 관제 본부</span>
         </div>
         <nav className="flex-1 p-6 space-y-2">
           {[
@@ -216,15 +224,20 @@ export default function App() {
       <main className="flex-1 overflow-auto flex flex-col bg-slate-50">
         <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-6 px-10 flex justify-between items-center sticky top-0 z-10 shadow-sm">
           <div>
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">{activeTab} MODULE</h2>
-            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 italic">Authorized Personal Only</p>
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
+              {activeTab === 'dashboard' ? '대시보드' : 
+               activeTab === 'search' ? '검색 및 감사' :
+               activeTab === 'admins' ? '관리자 설정' :
+               activeTab === 'api' ? 'API 통제' : '시스템 설정'} 모듈
+            </h2>
+            <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-1 italic">공인된 요원 전용 구역</p>
           </div>
           <div className="flex items-center gap-6">
             <div className="text-right hidden sm:block">
-              <p className="text-sm font-black text-slate-900">대표님 (Super Admin)</p>
+              <p className="text-sm font-black text-slate-900">대표님 (최상위 관리자)</p>
               <div className="flex items-center justify-end gap-1.5 mt-0.5">
                 <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">Status: Secure</span>
+                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">상태: 보안 유지</span>
               </div>
             </div>
             <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shadow-inner">
@@ -237,37 +250,41 @@ export default function App() {
           {activeTab === 'dashboard' && (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
-                <StatCard title="보관 데이터" value={stats.total} icon={Database} colorClass="bg-blue-600 shadow-blue-200" />
-                <StatCard title="오늘 신규" value={stats.today} icon={PlusCircle} colorClass="bg-emerald-600 shadow-emerald-200" />
-                <StatCard title="차단 시도" value={stats.alerts} icon={Shield} colorClass="bg-rose-600 shadow-rose-200" />
+                <StatCard title="총 보관 자산" value={stats.total} icon={Database} colorClass="bg-blue-600 shadow-blue-200" />
+                <StatCard title="금일 신규 등록" value={stats.today} icon={PlusCircle} colorClass="bg-emerald-600 shadow-emerald-200" />
+                <StatCard title="보안 위협 감지" value={stats.alerts} icon={Shield} colorClass="bg-rose-600 shadow-rose-200" />
               </div>
 
               <div className="bg-white rounded-[32px] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
                 <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
-                  <h3 className="font-black text-xl text-slate-900 tracking-tighter italic">ENCRYPTION LOGS</h3>
-                  <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition shadow-sm">Refresh</button>
+                  <h3 className="font-black text-xl text-slate-900 tracking-tighter italic whitespace-nowrap">실 시간 보안 처리 로그</h3>
+                  <button onClick={() => window.location.reload()} className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-slate-600 hover:bg-slate-50 transition shadow-sm uppercase">데이터 갱신</button>
                 </div>
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto scrollbar-hide">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-50">
-                        <th className="px-10 py-5">Secure ID</th>
-                        <th className="px-10 py-5">Asset Type</th>
-                        <th className="px-10 py-5">Timestamp</th>
-                        <th className="px-10 py-5 text-right">Status</th>
+                        <th className="px-10 py-5">보안 식별자 (ID)</th>
+                        <th className="px-10 py-5">자산 유형</th>
+                        <th className="px-10 py-5">처리 일시</th>
+                        <th className="px-10 py-5 text-right">보안 프로토콜</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {privacyRecords.map((item) => (
+                      {privacyRecords.length > 0 ? privacyRecords.map((item) => (
                         <tr key={item.id} className="hover:bg-slate-50 transition duration-300">
                           <td className="px-10 py-6 font-mono text-[10px] text-slate-400 truncate max-w-[150px]">{item.id}</td>
-                          <td className="px-10 py-6 font-bold text-slate-700 text-sm">Personal Info</td>
+                          <td className="px-10 py-6 font-bold text-slate-700 text-sm">개인정보 자산</td>
                           <td className="px-10 py-6 text-slate-500 text-xs font-medium">{item.displayDate}</td>
                           <td className="px-10 py-6 text-right">
-                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black ring-1 ring-blue-100">AES-256</span>
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black ring-1 ring-blue-100 uppercase">AES-256 보안 적용</span>
                           </td>
                         </tr>
-                      ))}
+                      )) : (
+                        <tr>
+                          <td colSpan="4" className="px-10 py-20 text-center text-slate-300 font-bold italic">현재 감시 중인 데이터가 없습니다.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -279,14 +296,14 @@ export default function App() {
             <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100 animate-in fade-in slide-in-from-bottom-5">
               <div className="mb-10 flex items-center gap-4">
                 <Search size={32} className="text-blue-600" />
-                <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic whitespace-nowrap">SEARCH & AUDIT</h3>
+                <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic whitespace-nowrap">검색 및 감사 기록</h3>
                 <div className="flex-1 h-[2px] bg-slate-50"></div>
               </div>
               <div className="grid grid-cols-1 gap-6 max-w-2xl mx-auto text-center py-20">
                 <div className="p-10 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                   <Lock size={48} className="text-slate-300 mx-auto mb-6" />
-                  <p className="text-slate-400 font-bold">검색 모듈 암호화 초기화 중...</p>
-                  <button className="mt-8 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-blue-100">ACCESS SEARCH ENGINE</button>
+                  <p className="text-slate-400 font-bold italic">검색 엔진 보안 프로토콜 초기화 중...</p>
+                  <button className="mt-8 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-blue-100 uppercase tracking-tighter hover:bg-blue-700 transition">검색 엔진 강제 접속</button>
                 </div>
               </div>
             </div>
@@ -295,43 +312,43 @@ export default function App() {
           {activeTab === 'admins' && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-5">
               <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100">
-                <h3 className="text-xl font-black mb-8 border-l-4 border-blue-600 pl-4 italic">ADMIN LIST</h3>
+                <h3 className="text-xl font-black mb-8 border-l-4 border-blue-600 pl-4 italic uppercase">현장 요원 명부</h3>
                 <div className="space-y-4">
                   {[1, 2].map(i => (
-                    <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
-                        <Users size={20} className="text-blue-600" />
+                    <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-blue-200 transition">
+                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm group-hover:bg-blue-600 transition">
+                        <Users size={20} className="text-blue-600 group-hover:text-white" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-black text-slate-800 text-sm">Manager #{i}</p>
-                        <p className="text-xs text-slate-400 font-bold lowercase tracking-widest">Lv.{3-i} Security Admin</p>
+                        <p className="font-black text-slate-800 text-sm">현장 관리자 {i}호</p>
+                        <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none mt-1">LV.{3-i} 요원 승인됨</p>
                       </div>
                       <button className="text-slate-300 hover:text-blue-600 transition"><Settings size={18} /></button>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="bg-indigo-900 p-10 rounded-[32px] shadow-2xl text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-10 opacity-10"><Shield size={150} /></div>
-                <h3 className="text-xl font-black mb-6 italic">PRIVILEGE CONTROL</h3>
-                <p className="text-indigo-300 text-sm font-bold leading-relaxed mb-10">보안 등급별 접근 권한을 실시간으로 제어합니다. 모든 변경 사항은 감사 로그에 영구 기록됩니다.</p>
-                <button className="w-full bg-white/10 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-white/20 transition">EDIT PERMISSIONS</button>
+              <div className="bg-indigo-900 p-10 rounded-[32px] shadow-2xl text-white relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform"><Shield size={150} /></div>
+                <h3 className="text-xl font-black mb-6 italic uppercase">특권 액세스 제어</h3>
+                <p className="text-indigo-300 text-xs font-bold leading-relaxed mb-10">보안 등급별 접근 권한을 실시간으로 수동 제어합니다. 모든 변경 사항은 감사 로그에 영구 박제됩니다.</p>
+                <button className="w-full bg-white/10 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-white/20 transition uppercase text-xs tracking-widest">권한 체계 수정</button>
               </div>
             </div>
           )}
 
           {activeTab === 'api' && (
             <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100 animate-in fade-in slide-in-from-bottom-5">
-              <h3 className="text-xl font-black mb-8 border-l-4 border-indigo-600 pl-4 italic">API CREDENTIALS</h3>
+              <h3 className="text-xl font-black mb-8 border-l-4 border-indigo-600 pl-4 italic uppercase">API 통제 자격 증명</h3>
               <div className="p-8 bg-slate-900 rounded-[24px] text-white">
                 <div className="flex items-center justify-between mb-6">
-                  <span className="text-[10px] font-black text-slate-500 tracking-[0.3em]">MASTER_API_KEY</span>
-                  <span className="text-emerald-500 text-[10px] font-black uppercase underline decoration-double underline-offset-4">Active</span>
+                  <span className="text-[10px] font-black text-slate-500 tracking-[0.3em] uppercase">마스터 API 식별 키</span>
+                  <span className="text-emerald-500 text-[10px] font-black uppercase underline decoration-double underline-offset-4">작전 중 (Active)</span>
                 </div>
-                <code className="block p-5 bg-white/5 rounded-xl font-mono text-xs text-slate-400 break-all border border-white/5">************************************************************</code>
+                <code className="block p-5 bg-white/5 rounded-xl font-mono text-xs text-slate-400 break-all border border-white/5 shadow-inner">************************************************************</code>
                 <div className="mt-8 flex gap-4">
-                  <button className="flex-1 bg-blue-600 py-4 rounded-xl font-black text-xs hover:bg-blue-700 transition">REGENERATE KEY</button>
-                  <button className="flex-1 bg-white/10 py-4 rounded-xl font-black text-xs hover:bg-white/20 transition">COPY ENDPOINT</button>
+                  <button className="flex-1 bg-blue-600 py-4 rounded-xl font-black text-xs hover:bg-blue-700 transition uppercase">키 강제 재생성</button>
+                  <button className="flex-1 bg-white/10 py-4 rounded-xl font-black text-xs hover:bg-white/20 transition uppercase">엔드포인트 복사</button>
                 </div>
               </div>
             </div>
@@ -341,21 +358,21 @@ export default function App() {
             <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-5">
               <div className="bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
                 <div className="p-10 border-b border-slate-50">
-                  <h3 className="text-xl font-black italic">SYSTEM CONFIGURATION</h3>
+                  <h3 className="text-xl font-black italic uppercase">시스템 환경 설정</h3>
                 </div>
                 <div className="p-10 space-y-8">
                   {[
-                    { label: 'Auto-Encryption', desc: '실시간 데이터 유입 시 즉시 AES-256 적용' },
-                    { label: 'Deep Proxying', desc: '모든 API 요청을 보안 프록시 서버 경유' },
-                    { label: 'Audit Logging', desc: '모든 관리 행위에 대한 불변 로그 생성' }
+                    { label: '자동 보안 암호화', desc: '데이터 유입 즉시 AES-256 프로토콜 강제 적용' },
+                    { label: '딥 프록시 통제', desc: '모든 외부 요청을 보안 프록시 서버로 강제 우회' },
+                    { label: '불변 감사 로깅', desc: '관리자의 모든 행위를 수정 불가능한 로그로 기록' }
                   ].map((s, idx) => (
-                    <div key={idx} className="flex items-center justify-between">
+                    <div key={idx} className="flex items-center justify-between group">
                       <div>
-                        <p className="font-black text-slate-800 text-sm">{s.label}</p>
-                        <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tighter">{s.desc}</p>
+                        <p className="font-black text-slate-800 text-sm group-hover:text-blue-600 transition">{s.label}</p>
+                        <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-tighter">{s.desc}</p>
                       </div>
-                      <div className="w-14 h-8 bg-blue-600 rounded-full flex items-center px-1">
-                        <div className="w-6 h-6 bg-white rounded-full shadow-lg ml-auto"></div>
+                      <div className="w-14 h-8 bg-blue-600 rounded-full flex items-center px-1 shadow-inner cursor-pointer">
+                        <div className="w-6 h-6 bg-white rounded-full shadow-lg ml-auto animate-in fade-in duration-500"></div>
                       </div>
                     </div>
                   ))}

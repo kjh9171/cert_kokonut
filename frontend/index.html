@@ -12,9 +12,36 @@
     <style>
       body { font-family: 'Noto Sans KR', sans-serif; }
     </style>
+    <script>
+      window.onerror = function(msg, url, line, col, error) {
+        var str = "⚠️ [CERT 보안 경보] 자바스크립트 오류 감지!\n\n내용: " + msg + "\n위치: " + line + "행 " + col + "열\n파일: " + url;
+        console.error(str);
+        var div = document.createElement('div');
+        div.style.background = '#fee2e2'; // rose-100
+        div.style.color = '#991b1b'; // rose-800
+        div.style.padding = '30px';
+        div.style.margin = '20px';
+        div.style.borderRadius = '20px';
+        div.style.border = '2px solid #ef4444';
+        div.style.position = 'fixed';
+        div.style.zIndex = '99999';
+        div.style.top = '0';
+        div.style.left = '0';
+        div.style.right = '0';
+        div.style.fontFamily = 'sans-serif';
+        div.style.boxShadow = '0 20px 25px -5px rgb(0 0 0 / 0.1)';
+        div.innerHTML = '<h3 style="margin-top:0;font-weight:900">🚨 시스템 런타임 오류 발생</h3><pre style="white-space:pre-wrap;font-size:12px;font-weight:bold">' + str + '</pre><p style="font-size:10px;margin-bottom:0">대표님, 위 오류 내용을 스크린샷 찍어 CERT에게 전달해 주시면 즉시 격파하겠습니다!</p>';
+        document.body.appendChild(div);
+      };
+    </script>
   </head>
   <body class="bg-slate-50 text-slate-900 overflow-hidden">
-    <div id="root"></div>
+    <div id="root">
+      <div id="debug-layer" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; color: #1e293b; font-family: sans-serif;">
+        <h2 style="font-weight: 900; letter-spacing: -0.05em; italic: true;">PMS SECURING...</h2>
+        <p style="font-size: 12px; font-weight: bold; color: #64748b;">React Engine Initializing (CERT Patrolling)</p>
+      </div>
+    </div>
     <script>
       // [보안 설정] 파이어베이스 설정값 앱 엔진 주입 (인라인 스크립트 우선 실행)
       window.__firebase_config = JSON.stringify({
