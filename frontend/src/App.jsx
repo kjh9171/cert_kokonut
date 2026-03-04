@@ -102,6 +102,18 @@ export default function App() {
   const [timer, setTimer] = useState(4800);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [agreed, setAgreed] = useState({ terms: false, privacy: false, marketing: false });
+  // 암호화 처리 결과를 회원DB 탭에 연동하기 위한 저장소
+  const [encryptedRecords, setEncryptedRecords] = useState([]);
+
+  // 보안 금고에서 암호화 완료 시 호출되는 콜백
+  const handleVaultComplete = (result) => {
+    setEncryptedRecords(prev => [result, ...prev]);
+  };
+
+  // 약관 전체동의 토글 핸들러
+  const handleAgreeAll = (checked) => {
+    setAgreed({ terms: checked, privacy: checked, marketing: checked });
+  };
 
   // 세션 타이머 작동 엔진 (80분 기준 자동 로그아웃 감시)
   useEffect(() => {
@@ -307,46 +319,100 @@ export default function App() {
             </div>
           );
         case 'security_vault':
-          // 선택형 암호화 및 엑셀 보안 처리 모듈 렌더링
-          return <SecurityVault />;
+          // 선택형 암호화 및 엑셀 보안 처리 모듈 렌더링 (결과를 회원DB에 연동)
+          return <SecurityVault onProcessComplete={handleVaultComplete} />;
         case 'member_db':
           return (
-            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm animate-in zoom-in-95 duration-500">
-              <div className="flex justify-between items-center mb-10">
-                <h3 className="text-2xl font-black text-slate-800 italic uppercase">Member Database</h3>
-                <button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100 uppercase italic"><Plus size={16} /> 신규 추가</button>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="border-b-2 border-slate-50">
-                      <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">성명</th>
-                      <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">연락처</th>
-                      <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">저장일시</th>
-                      <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">보안상태</th>
-                      <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">관리</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {[
-                      { n: '홍길동', p: '010-1***-2***', d: '2026.03.04 14:22', s: 'Encrypted' },
-                      { n: '임꺽정', p: '010-9***-0***', d: '2026.03.04 16:05', s: 'Encrypted' },
-                      { n: '이순신', p: '010-5***-7***', d: '2026.03.04 17:11', s: 'Encrypted' },
-                    ].map((row, i) => (
-                      <tr key={i} className="hover:bg-slate-50 transition-colors uppercase font-bold text-sm text-slate-700 italic">
-                        <td className="py-5 px-6">{row.n}</td>
-                        <td className="py-5 px-6 tabular-nums">{row.p}</td>
-                        <td className="py-5 px-6 tabular-nums">{row.d}</td>
-                        <td className="py-5 px-6"><span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] uppercase font-black">{row.s}</span></td>
-                        <td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-400">
-                          <Eye size={18} className="cursor-pointer hover:text-blue-600" />
-                          <Trash2 size={18} className="cursor-pointer hover:text-rose-600" />
-                        </td>
+            <div className="space-y-8 animate-in zoom-in-95 duration-500">
+              {/* 기존 회원 DB */}
+              <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
+                <div className="flex justify-between items-center mb-10">
+                  <h3 className="text-2xl font-black text-slate-800 italic uppercase">Member Database</h3>
+                  <button onClick={() => setActiveTab('security_vault')} className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100 uppercase italic"><Plus size={16} /> 엑셀 업로드 (보안 금고)</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b-2 border-slate-50">
+                        <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">성명</th>
+                        <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">연락처</th>
+                        <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">저장일시</th>
+                        <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">보안상태</th>
+                        <th className="py-4 px-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">관리</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {[
+                        { n: '홍길동', p: '010-1***-2***', d: '2026.03.04 14:22', s: 'Encrypted' },
+                        { n: '임꺽정', p: '010-9***-0***', d: '2026.03.04 16:05', s: 'Encrypted' },
+                        { n: '이순신', p: '010-5***-7***', d: '2026.03.04 17:11', s: 'Encrypted' },
+                      ].map((row, i) => (
+                        <tr key={i} className="hover:bg-slate-50 transition-colors uppercase font-bold text-sm text-slate-700 italic">
+                          <td className="py-5 px-6">{row.n}</td>
+                          <td className="py-5 px-6 tabular-nums">{row.p}</td>
+                          <td className="py-5 px-6 tabular-nums">{row.d}</td>
+                          <td className="py-5 px-6"><span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] uppercase font-black">{row.s}</span></td>
+                          <td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-400">
+                            <Eye size={18} className="cursor-pointer hover:text-blue-600" />
+                            <Trash2 size={18} className="cursor-pointer hover:text-rose-600" />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+
+              {/* 보안 금고에서 처리된 암호화 결과 연동 */}
+              {encryptedRecords.length > 0 && (
+                <div className="bg-white rounded-[3rem] p-10 border border-emerald-100 shadow-sm">
+                  <h3 className="text-lg font-black text-slate-800 italic uppercase mb-6 flex items-center gap-3">
+                    <ShieldCheck size={20} className="text-emerald-500" /> 보안 처리 완료 데이터
+                  </h3>
+                  <div className="space-y-4">
+                    {encryptedRecords.map((rec, idx) => (
+                      <div key={idx} className="bg-emerald-50/50 rounded-2xl border border-emerald-100 overflow-hidden">
+                        <div className="p-5 flex justify-between items-center">
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center"><Lock size={18} /></div>
+                            <div>
+                              <p className="font-black text-slate-800 text-sm italic">{rec.filename}</p>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{rec.cipher} · {rec.totalRows}행 {rec.totalCells}셀 · {rec.timestamp}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <span className="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[10px] uppercase font-black">Secured</span>
+                            <Download size={16} className="text-slate-400 cursor-pointer hover:text-blue-600 transition" />
+                          </div>
+                        </div>
+                        {/* 처리 결과 미리보기 (헤더 + 첫 3행) */}
+                        {rec.data && rec.data.length > 0 && (
+                          <div className="border-t border-emerald-100 overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-[11px]">
+                              <thead className="bg-emerald-50">
+                                <tr>
+                                  {rec.header.map((h, ci) => (
+                                    <th key={ci} className={`py-2 px-3 font-black uppercase tracking-wider whitespace-nowrap ${rec.selectedCols.includes(ci) ? 'text-emerald-700' : 'text-slate-400'}`}>{h || `Col ${ci+1}`}</th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-emerald-50/50">
+                                {rec.data.slice(0, 3).map((row, ri) => (
+                                  <tr key={ri}>
+                                    {row.map((cell, ci) => (
+                                      <td key={ci} className="py-2 px-3 font-medium whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis text-slate-600">{cell}</td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           );
         default:
@@ -587,7 +653,7 @@ export default function App() {
             <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100 space-y-6 mb-12 shadow-inner">
               <label className="flex items-center gap-4 text-base font-black text-slate-800 cursor-pointer group">
                 <div className="relative flex items-center">
-                  <input type="checkbox" className="w-6 h-6 rounded-lg border-2 border-slate-200 text-blue-600 focus:ring-0 cursor-pointer transition-all" />
+                  <input type="checkbox" checked={agreed.terms && agreed.privacy && agreed.marketing} onChange={(e) => handleAgreeAll(e.target.checked)} className="w-6 h-6 rounded-lg border-2 border-slate-200 text-blue-600 focus:ring-0 cursor-pointer transition-all" />
                 </div>
                 모든 보안 약관 및 방침에 동의합니다.
               </label>
