@@ -5,7 +5,7 @@ import {
   Key, Database, Bell, Activity, PlusCircle, CheckCircle 
 } from 'lucide-react';
 // 파이어베이스 핵심 기능 임포트
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 
@@ -39,7 +39,8 @@ export default function App() {
           return;
         }
 
-        const app = initializeApp(firebaseConfig);
+        // [보안 핵심] Firebase 중복 초기화 방지 프로토콜 적용 (React 18 Strict Mode 대응)
+        const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
@@ -100,6 +101,22 @@ export default function App() {
       </div>
     </div>
   );
+  // --- [로딩 및 에러 처리 브릿지] ---
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 font-sans p-6 text-center">
+        <div className="relative mb-10">
+          <div className="absolute inset-0 bg-blue-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
+          <Shield size={80} className="text-white relative animate-bounce" />
+        </div>
+        <h1 className="text-white text-2xl font-black tracking-widest mb-4">PMS SECURITY ANALYZING...</h1>
+        <div className="w-64 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+          <div className="h-full bg-blue-500 animate-progress origin-left"></div>
+        </div>
+        <p className="mt-6 text-slate-500 font-bold animate-pulse">대표님의 안전한 작업 환경을 구축 중입니다... 충성!</p>
+      </div>
+    );
+  }
 
   // --- [UI 레이아웃: 로그인 페이지] ---
   if (!user) {
