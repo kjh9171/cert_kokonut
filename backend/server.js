@@ -349,16 +349,23 @@ app.delete('/api/admin/users/:id', async (req, res) => {
 app.get('/api/admin/db/stats', async (req, res) => {
   try {
     // 프로젝트 통계 계산 로직 (로컬 DB 기준)
+    const admins = await getCollection('pms_admins');
+    const records = await getCollection('privacy_records');
+    
+    // 금일 날짜 기준 (YYYY-MM-DD)
+    const todayStr = new Date().toISOString().split('T')[0];
+    const todayRecords = records.filter(r => r.createdAt && r.createdAt.startsWith(todayStr));
+
     res.json({
       database: 'Local JSON (CERT Private Storage)',
       status: 'Secured',
-      collections: ['privacy_records', 'pms_users', 'pms_admins']
-    });
+      collections: ['privacy_records', 'pms_users', 'pms_admins'],
       total: records.length,
       today: todayRecords.length,
       alerts: admins.filter(a => !a.otpEnabled).length // OTP 미설정 요원을 보안 위협으로 간주
     });
   } catch (error) {
+    console.error('[EROR] 통계 조회 중 오류:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
