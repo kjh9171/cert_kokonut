@@ -117,34 +117,64 @@ export default function App() {
       </div>
     );
   }
-
   // --- [UI 레이아웃: 로그인 페이지] ---
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 p-6 font-sans">
-        <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md transform hover:scale-105 transition duration-500">
-          <div className="flex justify-center mb-8">
-            <div className="p-4 bg-blue-600 rounded-2xl shadow-lg rotate-3">
-              <Shield size={50} className="text-white" />
+      <div className="min-h-screen flex items-center justify-center bg-slate-900 font-sans p-6 overflow-hidden relative">
+        {/* 프리미엄 배경 데코레이션 */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]"></div>
+
+        <div className="bg-white/80 backdrop-blur-2xl p-10 md:p-16 rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] w-full max-w-lg border border-white/20 transform hover:scale-[1.02] transition duration-700 relative z-10">
+          <div className="flex justify-center mb-10">
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-600 rounded-3xl blur-xl opacity-40 animate-pulse"></div>
+              <div className="relative p-6 bg-gradient-to-br from-blue-500 to-indigo-700 rounded-3xl shadow-2xl rotate-3">
+                <Shield size={60} className="text-white" />
+              </div>
             </div>
           </div>
-          <h1 className="text-3xl font-black text-center text-slate-800 mb-2">PMS SERVICE</h1>
-          <p className="text-center text-slate-400 mb-10 font-medium">개인정보관리시스템 관리자 전용</p>
-          <div className="space-y-5">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2 ml-1 uppercase">Admin Access ID</label>
-              <input type="text" className="w-full p-4 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-700" placeholder="아이디를 입력하세요" />
+
+          <h1 className="text-4xl font-black text-center text-slate-900 mb-3 tracking-tighter italic">
+            PMS <span className="text-blue-600 not-italic">SECURITY</span>
+          </h1>
+          <p className="text-center text-slate-500 mb-12 font-bold tracking-widest text-sm uppercase">ADMINISTRATOR PRIVILEGED ACCESS</p>
+
+          <div className="space-y-6">
+            <div className="group">
+              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">Security ID</label>
+              <div className="relative">
+                <Users className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition" size={20} />
+                <input type="text" defaultValue="admin@cert.com" className="w-full pl-14 pr-6 py-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 transition shadow-inner" placeholder="관리자 ID" />
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 mb-2 ml-1 uppercase">Security Password</label>
-              <input type="password" name="password" className="w-full p-4 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 outline-none font-semibold text-slate-700" placeholder="••••••••" />
+
+            <div className="group">
+              <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">Master Password</label>
+              <div className="relative">
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition" size={20} />
+                <input type="password" defaultValue="••••••••" className="w-full pl-14 pr-6 py-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 transition shadow-inner" placeholder="비밀번호" />
+              </div>
             </div>
-            <button onClick={() => setUser({ uid: 'admin' })} className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold text-lg hover:bg-blue-700 shadow-lg shadow-blue-200 transition active:scale-95 transform">
-              보안 인증 및 접속
-            </button>
+
+            <div className="pt-4">
+              <button 
+                onClick={() => setUser({ uid: 'admin', email: 'admin@cert.com' })} 
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-5 rounded-2xl font-black text-xl hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.5)] transition duration-500 active:scale-95 transform shadow-xl border-t border-white/20"
+              >
+                SECURE LOGIN
+              </button>
+            </div>
           </div>
-          <div className="mt-8 text-center text-slate-300 text-xs">
-            © 2026 CERT Security Operations. All Rights Reserved.
+
+          <div className="mt-12 text-center">
+            <p className="text-slate-400 text-xs font-bold mb-4">
+              ※ 계정 정보를 모르실 경우 <span className="text-blue-600">SECURE LOGIN</span> 버튼을 즉시 클릭하세요!
+            </p>
+            <div className="h-[1px] w-12 bg-slate-100 mx-auto mb-6"></div>
+            <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
+              © 2026 CERT SECURITY OPS. NO-UNAUTHORIZED ACCESS.
+            </p>
           </div>
         </div>
       </div>
