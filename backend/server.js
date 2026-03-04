@@ -92,13 +92,20 @@ function encrypt(text) {
  * Firebase Auth를 사용하지 않고 Firestore에 직접 사용자 정보(해시된 PW) 저장
  */
 app.post('/api/auth/register', async (req, res) => {
+  console.log('[CERT] 신규 요원 등록 요청 수신:', req.body.email);
   try {
     const { email, password, name } = req.body;
-    if (!email || !password || !name) return res.status(400).json({ error: '필수 정보 누락' });
+    if (!email || !password || !name) {
+      console.warn('[CERT] 필수 정보 누락으로 인한 등록 거부');
+      return res.status(400).json({ error: '필수 정보 누락' });
+    }
 
     // 중복 이메일 체크
     const existingUser = await findUserByEmail(email);
-    if (existingUser) return res.status(400).json({ error: '이미 등록된 보안 아이디입니다.' });
+    if (existingUser) {
+      console.warn('[CERT] 이미 존재하는 아이디:', email);
+      return res.status(400).json({ error: '이미 등록된 보안 아이디입니다.' });
+    }
 
     // 비밀번호 해싱 (bcrypt)
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -106,7 +113,7 @@ app.post('/api/auth/register', async (req, res) => {
     // OTP 시크릿 생성 (최초 1회)
     const otpSecret = authenticator.generateSecret();
 
-    // Firestore 저장
+    // 로컬 DB 저장 객체 생성 (admin.firestore 제거)
     const userDoc = {
       email,
       password: hashedPassword,
@@ -114,10 +121,11 @@ app.post('/api/auth/register', async (req, res) => {
       role: 'admin',
       otpSecret: encrypt(otpSecret), // OTP 시크릿은 암호화해서 보관
       otpEnabled: false,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      createdAt: new Date().toISOString()
     };
 
     const docRef = await addDoc('pms_admins', userDoc);
+    console.log('[CERT] 요원 등록 성공. ID:', docRef.id);
     
     res.status(201).json({ 
       success: true, 
@@ -125,7 +133,8 @@ app.post('/api/auth/register', async (req, res) => {
       message: '보안 요원 등록 성공! 이제 OTP 설정을 진행하십시오.' 
     });
   } catch (error) {
-    res.status(500).json({ error: '회원가입 중 서버 오류 발생' });
+    console.error('[EROR] 회원가입 중 치명적 오류:', error);
+    res.status(500).json({ error: `회원가입 중 서버 오류 발생: ${error.message}` });
   }
 });
 
@@ -133,26 +142,36 @@ app.post('/api/auth/register', async (req, res) => {
  * 2. 독자 로그인 API (1차: 비밀번호 검증)
  */
 app.post('/api/auth/login', async (req, res) => {
+  console.log('[CERT] 보안 구역 접속 시도:', req.body.email);
   try {
+    const { email, password } = req.body;
     const userData = await findUserByEmail(email);
-    if (!userData) return res.status(401).json({ error: '아이디 또는 비밀번호가 일치하지 않습니다.' });
+    
+    if (!userData) {
+      console.warn('[CERT] 존재하지 않는 요원:', email);
+      return res.status(401).json({ error: '등록되지 않은 요원입니다.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, userData.password);
+    if (!isMatch) {
+      console.warn('[CERT] 비밀번호 불일치:', email);
+      return res.status(401).json({ error: '비밀번호가 일치하지 않습니다.' });
+    }
 
     const userDocId = userData.id;
-    // 비밀번호 검증
-    const isMatched = await bcrypt.compare(password, userData.password);
-    if (!isMatched) return res.status(401).json({ error: '아이디 또는 비밀번호가 일치하지 않습니다.' });
 
-    // OTP 완료 여부 확인
+    // OTP 활성화 여부 확인
     if (userData.otpEnabled) {
+      console.log('[CERT] 2차 인증(OTP) 요구됨:', email);
       return res.json({ 
         success: true, 
         requireOTP: true, 
-        uid: userDocId,
-        message: 'Google OTP 2차 인증이 필요합니다.' 
+        uid: userDocId 
       });
     }
 
     // OTP 미설정 시 (초기 로그인)
+    console.log('[CERT] 초기 로그인 성공. 세션 발급 중:', email);
     const token = jwt.sign({ uid: userDocId, email: userData.email, role: userData.role }, JWT_SECRET, { expiresIn: '8h' });
     res.json({ 
       success: true, 
@@ -161,7 +180,8 @@ app.post('/api/auth/login', async (req, res) => {
       user: { email: userData.email, name: userData.name, role: userData.role } 
     });
   } catch (error) {
-    res.status(500).json({ error: '로그인 도중 서버 오류 발생' });
+    console.error('[EROR] 로그인 중 오류:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
