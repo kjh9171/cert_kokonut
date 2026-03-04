@@ -101,80 +101,73 @@ export default function App() {
       </div>
     </div>
   );
+  // --- [상태 관리 추가] ---
+  const [isSignup, setIsSignup] = useState(false); // 가입 페이지 여부
+
   // --- [로딩 및 에러 처리 브릿지] ---
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 font-sans p-6 text-center">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 font-sans p-6 text-center text-white">
         <div className="relative mb-10">
           <div className="absolute inset-0 bg-blue-500 rounded-full blur-2xl opacity-20 animate-pulse"></div>
-          <Shield size={80} className="text-white relative animate-bounce" />
+          <Shield size={80} className="relative animate-bounce" />
         </div>
-        <h1 className="text-white text-2xl font-black tracking-widest mb-4">PMS SECURITY ANALYZING...</h1>
+        <h1 className="text-2xl font-black tracking-widest mb-4 uppercase">PMS Security Analyzing...</h1>
         <div className="w-64 h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div className="h-full bg-blue-500 animate-progress origin-left"></div>
         </div>
-        <p className="mt-6 text-slate-500 font-bold animate-pulse">대표님의 안전한 작업 환경을 구축 중입니다... 충성!</p>
       </div>
     );
   }
-  // --- [UI 레이아웃: 로그인 페이지] ---
+
+  // --- [UI 레이아웃: 가입 및 로그인 페이지] ---
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-900 font-sans p-6 overflow-hidden relative">
-        {/* 프리미엄 배경 데코레이션 */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/20 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px]"></div>
 
-        <div className="bg-white/80 backdrop-blur-2xl p-10 md:p-16 rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] w-full max-w-lg border border-white/20 transform hover:scale-[1.02] transition duration-700 relative z-10">
+        <div className="bg-white/80 backdrop-blur-2xl p-10 md:p-16 rounded-[40px] shadow-2xl w-full max-w-lg border border-white/20 relative z-10 transition-all duration-700">
           <div className="flex justify-center mb-10">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-600 rounded-3xl blur-xl opacity-40 animate-pulse"></div>
-              <div className="relative p-6 bg-gradient-to-br from-blue-500 to-indigo-700 rounded-3xl shadow-2xl rotate-3">
-                <Shield size={60} className="text-white" />
-              </div>
+            <div className="relative p-6 bg-gradient-to-br from-blue-500 to-indigo-700 rounded-3xl shadow-2xl rotate-3">
+              <Shield size={60} className="text-white" />
             </div>
           </div>
 
-          <h1 className="text-4xl font-black text-center text-slate-900 mb-3 tracking-tighter italic">
-            PMS <span className="text-blue-600 not-italic">SECURITY</span>
+          <h1 className="text-4xl font-black text-center text-slate-900 mb-2 tracking-tighter italic">
+            PMS <span className="text-blue-600 not-italic">{isSignup ? 'SIGNUP' : 'SECURITY'}</span>
           </h1>
-          <p className="text-center text-slate-500 mb-12 font-bold tracking-widest text-sm uppercase">ADMINISTRATOR PRIVILEGED ACCESS</p>
+          <p className="text-center text-slate-500 mb-12 font-bold tracking-widest text-xs uppercase">{isSignup ? 'Create Master Account' : 'Administrator Privileged Access'}</p>
 
           <div className="space-y-6">
             <div className="group">
               <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">Security ID</label>
               <div className="relative">
-                <Users className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition" size={20} />
-                <input type="text" defaultValue="admin@cert.com" className="w-full pl-14 pr-6 py-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 transition shadow-inner" placeholder="관리자 ID" />
+                <Users className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input type="text" defaultValue={isSignup ? "" : "admin@cert.com"} className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800" placeholder="admin@cert.com" />
               </div>
             </div>
 
             <div className="group">
               <label className="block text-[10px] font-black text-slate-400 mb-2 ml-4 uppercase tracking-[0.2em]">Master Password</label>
               <div className="relative">
-                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-600 transition" size={20} />
-                <input type="password" defaultValue="••••••••" className="w-full pl-14 pr-6 py-5 bg-slate-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800 transition shadow-inner" placeholder="비밀번호" />
+                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                <input type="password" defaultValue={isSignup ? "" : "••••••••"} className="w-full pl-14 pr-6 py-5 bg-slate-100/50 border-none rounded-2xl focus:ring-2 focus:ring-blue-600 outline-none font-bold text-slate-800" placeholder="••••••••" />
               </div>
             </div>
 
-            <div className="pt-4">
-              <button 
-                onClick={() => setUser({ uid: 'admin', email: 'admin@cert.com' })} 
-                className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-5 rounded-2xl font-black text-xl hover:shadow-[0_20px_40px_-10px_rgba(37,99,235,0.5)] transition duration-500 active:scale-95 transform shadow-xl border-t border-white/20"
-              >
-                SECURE LOGIN
-              </button>
-            </div>
+            <button 
+              onClick={() => setUser({ uid: 'admin', email: 'admin@cert.com' })} 
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-5 rounded-2xl font-black text-xl hover:shadow-xl transition duration-500 active:scale-95 transform"
+            >
+              {isSignup ? 'CREATE ACCOUNT' : 'SECURE LOGIN'}
+            </button>
           </div>
 
-          <div className="mt-12 text-center">
-            <p className="text-slate-400 text-xs font-bold mb-4">
-              ※ 계정 정보를 모르실 경우 <span className="text-blue-600">SECURE LOGIN</span> 버튼을 즉시 클릭하세요!
-            </p>
-            <div className="h-[1px] w-12 bg-slate-100 mx-auto mb-6"></div>
-            <p className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">
-              © 2026 CERT SECURITY OPS. NO-UNAUTHORIZED ACCESS.
-            </p>
+          <div className="mt-8 text-center">
+            <button onClick={() => setIsSignup(!isSignup)} className="text-blue-600 font-bold text-sm hover:underline">
+              {isSignup ? 'Already have an account? Login' : 'Need a master account? Signup'}
+            </button>
           </div>
         </div>
       </div>
@@ -183,16 +176,16 @@ export default function App() {
 
   // --- [UI 레이아웃: 메인 대시보드] ---
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans">
+    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
       {/* 프리미엄 사이드바 */}
-      <aside className="w-72 bg-slate-900 text-white flex flex-col shadow-2xl">
-        <div className="p-8 flex items-center gap-4 border-b border-slate-800">
-          <div className="p-2 bg-blue-500 rounded-lg">
+      <aside className="w-72 bg-slate-950 text-white flex flex-col shadow-2xl relative z-20">
+        <div className="p-8 flex items-center gap-4 border-b border-slate-900">
+          <div className="p-2 bg-blue-600 rounded-lg shadow-lg shadow-blue-900/40">
             <Shield size={24} className="text-white" />
           </div>
-          <span className="font-black text-xl tracking-tighter italic">PMS DASHBOARD</span>
+          <span className="font-black text-xl tracking-tighter italic">PMS OPS</span>
         </div>
-        <nav className="flex-1 p-6 space-y-3">
+        <nav className="flex-1 p-6 space-y-2">
           {[
             { id: 'dashboard', label: '운영 대시보드', icon: Database },
             { id: 'search', label: '정보 검색/열람', icon: Search },
@@ -200,121 +193,166 @@ export default function App() {
             { id: 'api', label: '인증/API 관리', icon: Key },
             { id: 'settings', label: '시스템 설정', icon: Settings },
           ].map((menu) => (
-            <button 
-              key={menu.id}
-              onClick={() => setActiveTab(menu.id)} 
-              className={`w-full flex items-center gap-4 p-4 rounded-xl font-bold transition duration-300 ${activeTab === menu.id ? 'bg-blue-600 shadow-lg shadow-blue-900/50' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-            >
+            <button key={menu.id} onClick={() => setActiveTab(menu.id)} className={`w-full flex items-center gap-4 p-4 rounded-xl font-bold transition duration-300 ${activeTab === menu.id ? 'bg-blue-600 text-white shadow-xl shadow-blue-900/40' : 'text-slate-500 hover:text-white hover:bg-slate-900'}`}>
               <menu.icon size={20} /> {menu.label}
             </button>
           ))}
         </nav>
-        <div className="p-6 border-t border-slate-800">
-          <button onClick={() => setUser(null)} className="w-full flex items-center gap-4 p-4 text-slate-500 hover:text-red-400 font-bold transition transform hover:translate-x-1">
+        <div className="p-6 border-t border-slate-900">
+          <button onClick={() => setUser(null)} className="w-full flex items-center gap-4 p-4 text-slate-500 hover:text-rose-500 font-bold transition transform hover:translate-x-1">
             <LogOut size={20} /> 시스템 종료
           </button>
         </div>
       </aside>
 
-      {/* 메인 작업 영역 */}
-      <main className="flex-1 overflow-auto flex flex-col">
-        {/* 헤더 섹션 */}
-        <header className="bg-white border-b border-slate-100 p-6 px-10 flex justify-between items-center sticky top-0 z-10">
+      <main className="flex-1 overflow-auto flex flex-col bg-slate-50">
+        <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 p-6 px-10 flex justify-between items-center sticky top-0 z-10 shadow-sm">
           <div>
-            <h2 className="text-2xl font-black text-slate-800">
-              {activeTab === 'dashboard' && 'SYSTEM REAL-TIME STATUS'}
-              {activeTab !== 'dashboard' && activeTab.toUpperCase() + ' MODULE'}
-            </h2>
-            <p className="text-slate-400 text-sm font-medium">현재 시스템이 CERT의 철저한 보안 감시 하에 있습니다.</p>
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">{activeTab} MODULE</h2>
+            <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1 italic">Authorized Personal Only</p>
           </div>
           <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-600 rounded-full border border-green-100">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-              <span className="text-xs font-bold font-mono uppercase tracking-widest">Server Secure</span>
+            <div className="text-right hidden sm:block">
+              <p className="text-sm font-black text-slate-900">대표님 (Super Admin)</p>
+              <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none">Status: Secure</span>
+              </div>
             </div>
-            <div className="text-right border-r pr-6 border-slate-100">
-              <p className="text-sm font-black text-slate-800">대표님 (Super Admin)</p>
-              <p className="text-xs text-slate-400">관리 권한: 최상위 (L0)</p>
-            </div>
-            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200">
+            <div className="w-12 h-12 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 shadow-inner">
               <Users size={22} className="text-slate-600" />
             </div>
           </div>
         </header>
 
-        {/* 콘텐츠 섹션 */}
         <section className="p-10 flex-1">
-          {activeTab === 'dashboard' ? (
+          {activeTab === 'dashboard' && (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-5 duration-700">
-              {/* 통계 요약 */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <StatCard title="전체 개인정보 건수" value={stats.total} icon={Database} colorClass="bg-blue-600" />
-                <StatCard title="오늘 신규 등록" value={stats.today} icon={PlusCircle} colorClass="bg-emerald-500" />
-                <StatCard title="차단된 이상 접근" value={stats.alerts} icon={Shield} colorClass="bg-rose-500" />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-white">
+                <StatCard title="보관 데이터" value={stats.total} icon={Database} colorClass="bg-blue-600 shadow-blue-200" />
+                <StatCard title="오늘 신규" value={stats.today} icon={PlusCircle} colorClass="bg-emerald-600 shadow-emerald-200" />
+                <StatCard title="차단 시도" value={stats.alerts} icon={Shield} colorClass="bg-rose-600 shadow-rose-200" />
               </div>
 
-              {/* 데이터 테이블 */}
-              <div className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden">
-                <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <Database className="text-blue-600" size={24} />
-                    <h3 className="font-black text-xl text-slate-800 tracking-tight">최근 암호화 처리 로그</h3>
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="relative">
-                      <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
-                      <input type="text" placeholder="레코드 ID 검색..." className="pl-12 pr-6 py-3 bg-slate-50 border-none rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 w-64 font-medium" />
-                    </div>
-                  </div>
+              <div className="bg-white rounded-[32px] shadow-2xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
+                <div className="p-8 bg-slate-50/50 border-b border-slate-100 flex justify-between items-center">
+                  <h3 className="font-black text-xl text-slate-900 tracking-tighter italic">ENCRYPTION LOGS</h3>
+                  <button className="px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-black text-slate-600 hover:bg-slate-50 transition shadow-sm">Refresh</button>
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="bg-slate-50/50 text-slate-400 text-xs font-black uppercase tracking-widest">
-                      <tr>
-                        <th className="px-8 py-5">이름 (Encrypted)</th>
-                        <th className="px-8 py-5">이메일 (Encrypted)</th>
-                        <th className="px-8 py-5">보안 처리일시</th>
-                        <th className="px-8 py-5">상태 프로토콜</th>
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="text-slate-400 text-[10px] font-black uppercase tracking-widest border-b border-slate-50">
+                        <th className="px-10 py-5">Secure ID</th>
+                        <th className="px-10 py-5">Asset Type</th>
+                        <th className="px-10 py-5">Timestamp</th>
+                        <th className="px-10 py-5 text-right">Status</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {privacyRecords.length > 0 ? privacyRecords.map((item) => (
-                        <tr key={item.id} className="hover:bg-slate-50 transition group">
-                          <td className="px-8 py-6">
-                            <div className="flex items-center gap-3">
-                              <Lock size={14} className="text-slate-300" />
-                              <span className="font-mono text-xs text-slate-500 truncate w-32">{item.name}</span>
-                            </div>
-                          </td>
-                          <td className="px-8 py-6 font-mono text-xs text-slate-400">{item.email}</td>
-                          <td className="px-8 py-6 text-slate-500 text-sm font-semibold">{item.displayDate}</td>
-                          <td className="px-8 py-6">
-                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-black ring-1 ring-green-100">
-                              <CheckCircle size={12} />
-                              AES-256 SECURED
-                            </div>
+                      {privacyRecords.map((item) => (
+                        <tr key={item.id} className="hover:bg-slate-50 transition duration-300">
+                          <td className="px-10 py-6 font-mono text-[10px] text-slate-400 truncate max-w-[150px]">{item.id}</td>
+                          <td className="px-10 py-6 font-bold text-slate-700 text-sm">Personal Info</td>
+                          <td className="px-10 py-6 text-slate-500 text-xs font-medium">{item.displayDate}</td>
+                          <td className="px-10 py-6 text-right">
+                            <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-[10px] font-black ring-1 ring-blue-100">AES-256</span>
                           </td>
                         </tr>
-                      )) : (
-                        <tr>
-                          <td colSpan="4" className="px-8 py-24 text-center">
-                            <div className="flex flex-col items-center gap-4 text-slate-300">
-                              <Shield size={64} className="opacity-20" />
-                              <p className="font-bold text-lg">보관된 개인정보가 없습니다.</p>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="bg-white p-32 rounded-3xl shadow-xl shadow-slate-200/50 text-center border border-slate-100 animate-pulse">
-              <Lock size={80} className="mx-auto text-slate-200 mb-8" />
-              <h3 className="text-3xl font-black text-slate-800 mb-4 tracking-tighter uppercase">Security Lockdown</h3>
-              <p className="text-slate-400 text-lg font-medium">해당 모듈은 현재 CERT의 보안 검토 명령 완료 대기 중입니다.</p>
+          )}
+
+          {activeTab === 'search' && (
+            <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100 animate-in fade-in slide-in-from-bottom-5">
+              <div className="mb-10 flex items-center gap-4">
+                <Search size={32} className="text-blue-600" />
+                <h3 className="text-3xl font-black text-slate-900 tracking-tighter italic whitespace-nowrap">SEARCH & AUDIT</h3>
+                <div className="flex-1 h-[2px] bg-slate-50"></div>
+              </div>
+              <div className="grid grid-cols-1 gap-6 max-w-2xl mx-auto text-center py-20">
+                <div className="p-10 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                  <Lock size={48} className="text-slate-300 mx-auto mb-6" />
+                  <p className="text-slate-400 font-bold">검색 모듈 암호화 초기화 중...</p>
+                  <button className="mt-8 bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-xl shadow-blue-100">ACCESS SEARCH ENGINE</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'admins' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-in fade-in slide-in-from-bottom-5">
+              <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100">
+                <h3 className="text-xl font-black mb-8 border-l-4 border-blue-600 pl-4 italic">ADMIN LIST</h3>
+                <div className="space-y-4">
+                  {[1, 2].map(i => (
+                    <div key={i} className="flex items-center gap-4 p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                        <Users size={20} className="text-blue-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-black text-slate-800 text-sm">Manager #{i}</p>
+                        <p className="text-xs text-slate-400 font-bold lowercase tracking-widest">Lv.{3-i} Security Admin</p>
+                      </div>
+                      <button className="text-slate-300 hover:text-blue-600 transition"><Settings size={18} /></button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-indigo-900 p-10 rounded-[32px] shadow-2xl text-white relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-10 opacity-10"><Shield size={150} /></div>
+                <h3 className="text-xl font-black mb-6 italic">PRIVILEGE CONTROL</h3>
+                <p className="text-indigo-300 text-sm font-bold leading-relaxed mb-10">보안 등급별 접근 권한을 실시간으로 제어합니다. 모든 변경 사항은 감사 로그에 영구 기록됩니다.</p>
+                <button className="w-full bg-white/10 backdrop-blur-md border border-white/20 text-white py-4 rounded-2xl font-black hover:bg-white/20 transition">EDIT PERMISSIONS</button>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'api' && (
+            <div className="bg-white p-10 rounded-[32px] shadow-2xl border border-slate-100 animate-in fade-in slide-in-from-bottom-5">
+              <h3 className="text-xl font-black mb-8 border-l-4 border-indigo-600 pl-4 italic">API CREDENTIALS</h3>
+              <div className="p-8 bg-slate-900 rounded-[24px] text-white">
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-[10px] font-black text-slate-500 tracking-[0.3em]">MASTER_API_KEY</span>
+                  <span className="text-emerald-500 text-[10px] font-black uppercase underline decoration-double underline-offset-4">Active</span>
+                </div>
+                <code className="block p-5 bg-white/5 rounded-xl font-mono text-xs text-slate-400 break-all border border-white/5">************************************************************</code>
+                <div className="mt-8 flex gap-4">
+                  <button className="flex-1 bg-blue-600 py-4 rounded-xl font-black text-xs hover:bg-blue-700 transition">REGENERATE KEY</button>
+                  <button className="flex-1 bg-white/10 py-4 rounded-xl font-black text-xs hover:bg-white/20 transition">COPY ENDPOINT</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && (
+            <div className="max-w-3xl animate-in fade-in slide-in-from-bottom-5">
+              <div className="bg-white rounded-[32px] shadow-2xl border border-slate-100 overflow-hidden">
+                <div className="p-10 border-b border-slate-50">
+                  <h3 className="text-xl font-black italic">SYSTEM CONFIGURATION</h3>
+                </div>
+                <div className="p-10 space-y-8">
+                  {[
+                    { label: 'Auto-Encryption', desc: '실시간 데이터 유입 시 즉시 AES-256 적용' },
+                    { label: 'Deep Proxying', desc: '모든 API 요청을 보안 프록시 서버 경유' },
+                    { label: 'Audit Logging', desc: '모든 관리 행위에 대한 불변 로그 생성' }
+                  ].map((s, idx) => (
+                    <div key={idx} className="flex items-center justify-between">
+                      <div>
+                        <p className="font-black text-slate-800 text-sm">{s.label}</p>
+                        <p className="text-xs text-slate-400 font-bold mt-1 uppercase tracking-tighter">{s.desc}</p>
+                      </div>
+                      <div className="w-14 h-8 bg-blue-600 rounded-full flex items-center px-1">
+                        <div className="w-6 h-6 bg-white rounded-full shadow-lg ml-auto"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </section>

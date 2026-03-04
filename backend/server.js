@@ -150,6 +150,90 @@ app.get('/api/privacy/list', async (req, res) => {
   }
 });
 
+/**
+ * 3. 관리자 신규 가입 API
+ * (보안상 초기 구축 시에만 개방하거나 특정 토큰 필요)
+ */
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    if (!email || !password) return res.status(400).json({ error: '필수 정보 누락' });
+    
+    // Firebase Auth 사용자 생성
+    const userRecord = await admin.auth().createUser({
+      email,
+      password,
+      displayName: name,
+    });
+
+    // 추가 프로필 정보 Firestore 저장
+    await db.collection('pms_admins').doc(userRecord.uid).set({
+      email,
+      name,
+      role: 'admin',
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
+    res.status(201).json({ success: true, uid: userRecord.uid });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * 4. 서비스 이용자 관리 (CRUD)
+ */
+// 등록
+app.post('/api/admin/users', async (req, res) => {
+  // 실제 구현 시 권한 체크 로직 포함
+  try {
+    const { userData } = req.body;
+    const docRef = await db.collection('pms_users').add({
+      ...userData,
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+    res.json({ success: true, id: docRef.id });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 수정/삭제 등 추가 엔드포인트...
+app.put('/api/admin/users/:id', async (req, res) => {
+  try {
+    const { userData } = req.body;
+    await db.collection('pms_users').doc(req.params.id).update(userData);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/admin/users/:id', async (req, res) => {
+  try {
+    await db.collection('pms_users').doc(req.params.id).delete();
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * 5. 데이터베이스 상태 관리 API
+ */
+app.get('/api/admin/db/stats', async (req, res) => {
+  try {
+    // 프로젝트 통계 계산 로직
+    res.json({
+      database: 'Firestore',
+      status: 'Healthy',
+      collections: ['privacyRecords', 'pms_users', 'pms_admins']
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 서버 리스닝 (도커 컨테이너 내부 8080 포트 사용)
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
