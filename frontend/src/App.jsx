@@ -8,7 +8,7 @@ import {
   History, Mail, CreditCard, HelpCircle, Eye, ShieldCheck,
   ChevronRight, Lock, CheckCircle, AlertTriangle, UserPlus, LogIn, 
   ArrowLeft, Globe, Zap, Check, Activity, BarChart3, TrendingUp,
-  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, QrCode, Sparkles, Wand2, MessageSquare, Calendar, FileDown, CreditCard as CardIcon, Save as SaveIcon
+  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, QrCode, Sparkles, Wand2, MessageSquare, Calendar, FileDown
 } from 'lucide-react';
 // 데이터 시각화 라이브러리 (보안 관제용)
 import { 
@@ -201,7 +201,7 @@ function PolicyAIView({ authFetch }) {
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><FileText size={14}/> 현재 개인정보 처리방침</span>
             <div className="flex gap-3">
               <button onClick={() => downloadFile('txt')} title="텍스트 다운로드" className="text-slate-400 hover:text-slate-900 transition-colors"><FileDown size={18}/></button>
-              <button onClick={() => downloadFile('excel')} className="text-emerald-500 hover:text-emerald-700 transition-colors flex items-center gap-1 font-black text-[10px] uppercase"><CardIcon size={14}/> Excel</button>
+              <button onClick={() => downloadFile('excel')} className="text-emerald-500 hover:text-emerald-700 transition-colors flex items-center gap-1 font-black text-[10px] uppercase"><Database size={14}/> Excel</button>
             </div>
           </div>
           <textarea value={policy} onChange={e=>setPolicy(e.target.value)} className="flex-1 w-full p-6 bg-slate-50 rounded-2xl border border-slate-100 outline-none font-medium text-sm leading-relaxed no-scrollbar resize-none" placeholder="정책 내용을 입력하거나 AI 에이전트에게 작성을 요청하세요." />
@@ -460,7 +460,7 @@ function CompanyAdminView({
                   <h3 className="text-2xl font-black text-slate-900 uppercase italic mb-2">OTP 보안 설정</h3>
                   <p className="text-[10px] text-slate-400 font-bold mb-8 leading-relaxed">Google Authenticator 등 OTP 앱으로<br/>아래 QR코드를 스캔해 주세요.</p>
                   <div className="bg-white p-4 border border-slate-100 rounded-[2rem] shadow-inner mb-8 inline-block"><img src={otpSetup.qrCode} alt="OTP QR" className="w-40 h-40" /></div>
-                  <div className="space-y-4"><input type="text" maxLength={6} value={otpSetup.code} onChange={e=>setOtpSetup({...otpSetup, code: e.target.value})} placeholder="000000" className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-black text-center tracking-[0.5em] text-xl" /><button onClick={enableOtp} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700">활성화하기</button></div>
+                  <div className="space-y-4"><input type="text" maxLength={6} value={otpSetup.code} onChange={e=>setOtpSetup({...otpSetup, code: e.target.value})} placeholder="000000" className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-black text-center tracking-[0.5em] text-3xl" required autoFocus /><button onClick={enableOtp} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700">활성화하기</button></div>
                 </div>
               </div>
             )}
@@ -482,7 +482,7 @@ function CompanyAdminView({
         );
       default: return <div className="p-24 text-center font-black text-slate-400 uppercase italic">모듈 준비 중...</div>;
     }
-  };
+  }
 
   return (
     <div className="h-screen bg-[#f8fafc] flex animate-in fade-in duration-700 overflow-hidden">
