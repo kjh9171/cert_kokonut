@@ -1,51 +1,20 @@
-# version: '3.8'
+#version: '3.8'
 
 services:
-  pms-db:
-    image: mysql:8.0
-    container_name: pms-db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root1234
-      MYSQL_DATABASE: pms_db
-      MYSQL_USER: pms_user
-      MYSQL_PASSWORD: pms1234
-    ports:
-      - "3306:3306"
-    volumes:
-      - pms-db-data:/var/lib/mysql
-      - ./pms-backend/src/main/resources/init.sql:/docker-entrypoint-initdb.d/init.sql
-    networks:
-      - pms-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot1234"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   pms-backend:
     build:
-      context: ./pms-backend
+      context: ./backend
       dockerfile: Dockerfile
     container_name: pms-backend
     restart: always
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://pms-db:3306/pms_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: pms_user
-      SPRING_DATASOURCE_PASSWORD: pms1234
-      JWT_SECRET: cert_kokonut_jwt_secret_key_2024_very_long_secure_key
-      JWT_EXPIRATION: 86400000
     ports:
-      - "8080:8080"
-    depends_on:
-      pms-db:
-        condition: service_healthy
+      - "8081:8080"
     networks:
       - pms-network
 
   pms-frontend:
     build:
-      context: ./pms-frontend
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: pms-frontend
     restart: always
@@ -59,6 +28,3 @@ services:
 networks:
   pms-network:
     driver: bridge
-
-volumes:
-  pms-db-data:

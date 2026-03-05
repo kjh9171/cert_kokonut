@@ -2,11 +2,6 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
-// ✅ 버그 수정:
-//   1. 포트: 8081 → 8080 (백엔드 실제 포트)
-//   2. host: localhost → pms-backend (Docker 내부 서비스명)
-//   3. changeOrigin: true 추가
-
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -19,10 +14,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://pms-backend:8080',  // ✅ 수정: localhost:8081 → pms-backend:8080
+        // ✅ 수정: localhost:8081 → pms-backend:8080
+        // Docker 컨테이너 내부에서 localhost는 ::1(IPv6)로 해석되어 ECONNREFUSED 발생
+        // 반드시 Docker 서비스명(pms-backend)과 컨테이너 내부 포트(8080) 사용
+        target: 'http://pms-backend:8080',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path,
       },
     },
   },
