@@ -8,7 +8,7 @@ import {
   History, Mail, CreditCard, HelpCircle, Eye, ShieldCheck,
   ChevronRight, Lock, CheckCircle, AlertTriangle, UserPlus, LogIn, 
   ArrowLeft, Globe, Zap, Check, Activity, BarChart3, TrendingUp,
-  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2
+  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw
 } from 'lucide-react';
 // 데이터 시각화를 위한 Recharts 라이브러리 (보안 모니터링용)
 import { 
