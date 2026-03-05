@@ -3,31 +3,19 @@
 @tailwind utilities;
 
 :root {
-  --font-noto: 'Noto Sans KR', sans-serif;
+  --font-noto: "Noto Sans KR", sans-serif;
 }
 
+/* ✅ [FIX] 라이트 모드로 수정 (App.jsx bg-white 디자인과 일치) */
 body {
   font-family: var(--font-noto);
-  @apply bg-slate-950 text-slate-100;
+  @apply bg-slate-50 text-slate-900;
 }
 
-/* 프리미엄 블러 효과 */
-.glass-effect {
-  @apply bg-white/10 backdrop-blur-xl border border-white/10;
-}
-
-/* 로딩 애니메이션 */
-@keyframes progress {
-  0% { transform: scaleX(0); }
-  50% { transform: scaleX(1); }
-  100% { transform: scaleX(0); transform-origin: right; }
-}
-
-.animate-progress {
-  animation: progress 2s ease-in-out infinite;
-  transform-origin: left;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import * as XLSX from 'xlsx'; // ✅ [FIX-08] CDN 동적 로딩 제거, npm 패키지 직접 사용
 // 보안 금고 전용 아이콘 세트
 import {
   Lock, Upload, Download, ShieldCheck, Trash2,
@@ -57,22 +58,11 @@ function parseCSV(text) {
   return rows;
 }
 
-// --- 엑셀(xlsx) 파싱: CDN에서 SheetJS 동적 로딩 ---
+// ✅ [FIX-08] window.XLSX CDN 로딩 완전 제거
 async function parseXLSX(arrayBuffer) {
-  // 전역에 이미 로딩되었는지 확인
-  if (!window.XLSX) {
-    // CDN에서 SheetJS 라이브러리 동적 로딩
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('SheetJS CDN 로딩 실패'));
-      document.head.appendChild(script);
-    });
-  }
-  const wb = window.XLSX.read(arrayBuffer, { type: 'array' });
+  const wb = XLSX.read(arrayBuffer, { type: 'array' });
   const ws = wb.Sheets[wb.SheetNames[0]];
-  return window.XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 }
 
 // --- 2차원 배열 → CSV 문자열 변환 ---
@@ -293,12 +283,14 @@ export default function SecurityVault({ onProcessComplete }) {
         onProcessComplete({
           filename: uploadedFile?.name || 'unknown',
           cipher: CIPHER_OPTIONS.find(c => c.id === selectedCipher)?.label || '',
-          header: header,
+          header,
           data: processed.slice(1),
           selectedCols: [...selectedCols],
           totalRows: selectedRows.size,
           totalCells: done,
           timestamp: new Date().toLocaleString('ko-KR'),
+          downloadUrl: url,          // ✅ [FIX-07] 다운로드 URL 추가
+          keyDownloadUrl: keyBlobUrl || null,
         });
       }
     } catch (err) {

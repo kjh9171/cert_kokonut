@@ -105,6 +105,133 @@ export default function App() {
   // 암호화 처리 결과를 회원DB 탭에 연동하기 위한 저장소
   const [encryptedRecords, setEncryptedRecords] = useState([]);
 
+// ────── ✅ [FIX-07] API 연동 상태 ──────
+const [authToken, setAuthToken] = useState(
+  () => localStorage.getItem('pms_token') || ''
+);
+const [currentUser, setCurrentUser] = useState(null);
+
+// 로그인 폼 상태
+const [loginEmail, setLoginEmail] = useState('');
+const [loginPassword, setLoginPassword] = useState('');
+const [loginError, setLoginError] = useState('');
+const [loginLoading, setLoginLoading] = useState(false);
+
+// 회원가입 폼 상태
+const [signupName, setSignupName] = useState('');
+const [signupEmail, setSignupEmail] = useState('');
+const [signupPassword, setSignupPassword] = useState('');
+const [signupError, setSignupError] = useState('');
+const [signupLoading, setSignupLoading] = useState(false);
+
+// 대시보드/회원DB 데이터
+const [dashStats, setDashStats] = useState({
+  total: 0, consentRate: 98, today: 0, daysLeft: 184
+});
+const [memberRecords, setMemberRecords] = useState([]);
+const [memberLoading, setMemberLoading] = useState(false);
+
+// 인증 fetch 헬퍼
+const authFetch = (url, options = {}) =>
+  fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...(options.headers || {}),
+    },
+  });
+
+// 로그인 API
+const handleLogin = async (e) => {
+  e?.preventDefault();
+  if (!loginEmail || !loginPassword) {
+    setLoginError('이메일과 비밀번호를 입력하세요.'); return;
+  }
+  setLoginLoading(true); setLoginError('');
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setLoginError(data.error || '로그인 실패'); return; }
+    if (data.token) {
+      localStorage.setItem('pms_token', data.token);
+      setAuthToken(data.token);
+      setCurrentUser(data.user);
+      setCurrentScreen('company_admin');
+      setActiveTab('dashboard');
+    }
+  } catch {
+    setLoginError('서버 연결 실패 — 백엔드를 먼저 실행해주세요.');
+  } finally { setLoginLoading(false); }
+};
+
+// 회원가입 API
+const handleSignup = async (e) => {
+  e?.preventDefault();
+  if (!signupName || !signupEmail || !signupPassword) {
+    setSignupError('모든 항목을 입력하세요.'); return;
+  }
+  setSignupLoading(true); setSignupError('');
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: signupName, email: signupEmail, password: signupPassword }),
+    });
+    const data = await res.json();
+    if (!res.ok) { setSignupError(data.error || '가입 실패'); return; }
+    alert('가입 완료! 로그인해주세요.');
+    setCurrentScreen('login');
+  } catch { setSignupError('서버 연결 실패'); }
+  finally { setSignupLoading(false); }
+};
+
+// 대시보드 통계 로딩
+const loadDashStats = async () => {
+  try {
+    const res = await authFetch('/api/admin/db/stats');
+    if (res.ok) {
+      const data = await res.json();
+      setDashStats(prev => ({
+        ...prev, total: data.total, consentRate: data.consentRate || 98, today: data.today
+      }));
+    }
+  } catch { /* 실패 시 기존 값 유지 */ }
+};
+
+// 회원 DB 로딩
+const loadMemberRecords = async () => {
+  setMemberLoading(true);
+  try {
+    const res = await authFetch('/api/admin/records');
+    if (res.ok) setMemberRecords(await res.json());
+  } catch { console.error('회원 DB 로딩 실패'); }
+  finally { setMemberLoading(false); }
+};
+
+// 회원 삭제
+const handleDeleteRecord = async (id) => {
+  if (!window.confirm('이 레코드를 영구 파기하시겠습니까?')) return;
+  try {
+    const res = await authFetch(`/api/admin/records/${id}`, { method: 'DELETE' });
+    if (res.ok) setMemberRecords(prev => prev.filter(r => r.id !== id));
+  } catch { alert('삭제 실패'); }
+};
+
+// admin 진입 시 통계 로딩
+useEffect(() => {
+  if (currentScreen === 'company_admin' && authToken) loadDashStats();
+}, [currentScreen, authToken]);
+
+// 회원DB 탭 전환 시 데이터 로딩
+useEffect(() => {
+  if (activeTab === 'member_db' && authToken) loadMemberRecords();
+}, [activeTab, authToken]);
+
   // 보안 금고에서 암호화 완료 시 호출되는 콜백
   const handleVaultComplete = (result) => {
     setEncryptedRecords(prev => [result, ...prev]);
@@ -277,10 +404,10 @@ export default function App() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
-                  { l: '보관 데이터', v: '1,284', c: 'text-blue-600', i: Database },
-                  { l: '동의 완료율', v: '98%', c: 'text-emerald-600', i: ShieldCheck },
-                  { l: '외부공유 건수', v: '23', c: 'text-indigo-600', i: Share2 },
-                  { l: '남은 구독일', v: '184', c: 'text-amber-600', i: CreditCard },
+{ l: '보관 데이터', v: dashStats.total.toLocaleString(), c: 'text-blue-600', i: Database },
+{ l: '동의 완료율', v: dashStats.consentRate + '%', c: 'text-emerald-600', i: ShieldCheck },
+{ l: '오늘 신규', v: String(dashStats.today), c: 'text-indigo-600', i: Share2 },
+{ l: '남은 구독일', v: String(dashStats.daysLeft), c: 'text-amber-600', i: CreditCard },
                 ].map((s, idx) => (
                   <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:border-blue-200 transition-all hover:shadow-2xl hover:shadow-blue-900/5 group">
                     <div className="bg-slate-50 p-2.5 rounded-xl text-slate-400 w-fit mb-6 group-hover:bg-blue-50 group-hover:text-blue-500 transition-colors"><s.i size={20} /></div>
@@ -342,23 +469,30 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {[
-                        { n: '홍길동', p: '010-1***-2***', d: '2026.03.04 14:22', s: 'Encrypted' },
-                        { n: '임꺽정', p: '010-9***-0***', d: '2026.03.04 16:05', s: 'Encrypted' },
-                        { n: '이순신', p: '010-5***-7***', d: '2026.03.04 17:11', s: 'Encrypted' },
-                      ].map((row, i) => (
-                        <tr key={i} className="hover:bg-slate-50 transition-colors uppercase font-bold text-sm text-slate-700 italic">
-                          <td className="py-5 px-6">{row.n}</td>
-                          <td className="py-5 px-6 tabular-nums">{row.p}</td>
-                          <td className="py-5 px-6 tabular-nums">{row.d}</td>
-                          <td className="py-5 px-6"><span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] uppercase font-black">{row.s}</span></td>
-                          <td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-400">
-                            <Eye size={18} className="cursor-pointer hover:text-blue-600" />
-                            <Trash2 size={18} className="cursor-pointer hover:text-rose-600" />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+  {memberLoading ? (
+    <tr><td colSpan={5} className="py-10 text-center text-slate-400">로딩 중...</td></tr>
+  ) : memberRecords.length === 0 ? (
+    <tr><td colSpan={5} className="py-10 text-center text-slate-400">등록된 회원이 없습니다.</td></tr>
+  ) : memberRecords.map((row) => (
+    <tr key={row.id} className="hover:bg-slate-50 transition-colors font-bold text-sm text-slate-700">
+      <td className="py-5 px-6 italic uppercase">{row.name}</td>
+      <td className="py-5 px-6 tabular-nums">{row.phone || '***-****-****'}</td>
+      <td className="py-5 px-6 tabular-nums">
+        {new Date(row.createdAt).toLocaleString('ko-KR')}
+      </td>
+      <td className="py-5 px-6">
+        <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] uppercase font-black">
+          {row.status || 'ENCRYPTED'}
+        </span>
+      </td>
+      <td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-400">
+        <Eye size={18} className="cursor-pointer hover:text-blue-600" />
+        <Trash2 size={18} className="cursor-pointer hover:text-rose-600"
+          onClick={() => handleDeleteRecord(row.id)} />
+      </td>
+    </tr>
+  ))}
+</tbody>
                   </table>
                 </div>
               </div>
@@ -616,10 +750,11 @@ export default function App() {
             {authStep === 'credentials' ? (
               <div className="space-y-6 animate-in fade-in slide-in-from-bottom-5 duration-300">
                 <div className="space-y-4">
-                  <input type="email" placeholder="admin@pms-center.com" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all" />
-                  <input type="password" placeholder="••••••••" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all" />
+                  <input type="email" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} placeholder="admin@pms-center.com" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all" />
+                  <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} placeholder="••••••••" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all" />
+                  {loginError && <p className="text-rose-500 text-sm font-bold text-center">{loginError}</p>}
                 </div>
-                <button onClick={() => setAuthStep('otp')} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-2xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98] uppercase italic tracking-tighter">Request Access</button>
+                <button onClick={handleLogin} disabled={loginLoading} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-2xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-[0.98] uppercase italic tracking-tighter">{loginLoading ? 'Loading...' : 'Request Access'}</button>
                 <div className="text-center">
                   <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">Demo access password: 1234</span>
                 </div>
@@ -651,7 +786,11 @@ export default function App() {
              <div className="absolute top-0 right-10 bg-blue-600 text-white px-4 py-2 rounded-b-2xl text-[10px] font-black uppercase tracking-[0.2em] italic">v2.0 Beta</div>
             <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-12 text-center italic">Initialize Account</h2>
             <div className="p-10 bg-slate-50 rounded-[3rem] border border-slate-100 space-y-6 mb-12 shadow-inner">
-              <label className="flex items-center gap-4 text-base font-black text-slate-800 cursor-pointer group">
+              <input type="text" placeholder="이름" value={signupName} onChange={e => setSignupName(e.target.value)} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl outline-none text-sm font-bold" />
+              <input type="email" placeholder="이메일 (admin@cert.com)" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl outline-none text-sm font-bold" />
+              <input type="password" placeholder="비밀번호" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} className="w-full px-6 py-4 bg-white border border-slate-200 rounded-xl outline-none text-sm font-bold" />
+              {signupError && <p className="text-rose-500 text-sm font-bold text-center">{signupError}</p>}
+              <label className="flex items-center gap-4 text-base font-black text-slate-800 cursor-pointer group mt-4">
                 <div className="relative flex items-center">
                   <input type="checkbox" checked={agreed.terms && agreed.privacy && agreed.marketing} onChange={(e) => handleAgreeAll(e.target.checked)} className="w-6 h-6 rounded-lg border-2 border-slate-200 text-blue-600 focus:ring-0 cursor-pointer transition-all" />
                 </div>
@@ -675,7 +814,7 @@ export default function App() {
                 </div>
               ))}
             </div>
-            <button onClick={() => setCurrentScreen('company_admin')} className="w-full py-6 bg-slate-900 text-white rounded-3xl font-black text-xl shadow-2xl shadow-slate-200 hover:bg-black transition-all active:scale-[0.98] uppercase italic tracking-tighter">Create Secured Workspace</button>
+            <button onClick={handleSignup} disabled={signupLoading} className="w-full py-6 bg-slate-900 text-white rounded-3xl font-black text-xl shadow-2xl shadow-slate-200 hover:bg-black transition-all active:scale-[0.98] uppercase italic tracking-tighter">{signupLoading ? 'Loading...' : 'Create Secured Workspace'}</button>
             <p className="mt-8 text-center text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] cursor-pointer hover:text-slate-500 italic" onClick={() => setCurrentScreen('login')}>Already have an account? Access Portal</p>
           </div>
         </div>
