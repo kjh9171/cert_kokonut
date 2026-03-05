@@ -67,11 +67,11 @@ const writeDB = (store) =>
 
 const getCollection = async (col) => readDB()[col] || [];
 
-// ✅ [FIX] DB 초기화 시 security_logs 추가
+// ✅ [FIX] DB 초기화 시 security_logs, verification_codes 추가
 const initDB = () => {
   const store = readDB();
   let changed = false;
-  ['pms_admins', 'privacy_records', 'pms_users', 'security_logs'].forEach(col => {
+  ['pms_admins', 'privacy_records', 'pms_users', 'security_logs', 'verification_codes'].forEach(col => {
     if (!store[col]) { store[col] = []; changed = true; }
   });
   if (changed) writeDB(store);
@@ -81,85 +81,53 @@ initDB();
 const getDoc = async (col, id) =>
   (readDB()[col] || []).find((i) => i.id === id) || null;
 
-// ✅ [FIX-06] 두 컬렉션 모두 검색하는 헬퍼
-const getDocByAny = async (id) => {
-  const store = readDB();
-  const admin = (store.pms_admins || []).find((i) => i.id === id);
-  if (admin) return { ...admin, _col: "pms_admins" };
-  const user = (store.pms_users || []).find((i) => i.id === id);
-  if (user) return { ...user, _col: "pms_users" };
-  return null;
-};
+// ────── 인증 메일 시뮬레이션 및 검증 API ──────
 
-const addDoc = async (col, data) => {
-  const store = readDB();
-  if (!store[col]) store[col] = [];
-  const newDoc = {
-    id: Date.now().toString(),
-    ...data,
-    createdAt: new Date().toISOString(),
-  };
-  store[col].push(newDoc);
-  writeDB(store);
-  return { id: newDoc.id };
-};
-
-const updateDoc = async (col, id, data) => {
-  const store = readDB();
-  const idx = (store[col] || []).findIndex((i) => i.id === id);
-  if (idx !== -1) {
-    store[col][idx] = { ...store[col][idx], ...data };
-    writeDB(store);
-  }
-};
-
-const deleteDoc = async (col, id) => {
-  const store = readDB();
-  if (store[col]) {
-    store[col] = store[col].filter((i) => i.id !== id);
-    writeDB(store);
-  }
-};
-
-const findUserByEmail = async (email) => {
-  const store = readDB();
-  const admin = (store.pms_admins || []).find((u) => u.email === email);
-  if (admin) return { ...admin, _type: "ADMIN" };
-  const user = (store.pms_users || []).find((u) => u.email === email);
-  if (user) return { ...user, _type: "USER" };
-  return null;
-};
-
-// ────── 보안 유틸리티 ──────
-function encrypt(text) {
-  const iv = crypto.randomBytes(IV_LENGTH);
-  const cipher = crypto.createCipheriv(
-    "aes-256-cbc",
-    normalizeKey(ENCRYPTION_KEY_RAW),
-    iv,
-  );
-  let encrypted = cipher.update(text);
-  encrypted = Buffer.concat([encrypted, cipher.final()]);
-  return iv.toString("hex") + ":" + encrypted.toString("hex");
-}
-
-function decrypt(text) {
+// 인증 코드 발송 (실제 메일 발송 대신 콘솔 출력 및 DB 저장)
+app.post("/api/auth/send-code", async (req, res) => {
   try {
-    const [ivHex, encHex] = text.split(":");
-    const iv = Buffer.from(ivHex, "hex");
-    const decipher = crypto.createDecipheriv(
-      "aes-256-cbc",
-      normalizeKey(ENCRYPTION_KEY_RAW),
-      iv,
-    );
-    let dec = decipher.update(Buffer.from(encHex, "hex"));
-    dec = Buffer.concat([dec, decipher.final()]);
-    return dec.toString();
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "이메일을 입력하세요." });
+    
+    const code = Math.floor(100000 + Math.random() * 900000).toString(); // 6자리 코드
+    const store = readDB();
+    if (!store.verification_codes) store.verification_codes = [];
+    
+    // 기존 코드 삭제 후 새 코드 저장
+    store.verification_codes = store.verification_codes.filter(c => c.email !== email);
+    store.verification_codes.push({
+      email,
+      code,
+      expiresAt: Date.now() + 1000 * 60 * 5 // 5분 유효
+    });
+    writeDB(store);
+    
+    console.log(`[CERT 보안알림] ${email} 인증 코드: [${code}]`);
+    res.json({ success: true, message: "인증 코드가 발송되었습니다. (콘솔 확인)" });
   } catch (err) {
-    console.error("[ERROR] 복호화 실패:", err.message);
-    return null;
+    res.status(500).json({ error: err.message });
   }
-}
+});
+
+// 인증 코드 확인
+app.post("/api/auth/verify-code", async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    const store = readDB();
+    const record = (store.verification_codes || []).find(c => c.email === email && c.code === code);
+    
+    if (!record) return res.status(400).json({ error: "인증 코드가 일치하지 않습니다." });
+    if (record.expiresAt < Date.now()) return res.status(400).json({ error: "만료된 인증 코드입니다." });
+    
+    // 검증 성공 시 마킹 (회원가입 시 확인용)
+    record.verified = true;
+    writeDB(store);
+    
+    res.json({ success: true, message: "이메일 인증이 완료되었습니다." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // ────── 인증 API ──────
 app.post("/api/auth/register", async (req, res) => {
@@ -167,12 +135,19 @@ app.post("/api/auth/register", async (req, res) => {
     const { email, password, name } = req.body;
     if (!email || !password || !name)
       return res.status(400).json({ error: "필수 정보 누락" });
+    
+    // 이메일 인증 여부 최종 확인
+    const store = readDB();
+    const isVerified = (store.verification_codes || []).some(c => c.email === email && c.verified);
+    if (!isVerified) return res.status(400).json({ error: "이메일 인증이 필요합니다." });
+
     if (await findUserByEmail(email))
       return res.status(400).json({ error: "이미 등록된 이메일입니다." });
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const secret = speakeasy.generateSecret({ length: 20 });
-    const role = email.includes("@cert.com") ? "admin" : "user";
+    // 특정 도메인 제한 없이 모두 admin 권한 부여 (대표님 요청: 워크스페이스 생성 주체)
+    const role = "admin"; 
     const userData = {
       email,
       password: hashedPassword,
@@ -181,15 +156,25 @@ app.post("/api/auth/register", async (req, res) => {
       otpSecret: encrypt(secret.base32),
       otpEnabled: false,
     };
-    const col = role === "admin" ? "pms_admins" : "pms_users";
-    const docRef = await addDoc(col, userData);
-    res
-      .status(201)
-      .json({
-        success: true,
-        id: docRef.id,
-        message: "등록 완료! 로그인하세요.",
-      });
+    const docRef = await addDoc("pms_admins", userData);
+    
+    // 인증 코드 레코드 정리
+    store.verification_codes = store.verification_codes.filter(c => c.email !== email);
+    writeDB(store);
+
+    // 가입 즉시 로그인 토큰 발행 (편의성 증대)
+    const token = jwt.sign(
+      { uid: docRef.id, email, role },
+      JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+
+    res.status(201).json({
+      success: true,
+      token,
+      user: { email, name, role },
+      message: "보안 워크스페이스가 생성되었습니다.",
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
