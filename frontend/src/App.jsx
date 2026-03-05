@@ -8,7 +8,7 @@ import {
   History, Mail, CreditCard, HelpCircle, Eye, ShieldCheck,
   ChevronRight, Lock, CheckCircle, AlertTriangle, UserPlus, LogIn, 
   ArrowLeft, Globe, Zap, Check, Activity, BarChart3, TrendingUp,
-  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, CreditCard as CardIcon, QrCode, Sparkles, Wand2, MessageSquare, Save as SaveIcon, Calendar, FileDown
+  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, QrCode, Sparkles, Wand2, MessageSquare, Calendar, FileDown, CreditCard as CardIcon, Save as SaveIcon
 } from 'lucide-react';
 // 데이터 시각화 라이브러리 (보안 관제용)
 import { 
@@ -30,7 +30,7 @@ const COMPANY_MENU = [
 const ALL_PERMISSIONS = COMPANY_MENU.map(m => ({ id: m.id, label: m.label }));
 
 // --- 세션 타이머 컴포넌트 ---
-const SessionTimer = ({ initialTime, onLogout, onRefresh, isSandbox, resetKey }) => {
+function SessionTimer({ initialTime, onLogout, onRefresh, isSandbox, resetKey }) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   
   useEffect(() => { setTimeLeft(initialTime); }, [resetKey, initialTime]);
@@ -55,10 +55,80 @@ const SessionTimer = ({ initialTime, onLogout, onRefresh, isSandbox, resetKey })
       <button onClick={onRefresh} className="text-[10px] font-black bg-blue-600 text-white px-2 py-0.5 rounded ml-2 hover:bg-blue-700 transition shadow-sm border border-blue-500 uppercase">RENEW</button>
     </div>
   );
-};
+}
+
+// --- 랜딩 페이지 뷰 ---
+function LandingView({ onNavigate }) {
+  return (
+    <div className="min-h-screen bg-white animate-in fade-in duration-700 overflow-y-auto">
+      <nav className="fixed top-0 w-full h-20 bg-white/90 backdrop-blur-md border-b border-slate-100 z-50 flex items-center justify-between px-10">
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('landing')}>
+          <div className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-200"><Shield size={24} /></div>
+          <span className="font-black text-xl tracking-tighter text-slate-900 uppercase">PMS 센터</span>
+        </div>
+        <div className="flex gap-4">
+          <button onClick={() => onNavigate('login')} className="text-sm font-bold text-slate-600 px-4 hover:text-blue-600 transition">보안 로그인</button>
+          <button onClick={() => onNavigate('sandbox')} className="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-black transition shadow-lg shadow-slate-200">무료 시작하기</button>
+        </div>
+      </nav>
+
+      <main className="pt-40 text-center px-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-1.5 rounded-full text-[11px] font-black tracking-widest mb-8 uppercase"><Zap size={14} fill="currentColor" /> 보안 및 신뢰 최우선 (Secured by CERT)</div>
+          <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-tight mb-8">개인정보 보호,<br /><span className="text-blue-600">자동화</span>의 시대입니다.</h1>
+          <p className="text-xl text-slate-500 font-medium mb-12 max-w-2xl mx-auto">복잡한 보안 컴플라이언스 대응부터 데이터 암호화 보관까지,<br />기업의 보안 리스크를 단 하나의 플랫폼으로 해결하세요.</p>
+          <div className="flex justify-center gap-4">
+            <button onClick={() => onNavigate('sandbox')} className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-2xl shadow-blue-200">무료 체험하기 (가입 없이)</button>
+            <button onClick={() => onNavigate('sandbox')} className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition shadow-2xl">지금 바로 도입하기 (체험)</button>
+          </div>
+        </div>
+        <div className="mt-24 max-w-6xl mx-auto px-4 mb-20 text-left">
+          <div className="bg-slate-50 rounded-[3rem] p-12 border border-slate-100 shadow-sm relative overflow-hidden grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="space-y-6">
+              <div className="bg-blue-100 text-blue-700 w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner"><FileSearch size={24} /></div>
+              <h3 className="text-3xl font-black text-slate-900 tracking-tight">지능형 개인정보 관리 시스템</h3>
+              <p className="text-slate-500 font-medium leading-relaxed">PMS Center를 통해 모든 데이터가 실시간으로 분류되고 법적 권고 사항에 맞춰 자동 암호화되는 과정을 확인하세요. 단 하나의 플랫폼으로 모든 리스크를 통제합니다.</p>
+            </div>
+            <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 space-y-4 transform hover:scale-105 transition duration-500">
+              <div className="flex items-center gap-3 p-4 bg-emerald-50 text-emerald-700 rounded-xl font-bold text-sm border border-emerald-100"><CheckCircle size={18} /> 개인정보처리방침 v2.4 자동 업데이트 완료</div>
+              <div className="flex items-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-xl font-bold text-sm border border-blue-100"><Lock size={18} /> 모든 필드 AES-256 암호화 적용 중</div>
+              <div className="flex items-center gap-3 p-4 bg-indigo-50 text-indigo-700 rounded-xl font-bold text-sm border border-indigo-100"><Activity size={18} /> 실시간 컴플라이언스 모니터링 활성화</div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <footer className="mt-20 py-24 bg-slate-50 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto px-10 flex flex-col items-center text-center">
+          <div className="flex items-center gap-2 mb-8 opacity-50"><Shield size={24} className="text-slate-900" /><span className="font-black text-2xl tracking-tighter text-slate-900 uppercase">PMS 센터</span></div>
+          <p className="text-slate-400 text-[10px] font-bold uppercase mb-4">주식회사 개인정보관리서비스 | 대표이사: 김종환 | 사업자번호: 000-00-00000</p>
+          <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.1em]">© 2026 PMS CENTER INC. SECURED BY CERT TEAM. ALL RIGHTS RESERVED.</p>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+// --- 접근 제한 및 구독 유도 뷰 ---
+function RestrictedView({ title, message, onUpgrade }) {
+  return (
+    <div className="h-full flex flex-col items-center justify-center p-10 animate-in zoom-in-95 duration-500">
+      <div className="w-24 h-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner border border-rose-100 animate-bounce">
+        <Lock size={48} />
+      </div>
+      <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic mb-4">{title}</h3>
+      <p className="text-slate-500 font-medium text-center mb-10 leading-relaxed max-w-md">{message}</p>
+      <div className="flex gap-4">
+        <button onClick={onUpgrade} className="px-10 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 shadow-2xl shadow-blue-100 transition-all flex items-center gap-3">
+          <CreditCard size={20} /> 프리미엄 구독하기
+        </button>
+      </div>
+      <p className="mt-8 text-[10px] font-black text-slate-300 uppercase tracking-widest">Secured by CERT Total Management</p>
+    </div>
+  );
+}
 
 // --- AI 에이전트 정책 관리 뷰 ---
-const PolicyAIView = ({ authFetch }) => {
+function PolicyAIView({ authFetch }) {
   const [policy, setPolicy] = useState("");
   const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -87,7 +157,6 @@ const PolicyAIView = ({ authFetch }) => {
     }, 2000);
   };
 
-  // ✅ [추가] 파일 다운로드 기능 (Excel/CSV 및 TXT)
   const downloadFile = (format) => {
     if (!policy) return;
     let content = policy;
@@ -95,7 +164,6 @@ const PolicyAIView = ({ authFetch }) => {
     let type = "text/plain";
 
     if (format === 'excel') {
-      // CSV 형식으로 변환 (Excel 호환)
       content = "\ufeff" + "목차,내용\n" + policy.split('\n').map(line => {
         if (!line.trim()) return "";
         return `"${line.split('.')[0]}","${line.replace(/"/g, '""')}"`;
@@ -113,8 +181,6 @@ const PolicyAIView = ({ authFetch }) => {
     link.download = fileName;
     link.click();
     URL.revokeObjectURL(url);
-    
-    // 다운로드 로그 기록 요청
     authFetch('/api/admin/logs', { method: 'POST', body: JSON.stringify({ action: 'POLICY_DOWNLOAD', target: 'PRIVACY_POLICY', reason: `${format.toUpperCase()} 형식 문서 반출` }) });
   };
 
@@ -134,7 +200,7 @@ const PolicyAIView = ({ authFetch }) => {
           <div className="flex justify-between items-center mb-6">
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><FileText size={14}/> 현재 개인정보 처리방침</span>
             <div className="flex gap-3">
-              <button onClick={() => downloadFile('txt')} className="text-slate-400 hover:text-slate-900 transition-colors"><FileDown size={18}/></button>
+              <button onClick={() => downloadFile('txt')} title="텍스트 다운로드" className="text-slate-400 hover:text-slate-900 transition-colors"><FileDown size={18}/></button>
               <button onClick={() => downloadFile('excel')} className="text-emerald-500 hover:text-emerald-700 transition-colors flex items-center gap-1 font-black text-[10px] uppercase"><CardIcon size={14}/> Excel</button>
             </div>
           </div>
@@ -178,13 +244,13 @@ const PolicyAIView = ({ authFetch }) => {
       </div>
     </div>
   );
-};
+}
 
 // --- 관리자 뷰 ---
-const CompanyAdminView = ({ 
+function CompanyAdminView({ 
   activeTab, setActiveTab, sidebarOpen, setSidebarOpen, onLogout, onRefresh, onNavigate,
   dashStats, memberRecords, memberLoading, handleDeleteRecord, onVaultComplete, isSandbox, user, timerKey 
-}) => {
+}) {
   const [auditLogs, setAuditLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [users, setUsers] = useState([]);
@@ -438,7 +504,7 @@ const CompanyAdminView = ({
       </div>
     </div>
   );
-};
+}
 
 // --- 메인 앱 컴포넌트 ---
 
