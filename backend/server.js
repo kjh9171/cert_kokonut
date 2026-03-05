@@ -413,6 +413,33 @@ app.delete("/api/admin/records/:id", verifyToken, async (req, res) => {
   }
 });
 
+// ✅ [추가] 개인정보 레코드 일괄 등록 (보안 금고 연동용)
+app.post("/api/admin/records/batch", verifyToken, async (req, res) => {
+  try {
+    const { records } = req.body;
+    if (!Array.isArray(records)) return res.status(400).json({ error: "올바르지 않은 데이터 형식입니다." });
+    
+    const store = readDB();
+    if (!store.privacy_records) store.privacy_records = [];
+    
+    const newRecords = records.map(r => ({
+      id: (Date.now() + Math.random()).toString(),
+      name: r.name || "미지정",
+      email: r.email || "",
+      phone: r.phone || "",
+      status: r.status || "ENCRYPTED",
+      createdAt: new Date().toISOString()
+    }));
+    
+    store.privacy_records.push(...newRecords);
+    writeDB(store);
+    
+    res.json({ success: true, count: newRecords.length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // 보안 감사 로그 기록
 app.post("/api/admin/logs", verifyToken, async (req, res) => {
   try {
