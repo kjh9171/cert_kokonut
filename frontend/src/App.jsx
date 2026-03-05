@@ -58,17 +58,17 @@ function SessionTimer({ initialTime, onLogout, onRefresh, isSandbox, resetKey })
 }
 
 // --- 랜딩 페이지 뷰 ---
-function LandingView({ onNavigate }) {
+function LandingView({ onNavigate, isLoggedIn }) {
   return (
     <div className="min-h-screen bg-white animate-in fade-in duration-700 overflow-y-auto">
       <nav className="fixed top-0 w-full h-20 bg-white/90 backdrop-blur-md border-b border-slate-100 z-50 flex items-center justify-between px-10">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('dashboard')}>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate(isLoggedIn ? 'company_admin' : 'landing')}>
           <div className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-200"><Shield size={24} /></div>
           <span className="font-black text-xl tracking-tighter text-slate-900 uppercase">PMS 센터</span>
         </div>
         <div className="flex gap-4">
-          <button onClick={() => onNavigate('login')} className="text-sm font-bold text-slate-600 px-4 hover:text-blue-600 transition">보안 로그인</button>
-          <button onClick={() => onNavigate('sandbox')} className="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-black transition shadow-lg shadow-slate-200">무료 시작하기</button>
+          <button onClick={() => onNavigate(isLoggedIn ? 'company_admin' : 'login')} className="text-sm font-bold text-slate-600 px-4 hover:text-blue-600 transition">{isLoggedIn ? '대시보드 이동' : '보안 로그인'}</button>
+          {!isLoggedIn && <button onClick={() => onNavigate('sandbox')} className="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-black transition shadow-lg shadow-slate-200">무료 시작하기</button>}
         </div>
       </nav>
 
@@ -78,8 +78,8 @@ function LandingView({ onNavigate }) {
           <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tighter leading-tight mb-8">개인정보 보호,<br /><span className="text-blue-600">자동화</span>의 시대입니다.</h1>
           <p className="text-xl text-slate-500 font-medium mb-12 max-w-2xl mx-auto">복잡한 보안 컴플라이언스 대응부터 데이터 암호화 보관까지,<br />기업의 보안 리스크를 단 하나의 플랫폼으로 해결하세요.</p>
           <div className="flex justify-center gap-4">
-            <button onClick={() => onNavigate('sandbox')} className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-2xl shadow-blue-200">무료 체험하기 (가입 없이)</button>
-            <button onClick={() => onNavigate('sandbox')} className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition shadow-2xl">지금 바로 도입하기 (체험)</button>
+            <button onClick={() => onNavigate(isLoggedIn ? 'company_admin' : 'sandbox')} className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-2xl shadow-blue-200">{isLoggedIn ? '대시보드로 가기' : '무료 체험하기 (가입 없이)'}</button>
+            <button onClick={() => onNavigate(isLoggedIn ? 'company_admin' : 'sandbox')} className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition shadow-2xl">{isLoggedIn ? '운영 관리 센터' : '지금 바로 도입하기 (체험)'}</button>
           </div>
         </div>
         <div className="mt-24 max-w-6xl mx-auto px-4 mb-20 text-left">
@@ -607,7 +607,7 @@ export default function App() {
       const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, name }) });
       const d = await res.json();
       if (res.ok) { localStorage.setItem('pms_token', d.token); setAuthToken(d.token); setCurrentUser(d.user); setCurrentScreen('company_admin'); }
-      else setError(d.error);
+      else setError(d.error || '회원가입 실패');
     } catch { setError('서버 연결 실패'); } finally { setLoading(false); }
   };
 
@@ -641,14 +641,16 @@ export default function App() {
       if (res.ok) {
         if (d.requiresOTP) { setOtpMode({ active: true, tempToken: d.tempToken, code: '' }); }
         else { localStorage.setItem('pms_token', d.token); setAuthToken(d.token); setCurrentUser(d.user); setCurrentScreen('company_admin'); }
+      } else {
+        alert(d.error || '구글 인증 실패');
       }
-    } catch { alert('구글 인증 실패'); } finally { setLoading(false); }
+    } catch { alert('서버 연결 실패'); } finally { setLoading(false); }
   };
 
   return (
     <div className="selection:bg-blue-600 selection:text-white h-screen overflow-hidden bg-white font-['Noto_Sans_KR']">
       <div className={`h-full ${currentScreen === 'company_admin' || currentScreen === 'sandbox' ? 'overflow-hidden' : 'overflow-y-auto scroll-smooth'}`}>
-        {currentScreen === 'landing' && <LandingView onNavigate={setCurrentScreen} />}
+        {currentScreen === 'landing' && <LandingView onNavigate={setCurrentScreen} isLoggedIn={!!authToken} />}
         
         {currentScreen === 'login' && !otpMode.active && (
           <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">

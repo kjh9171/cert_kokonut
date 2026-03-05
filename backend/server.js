@@ -25,7 +25,7 @@ if (!fs.existsSync(LOCAL_DB_PATH)) {
 }
 
 const app = express();
-app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:5173", credentials: true }));
+app.use(cors({ origin: ["http://localhost:5173", "http://127.0.0.1:5173"], credentials: true }));
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || "cert_pms_master_token_key_777";
@@ -117,6 +117,29 @@ app.get("/api/auth/refresh", verifyToken, async (req, res) => {
   } catch { res.status(500).send(); }
 });
 
+app.post("/api/auth/register", async (req, res) => {
+  try {
+    const { email, password, name } = req.body;
+    if (await findUserByEmail(email)) return res.status(400).json({ error: "이미 가입된 이메일입니다." });
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const userCount = (await getCollection("pms_admins")).length;
+    const role = userCount === 0 ? "admin" : "user";
+    const newUser = await addDoc("pms_admins", { 
+      email, 
+      password: hashedPassword, 
+      name, 
+      role, 
+      licenseKey: generateLicenseKey(), 
+      licenseExpiry: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+      permissions: ['dashboard', 'member_db', 'security_vault', 'policy_manage'],
+      otpEnabled: false 
+    });
+    const token = jwt.sign({ uid: newUser.id, email: newUser.email, role: newUser.role, name: newUser.name }, JWT_SECRET, { expiresIn: "1h" });
+    await logAction(newUser.id, newUser.email, newUser.name, "USER_REGISTERED", "AUTH_ENGINE", "신규 회원 가입 성공");
+    res.status(201).json({ success: true, token, user: { email: newUser.email, name: newUser.name, role: newUser.role } });
+  } catch (err) { res.status(500).json({ error: "회원가입 처리 중 오류 발생" }); }
+});
+
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -135,6 +158,36 @@ app.post("/api/auth/login", async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ✅ [복구] 구글 로그인 시뮬레이션 API
+app.post("/api/auth/google-mock", async (req, res) => {
+  try {
+    const { email } = req.body;
+    let userData = await findUserByEmail(email);
+    if (!userData) {
+      // 구글로 첫 접속 시 자동 가입 처리
+      const hashedPassword = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10);
+      userData = await addDoc("pms_admins", { 
+        email, 
+        password: hashedPassword, 
+        name: "구글이용자", 
+        role: "user", 
+        licenseKey: generateLicenseKey(), 
+        licenseExpiry: new Date(Date.now() + 30*24*60*60*1000).toISOString(),
+        permissions: ['dashboard'],
+        otpEnabled: false 
+      });
+      await logAction(userData.id, email, "구글이용자", "GOOGLE_SIGNUP", "AUTH_ENGINE", "구글 계정 자동 가입");
+    }
+    if (userData.otpEnabled) {
+      const tempToken = jwt.sign({ uid: userData.id, email: userData.email, isPendingOTP: true }, JWT_SECRET, { expiresIn: "5m" });
+      return res.json({ success: true, requiresOTP: true, tempToken });
+    }
+    const token = jwt.sign({ uid: userData.id, email: userData.email, role: userData.role, name: userData.name }, JWT_SECRET, { expiresIn: "1h" });
+    await logAction(userData.id, email, userData.name, "GOOGLE_LOGIN_SUCCESS", "AUTH_ENGINE", "구글 로그인 성공");
+    res.json({ success: true, token, user: { email: userData.email, name: userData.name, role: userData.role, permissions: userData.permissions || [], licenseKey: userData.licenseKey, licenseExpiry: userData.licenseExpiry, otpEnabled: userData.otpEnabled } });
+  } catch (err) { res.status(500).json({ error: "구글 인증 처리 실패" }); }
+});
+
 app.post("/api/auth/login/otp", async (req, res) => {
   try {
     const { tempToken, otpCode } = req.body;
@@ -148,7 +201,6 @@ app.post("/api/auth/login/otp", async (req, res) => {
   } catch { res.status(403).send(); }
 });
 
-// ✅ [추가] OTP 설정 및 관리 API
 app.get("/api/auth/otp/setup", verifyToken, async (req, res) => {
   try {
     const secret = speakeasy.generateSecret({ name: `PMS_Center:${req.user.email}` });
