@@ -8,7 +8,7 @@ import {
   History, Mail, CreditCard, HelpCircle, Eye, ShieldCheck,
   ChevronRight, Lock, CheckCircle, AlertTriangle, UserPlus, LogIn, 
   ArrowLeft, Globe, Zap, Check, Activity, BarChart3, TrendingUp,
-  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, QrCode, Sparkles, Wand2, MessageSquare, Calendar, FileDown
+  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, QrCode, Sparkles, Wand2, MessageSquare, Calendar, FileDown, CreditCard as CardIcon, Save as SaveIcon
 } from 'lucide-react';
 // 데이터 시각화 라이브러리 (보안 관제용)
 import { 
@@ -62,7 +62,7 @@ function LandingView({ onNavigate }) {
   return (
     <div className="min-h-screen bg-white animate-in fade-in duration-700 overflow-y-auto">
       <nav className="fixed top-0 w-full h-20 bg-white/90 backdrop-blur-md border-b border-slate-100 z-50 flex items-center justify-between px-10">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('landing')}>
+        <div className="flex items-center gap-2 cursor-pointer" onClick={() => onNavigate('dashboard')}>
           <div className="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-200"><Shield size={24} /></div>
           <span className="font-black text-xl tracking-tighter text-slate-900 uppercase">PMS 센터</span>
         </div>
@@ -260,6 +260,7 @@ function CompanyAdminView({
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
   const [otpSetup, setOtpSetup] = useState({ open: false, qrCode: '', secret: '', code: '' });
+  const [revealedIds, setRevealedIds] = useState([]);
 
   const authFetch = useCallback((url, options = {}) =>
     fetch(url, {
@@ -318,14 +319,30 @@ function CompanyAdminView({
 
   const enableOtp = async () => {
     const res = await authFetch('/api/auth/otp/enable', { method: 'POST', body: JSON.stringify({ otpCode: otpSetup.code }) });
-    if (res.ok) { alert('2단계 인증이 활성화되었습니다.'); setOtpSetup({ ...otpSetup, open: false }); }
+    if (res.ok) { alert('2단계 인증이 활성화되었습니다.'); setOtpSetup({ ...otpSetup, open: false }); onRefresh(); }
     else { const d = await res.json(); alert(d.error); }
   };
 
   const disableOtp = async () => {
     if (!confirm('2단계 인증을 해제하시겠습니까?')) return;
     const res = await authFetch('/api/auth/otp/disable', { method: 'POST' });
-    if (res.ok) alert('2단계 인증이 해제되었습니다.');
+    if (res.ok) { alert('2단계 인증이 해제되었습니다.'); onRefresh(); }
+  };
+
+  const toggleRecordView = async (record) => {
+    const isRevealed = revealedIds.includes(record.id);
+    if (!isRevealed) {
+      setRevealedIds(prev => [...prev, record.id]);
+      if (!isSandbox) {
+        await authFetch('/api/admin/logs', { 
+          method: 'POST', 
+          body: JSON.stringify({ action: 'DATA_DECRYPT_VIEW', target: `RECORD:${record.id}`, reason: `고객(${record.name}) 정보 상세 열람 및 해독` }) 
+        });
+        loadAuditLogs();
+      }
+    } else {
+      setRevealedIds(prev => prev.filter(id => id !== record.id));
+    }
   };
 
   const getDaysLeft = (expiry) => {
@@ -472,10 +489,33 @@ function CompanyAdminView({
           <div className="space-y-8 animate-in zoom-in-95">
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
               <div className="flex justify-between items-center mb-10 gap-4"><h3 className="text-2xl font-black text-slate-800 uppercase italic">고객 회원 자산 DB</h3><button onClick={() => setActiveTab('security_vault')} className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100 uppercase italic whitespace-nowrap"><Plus size={16} /> 대량 보안 처리</button></div>
-              <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">연락처</th><th className="py-4 px-6">상태</th><th className="py-4 px-6 text-right">제어</th></tr></thead><tbody className="divide-y divide-slate-50">
-                {memberLoading ? <tr><td colSpan={4} className="py-10 text-center">로드 중...</td></tr> : memberRecords.length === 0 ? <tr><td colSpan={4} className="py-10 text-center italic text-slate-400">데이터가 없습니다.</td></tr> : memberRecords.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic">{row.name}</td><td className="py-5 px-6 tabular-nums">{row.phone || '***-****-****'}</td><td className="py-5 px-6"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${row.status === 'ENCRYPTED' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>{row.status === 'ENCRYPTED' ? '보안 암호화' : '평문 노출'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300"><Eye size={18} className="cursor-pointer hover:text-blue-600" /><Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => handleDeleteRecord(row.id)} /></td></tr>
-                ))}
+              <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">연락처</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">상태</th><th className="py-4 px-6 text-right">제어</th></tr></thead><tbody className="divide-y divide-slate-50">
+                {memberLoading ? <tr><td colSpan={5} className="py-10 text-center">로드 중...</td></tr> : memberRecords.length === 0 ? <tr><td colSpan={5} className="py-10 text-center italic text-slate-400">데이터가 없습니다.</td></tr> : memberRecords.map((row) => {
+                  const isRevealed = revealedIds.includes(row.id);
+                  const isEncrypted = row.status === 'ENCRYPTED';
+                  return (
+                    <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-5 px-6 italic font-black text-slate-900">{row.name}</td>
+                      <td className={`py-5 px-6 tabular-nums transition-all duration-300 ${isRevealed ? 'text-blue-600 font-black italic scale-105 origin-left' : 'text-slate-500 font-medium'}`}>
+                        {isRevealed || !isEncrypted ? row.phone : (row.phone ? `${row.phone.slice(0, 3)}-****-${row.phone.slice(-4)}` : '***-****-****')}
+                      </td>
+                      <td className={`py-5 px-6 transition-all duration-300 ${isRevealed ? 'text-blue-600 font-black italic scale-105 origin-left' : 'text-slate-500 font-medium'}`}>
+                        {isRevealed || !isEncrypted ? row.email : (row.email ? `${row.email.split('@')[0].slice(0, 3)}***@${row.email.split('@')[1]}` : '***@***.***')}
+                      </td>
+                      <td className="py-5 px-6"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${isEncrypted ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>{isEncrypted ? '보안 암호화' : '평문 노출'}</span></td>
+                      <td className="py-5 px-6 text-right">
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => toggleRecordView(row)} title={isRevealed ? "마스킹 처리" : "상세 정보 해독"} className={`p-2 rounded-xl transition-all ${isRevealed ? 'bg-blue-50 text-blue-600 ring-2 ring-blue-200' : 'text-slate-300 hover:bg-slate-50 hover:text-blue-600'}`}>
+                            {isRevealed ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                          <button onClick={() => handleDeleteRecord(row.id)} title="데이터 파기" className="p-2 rounded-xl text-slate-300 hover:bg-rose-50 hover:text-rose-600 transition-all">
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody></table></div>
             </div>
           </div>
@@ -530,8 +570,15 @@ export default function App() {
   const authFetch = useCallback((url, options = {}) =>
     fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}), ...(options.headers || {}) } }), [authToken]);
 
+  // ✅ [복구] 세션 자동 복구 로직: 토큰이 있으면 대시보드로 즉시 이동
+  useEffect(() => {
+    if (authToken && currentScreen === 'landing') {
+      setCurrentScreen('company_admin');
+    }
+  }, [authToken, currentScreen]);
+
   const loadData = useCallback(() => {
-    if (currentScreen === 'sandbox') { setDashStats({ total: 1240, today: 12, consentRate: 98 }); setMemberRecords([{ id: '1', name: '홍길동(예시)', phone: '010-1234-5678', status: 'ENCRYPTED' }]); return; }
+    if (currentScreen === 'sandbox') { setDashStats({ total: 1240, today: 12, consentRate: 98 }); setMemberRecords([{ id: '1', name: '홍길동(예시)', phone: '010-1234-5678', email: 'test@example.com', status: 'ENCRYPTED' }]); return; }
     if (!authToken) return;
     authFetch('/api/auth/profile').then(r => r.ok && r.json().then(setCurrentUser));
     authFetch('/api/admin/db/stats').then(r => r.ok && r.json().then(setDashStats));
@@ -548,6 +595,8 @@ export default function App() {
         localStorage.setItem('pms_token', d.token);
         setAuthToken(d.token);
         setTimerKey(prev => prev + 1);
+        // 프로필 재로딩 (OTP 상태 동기화 등)
+        authFetch('/api/auth/profile').then(r => r.ok && r.json().then(setCurrentUser));
       }
     } catch { }
   };
