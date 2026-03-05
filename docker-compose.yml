@@ -1,36 +1,64 @@
 # version: '3.8'
 
 services:
-  # PMS 백엔드 API 서비스
-  pms-backend:
-    build: ./backend
-    container_name: pms-api-server
-    ports:
-      - "8081:8080" # 기존 8080 포트 충돌로 인해 8081로 우회 조치!
+  pms-db:
+    image: mysql:8.0
+    container_name: pms-db
+    restart: always
     environment:
-      - NODE_ENV=production
-      - APP_ID=pms-service-id
-      - ENCRYPTION_KEY=cert_total_manager_secure_key_256
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: pms_db
+      MYSQL_USER: pms_user
+      MYSQL_PASSWORD: pms1234
+    ports:
+      - "3306:3306"
     volumes:
-      - ./backend/local_db.json:/app/local_db.json
+      - pms-db-data:/var/lib/mysql
+      - ./pms-backend/src/main/resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - pms-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot1234"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  pms-backend:
+    build:
+      context: ./pms-backend
+      dockerfile: Dockerfile
+    container_name: pms-backend
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://pms-db:3306/pms_db?useSSL=false&serverTimezone=Asia/Seoul&characterEncoding=UTF-8&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: pms_user
+      SPRING_DATASOURCE_PASSWORD: pms1234
+      JWT_SECRET: cert_kokonut_jwt_secret_key_2024_very_long_secure_key
+      JWT_EXPIRATION: 86400000
+    ports:
+      - "8080:8080"
+    depends_on:
+      pms-db:
+        condition: service_healthy
     networks:
       - pms-network
 
-  # PMS 프론트엔드 대시보드 (Vite Dev Server 또는 Static Serve용)
   pms-frontend:
-    image: node:18-alpine
-    container_name: pms-ui-dashboard
-    working_dir: /app
-    volumes:
-      - ./frontend:/app
+    build:
+      context: ./pms-frontend
+      dockerfile: Dockerfile
+    container_name: pms-frontend
+    restart: always
     ports:
       - "5173:5173"
-    command: sh -c "npm install && npm run dev -- --host"
-    networks:
-      - pms-network
     depends_on:
       - pms-backend
+    networks:
+      - pms-network
 
 networks:
   pms-network:
     driver: bridge
+
+volumes:
+  pms-db-data:
