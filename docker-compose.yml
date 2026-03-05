@@ -1,5 +1,4 @@
-#version: '3.8'
-
+# PMS Center 도커 오케스트레이션 설정
 services:
   pms-backend:
     build:
@@ -9,6 +8,9 @@ services:
     restart: always
     ports:
       - "8081:8080"
+    # ✅ [보안 개정] 데이터 영구 보존을 위한 볼륨 매핑
+    volumes:
+      - ./backend/local_db.json:/app/local_db.json
     networks:
       - pms-network
 
