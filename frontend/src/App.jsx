@@ -173,11 +173,11 @@ const CompanyAdminView = ({
               <button onClick={loadAuditLogs} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><RefreshCw size={18} className={logsLoading ? 'animate-spin' : ''} /></button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[{ l: '총 보관 자산', v: dashStats.total.toLocaleString(), c: 'text-blue-600', i: Database }, { l: '정보 동의율', v: (dashStats.consentRate || 98) + '%', c: 'text-emerald-600', i: ShieldCheck }, { l: '금일 보안 활동', v: String(dashStats.today || 0), c: 'text-indigo-600', i: Activity }, { l: '라이선스 상태', v: '유효', i: CreditCard }].map((s, idx) => (
+              {[{ l: '총 보관 자산', v: dashStats.total.toLocaleString(), i: Database }, { l: '정보 동의율', v: (dashStats.consentRate || 98) + '%', i: ShieldCheck }, { l: '금일 보안 활동', v: String(dashStats.today || 0), i: Activity }, { l: '라이선스 상태', v: '유효', i: CreditCard }].map((s, idx) => (
                 <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
                   <div className="bg-slate-50 p-2.5 rounded-xl text-slate-400 w-fit mb-6"><s.i size={20} /></div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{s.l}</p>
-                  <p className={`text-3xl font-black ${s.c || 'text-slate-900'} italic`}>{s.v}</p>
+                  <p className="text-3xl font-black italic">{s.v}</p>
                 </div>
               ))}
             </div>
@@ -210,7 +210,7 @@ const CompanyAdminView = ({
               <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">권한</th><th className="py-4 px-6 text-right">관리</th></tr></thead><tbody className="divide-y divide-slate-50">
                 {isSandbox ? <tr><td colSpan={4} className="py-10 text-center italic text-slate-400">체험 모드 이용자 조회 불가</td></tr> : users.map(u => (
                   <tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic uppercase">{u.name}</td><td className="py-5 px-6 font-medium text-slate-500">{u.email}</td><td className="py-5 px-6"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{u.role === 'admin' ? '관리자' : '일반'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300">
-                    <Edit3 size={18} className="cursor-pointer hover:text-blue-600" onClick={() => setUserModal({ open: true, type: 'edit', data: { ...u, password: '' } })} />
+                    <Edit3 size={18} className="cursor-pointer hover:text-blue-600" onClick={() => setUserModal({ open: true, type: 'edit', data: { ...u, permissions: u.permissions || ['dashboard'], password: '' } })} />
                     <Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => {if(confirm('삭제하시겠습니까?')) authFetch(`/api/admin/admins/${u.id}`, {method:'DELETE'}).then(()=>loadUsers());}} />
                   </td></tr>
                 ))}
@@ -238,8 +238,9 @@ const CompanyAdminView = ({
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">메뉴 접근 제어 (ACL)</span>
                       <div className="grid grid-cols-2 gap-2">{ALL_PERMISSIONS.map(p => (
                         <label key={p.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
-                          <input type="checkbox" checked={userModal.data.permissions.includes(p.id)} onChange={(e) => {
-                            const next = e.target.checked ? [...userModal.data.permissions, p.id] : userModal.data.permissions.filter(id => id !== p.id);
+                          <input type="checkbox" checked={(userModal.data.permissions || []).includes(p.id)} onChange={(e) => {
+                            const currentPerms = userModal.data.permissions || [];
+                            const next = e.target.checked ? [...currentPerms, p.id] : currentPerms.filter(id => id !== p.id);
                             setUserModal({...userModal, data: {...userModal.data, permissions: next}});
                           }} className="w-4 h-4 rounded border-slate-200 text-blue-600" />
                           <span className="text-xs font-bold text-slate-600">{p.label}</span>
@@ -279,8 +280,8 @@ const CompanyAdminView = ({
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
               <div className="flex justify-between items-center mb-10"><h3 className="text-2xl font-black text-slate-800 uppercase italic">고객 회원 자산 DB</h3><button onClick={() => setActiveTab('security_vault')} className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100 uppercase italic"><Plus size={16} /> 대량 보안 처리</button></div>
               <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">연락처</th><th className="py-4 px-6">상태</th><th className="py-4 px-6 text-right">제어</th></tr></thead><tbody className="divide-y divide-slate-50">
-                {memberLoading ? <tr><td colSpan={4} className="py-10 text-center">로드 중...</td></tr> : memberRecords.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic">{row.name}</td><td className="py-5 px-6 tabular-nums">{row.phone || '***-****-****'}</td><td className="py-5 px-6"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${row.status === 'ENCRYPTED' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>{row.status === 'ENCRYPTED' ? '보안 암호화' : '평문 노출'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300"><Eye size={18} className="cursor-pointer hover:text-blue-600" /><Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => handleDeleteRecord(row.id)} /></td></tr>
+                {memberLoading ? <tr><td colSpan={4} className="py-10 text-center">로드 중...</td></tr> : memberRecords.length === 0 ? <tr><td colSpan={4} className="py-10 text-center italic text-slate-400">데이터가 없습니다.</td></tr> : memberRecords.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic">{row.name}</td><td className="py-5 px-6 tabular-nums">{row.phone || '***-****-****'}</td><td className="py-5 px-6"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${row.status === 'ENCRYPTED' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>{row.status === 'ENCRYPTED' ? '보안 암호화' : '평문 노출'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300"><Eye size={18} className="cursor-pointer hover:text-blue-600" /><Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => handleDeleteRecord(row.id)} /></td></tr>
                 ))}
               </tbody></table></div>
             </div>
@@ -295,14 +296,14 @@ const CompanyAdminView = ({
       <aside className={`bg-slate-900 text-white flex flex-col transition-all duration-500 shrink-0 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
         <div className="h-20 flex items-center px-6 border-b border-slate-800 cursor-pointer overflow-hidden" onClick={() => onNavigate('landing')}><Shield className="text-blue-500 shrink-0" size={28} />{sidebarOpen && <span className="ml-3 font-black text-xl tracking-tighter uppercase whitespace-nowrap">PMS 센터</span>}</div>
         <nav className="flex-1 py-8 px-3 space-y-1 no-scrollbar overflow-y-auto">
-          {COMPANY_MENU.filter(m => !m.adminOnly || (user && user.role === 'admin')).filter(m => isSandbox || (user && user.permissions && user.permissions.includes(m.id))).map((m) => (
+          {COMPANY_MENU.filter(m => !m.adminOnly || (user && user.role === 'admin')).filter(m => isSandbox || (user && (user.permissions || []).includes(m.id))).map((m) => (
             <button key={m.id} onClick={() => setActiveTab(m.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === m.id ? 'bg-blue-600 shadow-xl shadow-blue-900/40 font-bold' : 'text-slate-500 hover:bg-slate-800 hover:text-white'}`}><m.icon size={20} className="shrink-0" /><span className={`text-sm whitespace-nowrap ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>{m.label}</span></button>
           ))}
         </nav>
         <div className="p-6 border-t border-slate-800"><button onClick={onLogout} className="flex items-center gap-4 p-4 text-slate-500 hover:text-white transition-all w-full"><LogIn size={20} className="shrink-0" />{sidebarOpen && <span className="text-xs font-black uppercase tracking-widest">보안 로그아웃</span>}</button></div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 flex justify-between items-center sticky top-0 z-30">
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 flex justify-between items-center sticky top-0 z-30 shadow-sm">
           <div className="flex items-center gap-6"><button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2.5 hover:bg-slate-50 rounded-xl text-slate-400 border border-slate-100 shadow-sm"><Menu size={20} /></button><SessionTimer initialTime={4800} onLogout={onLogout} isSandbox={isSandbox} /></div>
           <div className="flex items-center gap-4"><div className="text-right hidden sm:block"><p className="text-sm font-black text-slate-800 uppercase italic">{isSandbox ? '익명 이용자 (체험)' : `${user?.name || '보안 담당자'} (${user?.role === 'admin' ? '관리자' : '일반'})`}</p><div className="flex justify-end items-center gap-1.5 mt-0.5"><span className={`w-1.5 h-1.5 ${isSandbox ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full animate-pulse`}></span><p className={`text-[9px] ${isSandbox ? 'text-amber-500' : 'text-emerald-500'} font-bold uppercase tracking-widest`}>{isSandbox ? '체험 계정' : '인증됨'}</p></div></div><div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-500 shadow-inner"><Users size={18} /></div></div>
         </header>
@@ -376,15 +377,15 @@ export default function App() {
         {currentScreen === 'landing' && <LandingView onNavigate={setCurrentScreen} />}
         {currentScreen === 'login' && (
           <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
-            <div className="w-full max-w-[440px] bg-white rounded-[4rem] shadow-2xl p-14 border border-slate-100 relative">
+            <div className="w-full max-w-[440px] bg-white rounded-[4rem] shadow-2xl p-14 border border-slate-100 relative group">
               <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
-              <div className="flex flex-col items-center mb-12 cursor-pointer" onClick={() => setCurrentScreen('landing')}><div className="bg-blue-600 p-4 rounded-3xl text-white mb-5 shadow-2xl shadow-blue-200"><Shield size={32} /></div><h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">보안 포털 접속</h2></div>
+              <div className="flex flex-col items-center mb-12 cursor-pointer" onClick={() => setCurrentScreen('landing')}><div className="bg-blue-600 p-4 rounded-3xl text-white mb-5 shadow-2xl shadow-blue-200 group-hover:scale-110 transition-transform duration-500"><Shield size={32} /></div><h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">보안 포털 접속</h2></div>
               <form onSubmit={handleLogin} className="space-y-6">
                 <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="보안 이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" required />
                 <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" required />
                 {error && <p className="text-rose-500 text-sm font-bold text-center">{error}</p>}
                 <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-2xl hover:bg-blue-700 transition-all uppercase italic">{loading ? '인증 중...' : '접속 승인 요청'}</button>
-                <div className="flex flex-col gap-3 mt-6"><p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600" onClick={()=>{setError(''); setCurrentScreen('signup');}}>신규 보안 워크스페이스 생성</p><p className="text-center text-slate-300 text-[10px] font-black uppercase cursor-pointer hover:text-amber-500" onClick={()=>setCurrentScreen('sandbox')}>무료 체험 모드 입장</p></div>
+                <div className="flex flex-col gap-3 mt-6"><p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600" onClick={()=>{setError(''); setCurrentScreen('signup');}}>신규 보안 계정 생성</p><p className="text-center text-slate-300 text-[10px] font-black uppercase cursor-pointer hover:text-amber-500" onClick={()=>setCurrentScreen('sandbox')}>무료 체험 모드 입장</p></div>
               </form>
             </div>
           </div>
@@ -393,13 +394,13 @@ export default function App() {
           <div className="min-h-screen bg-white flex items-center justify-center p-6 animate-in fade-in duration-500">
             <div className="w-full max-w-[480px] bg-white rounded-[4rem] shadow-2xl p-16 border border-slate-100 relative">
               <button onClick={()=>setCurrentScreen('landing')} className="absolute top-10 left-10 text-slate-300 hover:text-slate-900"><ChevronLeft size={32}/></button>
-              <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-12 text-center italic">시스템 초기화</h2>
+              <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-12 text-center italic">회원가입</h2>
               <form onSubmit={handleSignup} className="space-y-6">
-                <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="담당자 성명" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="회사 이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
+                <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="성명" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
                 <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호 설정" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
                 {error && <p className="text-rose-500 text-sm font-bold text-center">{error}</p>}
-                <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-2xl hover:bg-blue-700 uppercase italic">{loading ? '워크스페이스 생성 중...' : '보안 워크스페이스 개설'}</button>
+                <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-2xl hover:bg-blue-700 uppercase italic">{loading ? '가입 처리 중...' : '가입하기'}</button>
                 <p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600 transition mt-6" onClick={()=>{setError(''); setCurrentScreen('login');}}>이미 계정이 있습니까? 로그인</p>
               </form>
             </div>
@@ -409,7 +410,7 @@ export default function App() {
           <CompanyAdminView 
             activeTab={activeTab} setActiveTab={setActiveTab} 
             sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} 
-            onLogout={() => { localStorage.removeItem('pms_token'); setAuthToken(''); setCurrentScreen('login'); }} onNavigate={setCurrentScreen}
+            onLogout={() => { localStorage.removeItem('pms_token'); setAuthToken(''); setCurrentUser(null); setCurrentScreen('login'); }} onNavigate={setCurrentScreen}
             dashStats={dashStats} memberRecords={memberRecords} memberLoading={memberLoading}
             handleDeleteRecord={(id) => { if(confirm('영구 파기하시겠습니까?')) authFetch(`/api/admin/records/${id}`, {method:'DELETE'}).then(()=>loadData()); }}
             onVaultComplete={async (data) => {
