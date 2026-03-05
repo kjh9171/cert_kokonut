@@ -199,6 +199,16 @@
       "target": "AUTH_ENGINE",
       "reason": "보안 로그인 성공",
       "createdAt": "2026-03-05T12:08:35.085Z"
+    },
+    {
+      "id": "1772713488222wdakw",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "보안 로그인 성공",
+      "createdAt": "2026-03-05T12:24:48.222Z"
     }
   ]
 }

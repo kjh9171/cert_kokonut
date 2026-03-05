@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 // 보안 금고(암/복호화 엔진) 컴포넌트
 import SecurityVault from './SecurityVault.jsx';
+// 페이팔 결제 SDK
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 // 보안 UI 아이콘 세트 (lucide-react)
 import { 
   Shield, Users, Database, Key, FileText, Settings, 
@@ -471,17 +473,49 @@ function CompanyAdminView({
             <div className="text-center"><h2 className="text-5xl font-black text-slate-900 tracking-tighter uppercase italic mb-4">보안 등급 업그레이드</h2><p className="text-slate-500 font-medium">기업의 규모에 맞는 최적의 보안 플랜을 선택하세요.</p></div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
-                { n: '스타트업', p: '무료', f: ['기본 대시보드', '30일 체험', '회원 10명 미만'] },
-                { n: '비즈니스', p: '월 99,000원', f: ['보안 금고 무제한', '실시간 로그 분석', 'ACL 정밀 제어'], h: true },
-                { n: '엔터프라이즈', p: '별도 문의', f: ['맞춤형 보안 정책', '전담 보안 매니저', 'SLA 보장'] }
+                { n: '스타트업', p: '무료', v: 0, f: ['기본 대시보드', '30일 체험', '회원 10명 미만'] },
+                { n: '비즈니스', p: 'USD 9.99', v: 9.99, f: ['보안 금고 무제한', '실시간 로그 분석', 'ACL 정밀 제어'], h: true },
+                { n: '엔터프라이즈', p: '별도 문의', v: 99.99, f: ['맞춤형 보안 정책', '전담 보안 매니저', 'SLA 보장'] }
               ].map((plan, i) => (
                 <div key={i} className={`p-10 rounded-[3rem] border ${plan.h ? 'bg-slate-900 text-white shadow-2xl scale-105' : 'bg-white text-slate-900 border-slate-100'} flex flex-col justify-between`}>
                   <div><h4 className="text-xl font-black uppercase italic mb-2">{plan.n}</h4><p className={`text-3xl font-black mb-10 ${plan.h ? 'text-blue-400' : 'text-blue-600'}`}>{plan.p}</p>
                     <ul className="space-y-4 mb-10">{plan.f.map((f, j) => (<li key={j} className="flex items-center gap-3 text-xs font-bold opacity-80"><CheckCircle size={16} /> {f}</li>))}</ul>
                   </div>
-                  <button className={`w-full py-4 rounded-2xl font-black text-xs uppercase ${plan.h ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>플랜 선택하기</button>
+                  {isSandbox ? (
+                    <button className="w-full py-4 rounded-2xl font-black text-xs uppercase bg-slate-100 text-slate-400 border border-slate-100 cursor-not-allowed">체험 모드 사용 불가</button>
+                  ) : plan.v > 0 ? (
+                    <div className="mt-auto">
+                      <PayPalButtons
+                        style={{ layout: "vertical", color: plan.h ? "blue" : "gold", shape: "pill", label: "pay" }}
+                        createOrder={async () => {
+                          const res = await authFetch("/api/paypal/create-order", { method: "POST", body: JSON.stringify({ planName: plan.n, amount: plan.v }) });
+                          const order = await res.json();
+                          return order.id;
+                        }}
+                        onApprove={async (data) => {
+                          const res = await authFetch("/api/paypal/capture-order", { method: "POST", body: JSON.stringify({ orderID: data.orderID }) });
+                          if (res.ok) {
+                            alert("결제가 완료되었습니다! 라이선스가 30일 연장되었습니다.");
+                            onRefresh();
+                            setActiveTab('dashboard');
+                          } else {
+                            alert("결제 승인 중 오류가 발생했습니다.");
+                          }
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <button className={`w-full py-4 rounded-2xl font-black text-xs uppercase ${plan.h ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-400 border border-slate-100'}`}>현재 이용 중</button>
+                  )}
                 </div>
               ))}
+            </div>
+            <div className="bg-blue-50 p-8 rounded-[2rem] border border-blue-100 flex items-center gap-6">
+              <div className="bg-blue-600 p-4 rounded-2xl text-white shadow-lg"><Info size={24}/></div>
+              <div>
+                <p className="text-sm font-black text-blue-900 uppercase italic">결제 및 환불 안내</p>
+                <p className="text-xs font-bold text-blue-700/70 mt-1 leading-relaxed">모든 결제는 페이팔 보안 결제 시스템을 통해 안전하게 처리됩니다. 구독 결제 즉시 라이선스 기간이 연장되며, 디지털 서비스 특성상 결제 후에는 환불이 제한될 수 있습니다. 문의사항은 고객센터로 연락 바랍니다.</p>
+              </div>
             </div>
           </div>
         );
@@ -690,68 +724,70 @@ export default function App() {
   };
 
   return (
-    <div className="selection:bg-blue-600 selection:text-white h-screen overflow-hidden bg-white font-['Noto_Sans_KR']">
-      <div className={`h-full ${currentScreen === 'company_admin' || currentScreen === 'sandbox' ? 'overflow-hidden' : 'overflow-y-auto scroll-smooth'}`}>
-        {currentScreen === 'landing' && <LandingView onNavigate={setCurrentScreen} isLoggedIn={!!authToken} />}
-        
-        {currentScreen === 'login' && !otpMode.active && (
-          <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
-            <div className="w-full max-w-[440px] bg-white rounded-[4rem] shadow-2xl p-14 border border-slate-100 relative">
-              <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
-              <div className="flex flex-col items-center mb-12 cursor-pointer" onClick={() => setCurrentScreen('landing')}><div className="bg-blue-600 p-4 rounded-3xl text-white mb-5 shadow-2xl shadow-blue-200 group-hover:scale-110 transition-transform duration-500"><Shield size={32} /></div><h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">보안 포털 접속</h2></div>
-              <form onSubmit={handleLogin} className="space-y-6">
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="보안 이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" required />
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" required />
-                <div className="flex items-center justify-center gap-4 py-2 border-y border-slate-50"><button type="button" onClick={handleGoogleLogin} className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-slate-900 transition"><Globe size={14}/> Google 계정으로 접속</button></div>
-                {error && <p className="text-rose-500 text-sm font-bold text-center">{error}</p>}
-                <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-2xl hover:bg-blue-700 transition-all uppercase italic">{loading ? '인증 중...' : '접속 승인 요청'}</button>
-                <div className="flex flex-col gap-3 mt-6"><p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600" onClick={()=>setCurrentScreen('signup')}>신규 보안 계정 생성</p><p className="text-center text-slate-300 text-[10px] font-black uppercase cursor-pointer hover:text-amber-500" onClick={()=>setCurrentScreen('sandbox')}>무료 체험 모드 입장</p></div>
-              </form>
+    <PayPalScriptProvider options={{ "client-id": "AU_DlvqR0XmC9Yn7Mv8P0w2Xy_Z-Y1J9K7L6M5N4O3P2Q1R0S", currency: "USD" }}>
+      <div className="selection:bg-blue-600 selection:text-white h-screen overflow-hidden bg-white font-['Noto_Sans_KR']">
+        <div className={`h-full ${currentScreen === 'company_admin' || currentScreen === 'sandbox' ? 'overflow-hidden' : 'overflow-y-auto scroll-smooth'}`}>
+          {currentScreen === 'landing' && <LandingView onNavigate={setCurrentScreen} isLoggedIn={!!authToken} />}
+          
+          {currentScreen === 'login' && !otpMode.active && (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
+              <div className="w-full max-w-[440px] bg-white rounded-[4rem] shadow-2xl p-14 border border-slate-100 relative">
+                <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
+                <div className="flex flex-col items-center mb-12 cursor-pointer" onClick={() => setCurrentScreen('landing')}><div className="bg-blue-600 p-4 rounded-3xl text-white mb-5 shadow-2xl shadow-blue-200 group-hover:scale-110 transition-transform duration-500"><Shield size={32} /></div><h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">보안 포털 접속</h2></div>
+                <form onSubmit={handleLogin} className="space-y-6">
+                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="보안 이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" required />
+                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" required />
+                  <div className="flex items-center justify-center gap-4 py-2 border-y border-slate-50"><button type="button" onClick={handleGoogleLogin} className="flex items-center gap-2 text-[10px] font-black text-slate-400 hover:text-slate-900 transition"><Globe size={14}/> Google 계정으로 접속</button></div>
+                  {error && <p className="text-rose-500 text-sm font-bold text-center">{error}</p>}
+                  <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-2xl hover:bg-blue-700 transition-all uppercase italic">{loading ? '인증 중...' : '접속 승인 요청'}</button>
+                  <div className="flex flex-col gap-3 mt-6"><p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600" onClick={()=>setCurrentScreen('signup')}>신규 보안 계정 생성</p><p className="text-center text-slate-300 text-[10px] font-black uppercase cursor-pointer hover:text-amber-500" onClick={()=>setCurrentScreen('sandbox')}>무료 체험 모드 입장</p></div>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {otpMode.active && (
-          <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 animate-in zoom-in duration-500">
-            <div className="w-full max-w-[400px] bg-white rounded-[4rem] shadow-2xl p-12 text-center">
-              <div className="bg-blue-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600"><Smartphone size={32}/></div>
-              <h3 className="text-2xl font-black text-slate-900 uppercase italic mb-2">2단계 인증</h3>
-              <p className="text-[10px] text-slate-400 font-bold mb-10 leading-relaxed">등록된 기기의 OTP 앱에서<br/>6자리 인증 코드를 확인 후 입력해 주세요.</p>
-              <form onSubmit={handleOtpLogin} className="space-y-6">
-                <input type="text" maxLength={6} value={otpMode.code} onChange={e=>setOtpMode({...otpMode, code: e.target.value})} placeholder="000000" className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-black text-center tracking-[0.5em] text-3xl" required autoFocus />
-                <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-xl hover:bg-blue-700 shadow-xl shadow-blue-100 uppercase italic">인증 완료 및 접속</button>
-                <button type="button" onClick={()=>setOtpMode({active:false, tempToken:'', code:''})} className="text-slate-400 text-xs font-bold hover:text-slate-900 transition">로그인 화면으로 돌아가기</button>
-              </form>
+          {otpMode.active && (
+            <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6 animate-in zoom-in duration-500">
+              <div className="w-full max-w-[400px] bg-white rounded-[4rem] shadow-2xl p-12 text-center">
+                <div className="bg-blue-50 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600"><Smartphone size={32}/></div>
+                <h3 className="text-2xl font-black text-slate-900 uppercase italic mb-2">2단계 인증</h3>
+                <p className="text-[10px] text-slate-400 font-bold mb-10 leading-relaxed">등록된 기기의 OTP 앱에서<br/>6자리 인증 코드를 확인 후 입력해 주세요.</p>
+                <form onSubmit={handleOtpLogin} className="space-y-6">
+                  <input type="text" maxLength={6} value={otpMode.code} onChange={e=>setOtpMode({...otpMode, code: e.target.value})} placeholder="000000" className="w-full px-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-black text-center tracking-[0.5em] text-3xl" required autoFocus />
+                  <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-xl hover:bg-blue-700 shadow-xl shadow-blue-100 uppercase italic">인증 완료 및 접속</button>
+                  <button type="button" onClick={()=>setOtpMode({active:false, tempToken:'', code:''})} className="text-slate-400 text-xs font-bold hover:text-slate-900 transition">로그인 화면으로 돌아가기</button>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {currentScreen === 'signup' && (
-          <div className="min-h-screen bg-white flex items-center justify-center p-6 animate-in fade-in duration-500">
-            <div className="w-full max-w-[480px] bg-white rounded-[4rem] shadow-2xl p-16 border border-slate-100 relative">
-              <button onClick={()=>setCurrentScreen('landing')} className="absolute top-10 left-10 text-slate-300 hover:text-slate-900"><ChevronLeft size={32}/></button>
-              <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-12 text-center italic">회원가입</h2>
-              <form onSubmit={handleSignup} className="space-y-6">
-                <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="성명" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호 설정" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
-                {error && <p className="text-rose-500 text-sm font-bold text-center">{error}</p>}
-                <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-2xl hover:bg-blue-700 uppercase italic">가입하기</button>
-                <p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600 transition mt-6" onClick={()=>setCurrentScreen('login')}>이미 계정이 있습니까? 로그인</p>
-              </form>
+          {currentScreen === 'signup' && (
+            <div className="min-h-screen bg-white flex items-center justify-center p-6 animate-in fade-in duration-500">
+              <div className="w-full max-w-[480px] bg-white rounded-[4rem] shadow-2xl p-16 border border-slate-100 relative">
+                <button onClick={()=>setCurrentScreen('landing')} className="absolute top-10 left-10 text-slate-300 hover:text-slate-900"><ChevronLeft size={32}/></button>
+                <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-12 text-center italic">회원가입</h2>
+                <form onSubmit={handleSignup} className="space-y-6">
+                  <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="성명" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
+                  <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
+                  <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호 설정" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
+                  {error && <p className="text-rose-500 text-sm font-bold text-center">{error}</p>}
+                  <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-2xl hover:bg-blue-700 uppercase italic">가입하기</button>
+                  <p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600 transition mt-6" onClick={()=>setCurrentScreen('login')}>이미 계정이 있습니까? 로그인</p>
+                </form>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {(currentScreen === 'company_admin' || currentScreen === 'sandbox') && (
-          <CompanyAdminView activeTab={activeTab} setActiveTab={setActiveTab} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} onLogout={()=>{localStorage.removeItem('pms_token'); setAuthToken(''); setCurrentUser(null); setCurrentScreen('login');}} onRefresh={handleRefreshSession} onNavigate={setCurrentScreen} dashStats={dashStats} memberRecords={memberRecords} memberLoading={memberLoading} handleDeleteRecord={(id)=>{if(confirm('파기하시겠습니까?')) authFetch(`/api/admin/records/${id}`, {method:'DELETE'}).then(()=>loadData());}} onVaultComplete={async (data)=>{if(currentScreen === 'sandbox') return; try{const r = await authFetch('/api/admin/records/batch', {method:'POST', body:JSON.stringify({records: data.records})}); if(r.ok) loadData();}catch{}}} isSandbox={currentScreen === 'sandbox'} user={currentUser} timerKey={timerKey} />
-        )}
+          {(currentScreen === 'company_admin' || currentScreen === 'sandbox') && (
+            <CompanyAdminView activeTab={activeTab} setActiveTab={setActiveTab} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} onLogout={()=>{localStorage.removeItem('pms_token'); setAuthToken(''); setCurrentUser(null); setCurrentScreen('login');}} onRefresh={handleRefreshSession} onNavigate={setCurrentScreen} dashStats={dashStats} memberRecords={memberRecords} memberLoading={memberLoading} handleDeleteRecord={(id)=>{if(confirm('파기하시겠습니까?')) authFetch(`/api/admin/records/${id}`, {method:'DELETE'}).then(()=>loadData());}} onVaultComplete={async (data)=>{if(currentScreen === 'sandbox') return; try{const r = await authFetch('/api/admin/records/batch', {method:'POST', body:JSON.stringify({records: data.records})}); if(r.ok) loadData();}catch{}}} isSandbox={currentScreen === 'sandbox'} user={currentUser} timerKey={timerKey} />
+          )}
+        </div>
+        <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap');
+          .no-scrollbar::-webkit-scrollbar { display: none; }
+          .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        `}</style>
       </div>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@100;300;400;500;700;900&display=swap');
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-      `}</style>
-    </div>
+    </PayPalScriptProvider>
   );
 }

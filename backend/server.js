@@ -10,9 +10,26 @@ import qrcode from "qrcode";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
+import fetch from "node-fetch";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// ────── 페이팔 설정 (샌드박스) ──────
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || "AU_DlvqR0XmC9Yn7Mv8P0w2Xy_Z-Y1J9K7L6M5N4O3P2Q1R0S"; // 샌드박스 클라이언트 ID
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || "EL_DlvqR0XmC9Yn7Mv8P0w2Xy_Z-Y1J9K7L6M5N4O3P2Q1R0S_SECRET"; // 샌드박스 시크릿
+const PAYPAL_API = "https://api-m.sandbox.paypal.com";
+
+const getPayPalAccessToken = async () => {
+  const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_CLIENT_SECRET}`).toString("base64");
+  const response = await fetch(`${PAYPAL_API}/v1/oauth2/token`, {
+    method: "POST",
+    body: "grant_type=client_credentials",
+    headers: { Authorization: `Basic ${auth}` },
+  });
+  const data = await response.json();
+  return data.access_token;
+};
 
 // ✅ [보안 개정] 도커 볼륨 매핑 위치(/app/local_db.json)와 소스 위치 대응
 const LOCAL_DB_PATH = path.join(__dirname, "local_db.json");
@@ -319,6 +336,70 @@ app.get("/api/admin/logs", verifyToken, async (req, res) => {
 app.post("/api/admin/logs", verifyToken, async (req, res) => {
   await logAction(req.user.uid, req.user.email, req.user.name, req.body.action, req.body.target, req.body.reason);
   res.json({ success: true });
+});
+
+// ────── 페이팔 결제 API ──────
+
+// 결제 주문 생성
+app.post("/api/paypal/create-order", verifyToken, async (req, res) => {
+  try {
+    const { planName, amount } = req.body;
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${PAYPAL_API}/v2/checkout/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            description: `${planName} 구독 결제`,
+            amount: { currency_code: "USD", value: amount }, // 테스트용으로 USD 사용
+          },
+        ],
+      }),
+    });
+
+    const data = await response.json();
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "주문 생성 실패" });
+  }
+});
+
+// 결제 주문 승인 (캡처)
+app.post("/api/paypal/capture-order", verifyToken, async (req, res) => {
+  try {
+    const { orderID } = req.body;
+    const accessToken = await getPayPalAccessToken();
+    const response = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderID}/capture`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (data.status === "COMPLETED") {
+      // ✅ [라이선스 연장 로직] 결제 성공 시 30일 연장
+      const user = await getDocByAny(req.user.uid);
+      const currentExpiry = user.licenseExpiry ? new Date(user.licenseExpiry) : new Date();
+      const newExpiry = new Date(currentExpiry.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      await updateDoc("pms_admins", req.user.uid, { licenseExpiry: newExpiry });
+      await logAction(req.user.uid, req.user.email, req.user.name, "PAYMENT_SUCCESS", "PAYPAL_ENGINE", `구독 결제 성공: ${orderID} (라이선스 30일 연장)`);
+      
+      return res.json({ success: true, newExpiry });
+    }
+
+    res.status(400).json({ error: "결제 승인 실패" });
+  } catch (err) {
+    res.status(500).json({ error: "결제 캡처 실패" });
+  }
 });
 
 const PORT = 8080;
