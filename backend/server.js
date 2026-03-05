@@ -25,8 +25,8 @@ if (!fs.existsSync(LOCAL_DB_PATH)) {
 }
 
 const app = express();
-// ✅ macOS 포트 충돌 방지를 위해 8081 포트 사용 권장
-app.use(cors({ origin: ["http://localhost:5173", "http://127.0.0.1:5173"], credentials: true }));
+// 도커 컨테이너 환경 대응 CORS
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 
 const JWT_SECRET = process.env.JWT_SECRET || "cert_pms_master_token_key_777";
@@ -307,5 +307,5 @@ app.post("/api/admin/logs", verifyToken, async (req, res) => {
   res.json({ success: true });
 });
 
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`[CERT] PMS Backend running on port ${PORT}`));

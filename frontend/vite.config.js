@@ -14,8 +14,9 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        // ✅ [보안 복구] macOS 충돌 방지를 위해 변경된 백엔드 포트 8081 조준
-        target: 'http://localhost:8081',
+        // ✅ [도커 보안 복구] 컨테이너 내부 통신을 위해 서비스명(pms-backend) 사용
+        // localhost 대신 도커 네트워크의 호스트 네임을 조준합니다.
+        target: 'http://pms-backend:8080',
         changeOrigin: true,
         secure: false,
       },
