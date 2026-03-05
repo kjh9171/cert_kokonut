@@ -80,16 +80,19 @@ const verifyToken = (req, res, next) => {
   } catch { return res.status(403).json({ error: "유효하지 않은 토큰입니다." }); }
 };
 
-// ✅ [추가] 라이선스 및 권한 검증 미들웨어
+// 라이선스 및 권한 검증 미들웨어 (관리자 예외 처리)
 const checkAccess = (requiredPermission) => {
   return async (req, res, next) => {
     try {
       const user = await getDocByAny(req.user.uid);
       if (!user) return res.status(404).json({ error: "사용자를 찾을 수 없습니다." });
 
-      // 1. 라이선스 만료 체크
+      // 관리자는 모든 체크 프리패스
+      if (user.role === 'admin') return next();
+
+      // 일반 유저 라이선스 만료 체크
       const now = new Date();
-      if (new Date(user.licenseExpiry) < now) {
+      if (!user.licenseExpiry || new Date(user.licenseExpiry) < now) {
         return res.status(402).json({ 
           error: "라이선스 만료", 
           code: "LICENSE_EXPIRED",
@@ -97,7 +100,7 @@ const checkAccess = (requiredPermission) => {
         });
       }
 
-      // 2. 개별 메뉴 권한 체크
+      // 개별 메뉴 권한 체크
       if (requiredPermission && (!user.permissions || !user.permissions.includes(requiredPermission))) {
         return res.status(403).json({ 
           error: "권한 없음", 
@@ -143,7 +146,7 @@ app.post("/api/auth/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const expiry = new Date();
-    expiry.setDate(expiry.getDate() + 365);
+    expiry.setFullYear(expiry.getFullYear() + 10); // 관리자는 10년
 
     const userData = { 
       email, 
@@ -159,7 +162,7 @@ app.post("/api/auth/register", async (req, res) => {
     const newDoc = await addDoc("pms_admins", userData);
     
     const token = jwt.sign({ uid: newDoc.id, email, role: "admin", name }, JWT_SECRET, { expiresIn: "8h" });
-    res.status(201).json({ success: true, token, user: { email, name, role: "admin", licenseKey: userData.licenseKey, licenseExpiry: userData.licenseExpiry } });
+    res.status(201).json({ success: true, token, user: { email, name, role: "admin", licenseKey: userData.licenseKey, licenseExpiry: userData.licenseExpiry, permissions: userData.permissions } });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -178,7 +181,7 @@ app.post("/api/auth/login", async (req, res) => {
         email: userData.email, 
         name: userData.name, 
         role: userData.role, 
-        permissions: userData.permissions,
+        permissions: userData.permissions || [],
         licenseKey: userData.licenseKey,
         licenseExpiry: userData.licenseExpiry 
       } 
@@ -208,11 +211,22 @@ app.get("/api/admin/admins", verifyToken, checkAccess("user_manage"), async (req
 
 app.post("/api/admin/admins", verifyToken, checkAccess("user_manage"), async (req, res) => {
   try {
-    const { email, password, name, role, permissions } = req.body;
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + 30);
+    const { email, password, name, role, permissions, licenseExpiry } = req.body;
+    
+    // 만료일 설정 (없으면 기본 30일)
+    const expiry = licenseExpiry ? new Date(licenseExpiry) : new Date();
+    if (!licenseExpiry) expiry.setDate(expiry.getDate() + 30);
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const userData = { email, password: hashedPassword, name, role: role || 'user', licenseKey: generateLicenseKey(), licenseExpiry: expiry.toISOString(), permissions: permissions || ['dashboard'] };
+    const userData = { 
+      email, 
+      password: hashedPassword, 
+      name, 
+      role: role || 'user', 
+      licenseKey: generateLicenseKey(), 
+      licenseExpiry: expiry.toISOString(), 
+      permissions: permissions || ['dashboard'] 
+    };
     const newDoc = await addDoc("pms_admins", userData);
     res.status(201).json({ success: true, id: newDoc.id });
   } catch (err) { res.status(500).json({ error: err.message }); }

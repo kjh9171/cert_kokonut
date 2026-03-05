@@ -8,7 +8,7 @@ import {
   History, Mail, CreditCard, HelpCircle, Eye, ShieldCheck,
   ChevronRight, Lock, CheckCircle, AlertTriangle, UserPlus, LogIn, 
   ArrowLeft, Globe, Zap, Check, Activity, BarChart3, TrendingUp,
-  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, CreditCard as CardIcon
+  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, CreditCard as CardIcon, Calendar
 } from 'lucide-react';
 // 데이터 시각화 라이브러리 (보안 관제용)
 import { 
@@ -127,7 +127,8 @@ const CompanyAdminView = ({
   const [logsLoading, setLogsLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  const [userModal, setUserModal] = useState({ open: false, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'] } });
+  // ✅ [수정] userModal 데이터 구조에 licenseExpiry 추가
+  const [userModal, setUserModal] = useState({ open: false, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'], licenseExpiry: '' } });
   const [passForm, setPassForm] = useState({ current: '', new: '', confirm: '' });
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
@@ -194,19 +195,25 @@ const CompanyAdminView = ({
 
   const renderContent = () => {
     const daysLeft = isSandbox ? 30 : getDaysLeft(user?.licenseExpiry);
+    const isAdmin = user?.role === 'admin';
     const hasPermission = isSandbox || (user?.permissions || []).includes(activeTab);
-    const isExpired = !isSandbox && daysLeft <= 0;
+    
+    // 관리자는 만료 체크를 무시하며, 일반 유저만 체크함
+    const isExpired = !isSandbox && !isAdmin && daysLeft <= 0;
 
+    // 만료된 일반 유저 차단 (설정 탭 제외)
     if (isExpired && activeTab !== 'my_settings') {
       return <RestrictedView title="라이선스 만료됨" message="보안 서비스 이용 기간이 종료되었습니다. 계속 이용하시려면 라이선스를 갱신하거나 구독을 연장해 주십시오." onUpgrade={() => alert('구독 결제 시스템 준비 중입니다.')} />;
     }
 
-    if (!hasPermission) {
+    // 권한 없는 메뉴 차단 (관리자도 설정에 따라 차단될 수 있으나 기본적으로 모든 권한 부여됨)
+    if (!hasPermission && !isAdmin) {
       return <RestrictedView title="접근 권한 제한" message="해당 기능은 현재 대표님의 권한 등급에서는 접근이 제한되어 있습니다. 업그레이드를 통해 모든 보안 기능을 활성화하세요." onUpgrade={() => alert('구독 업그레이드 페이지로 이동합니다.')} />;
     }
 
     switch (activeTab) {
       case 'dashboard':
+        const displayDays = isAdmin ? '영구' : daysLeft + '일';
         return (
           <div className="space-y-8 animate-in slide-in-from-bottom-5">
             <div className="flex justify-between items-end gap-4">
@@ -214,7 +221,7 @@ const CompanyAdminView = ({
               <button onClick={loadAuditLogs} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><RefreshCw size={18} className={logsLoading ? 'animate-spin' : ''} /></button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[{ l: '총 보관 자산', v: dashStats.total.toLocaleString(), i: Database, c: 'text-blue-600' }, { l: '정보 동의율', v: (dashStats.consentRate || 98) + '%', i: ShieldCheck, c: 'text-emerald-600' }, { l: '금일 보안 활동', v: String(dashStats.today || 0), i: Activity, c: 'text-indigo-600' }, { l: '라이선스 잔여', v: daysLeft + '일', i: CreditCard, c: daysLeft < 7 ? 'text-rose-600' : 'text-amber-600' }].map((s, idx) => (
+              {[{ l: '총 보관 자산', v: dashStats.total.toLocaleString(), i: Database, c: 'text-blue-600' }, { l: '정보 동의율', v: (dashStats.consentRate || 98) + '%', i: ShieldCheck, c: 'text-emerald-600' }, { l: '금일 보안 활동', v: String(dashStats.today || 0), i: Activity, c: 'text-indigo-600' }, { l: '라이선스 상태', v: displayDays, i: CreditCard, c: !isAdmin && daysLeft < 7 ? 'text-rose-600' : 'text-amber-600' }].map((s, idx) => (
                 <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
                   <div className="bg-slate-50 p-2.5 rounded-xl text-slate-400 w-fit mb-6"><s.i size={20} /></div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{s.l}</p>
@@ -245,13 +252,13 @@ const CompanyAdminView = ({
           <div className="space-y-8 animate-in zoom-in-95">
             <div className="flex justify-between items-center gap-4">
               <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">이용자 계정 관리</h2>
-              {!isSandbox && <button onClick={() => setUserModal({ open: true, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'] } })} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-black transition shadow-lg shadow-slate-200 uppercase italic"><Plus size={16} /> 신규 이용자 추가</button>}
+              {!isSandbox && <button onClick={() => setUserModal({ open: true, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'], licenseExpiry: new Date(Date.now() + 30*24*60*60*1000).toISOString() } })} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-black transition shadow-lg shadow-slate-200 uppercase italic"><Plus size={16} /> 신규 이용자 추가</button>}
             </div>
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
               <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">권한/상태</th><th className="py-4 px-6">라이선스 키</th><th className="py-4 px-6">만료일</th><th className="py-4 px-6 text-right">관리</th></tr></thead><tbody className="divide-y divide-slate-50">
                 {isSandbox ? <tr><td colSpan={6} className="py-10 text-center italic text-slate-400">체험 모드 이용자 조회 불가</td></tr> : users.map(u => (
                   <tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic uppercase">{u.name}</td><td className="py-5 px-6 font-medium text-slate-500">{u.email}</td><td className="py-5 px-6"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{u.role === 'admin' ? '관리자' : '일반'}</span></td><td className="py-5 px-6 text-xs font-mono text-slate-400">{u.licenseKey || 'N/A'}</td><td className="py-5 px-6 text-xs text-slate-400">{u.licenseExpiry ? new Date(u.licenseExpiry).toLocaleDateString() : '-'}</td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300">
-                    <Edit3 size={18} className="cursor-pointer hover:text-blue-600" onClick={() => setUserModal({ open: true, type: 'edit', data: { ...u, permissions: u.permissions || ['dashboard'], password: '' } })} />
+                    <Edit3 size={18} className="cursor-pointer hover:text-blue-600" onClick={() => setUserModal({ open: true, type: 'edit', data: { ...u, permissions: u.permissions || ['dashboard'], password: '', licenseExpiry: u.licenseExpiry || '' } })} />
                     <Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => {if(confirm('삭제하시겠습니까?')) authFetch(`/api/admin/admins/${u.id}`, {method:'DELETE'}).then(()=>loadUsers());}} />
                   </td></tr>
                 ))}
@@ -264,10 +271,17 @@ const CompanyAdminView = ({
                   <h3 className="text-3xl font-black text-slate-900 uppercase italic mb-8">{userModal.type === 'add' ? '이용자 추가' : '정보 수정'}</h3>
                   <form onSubmit={handleUserAction} className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
-                      <input type="text" value={userModal.data.name} onChange={e=>setUserModal({...userModal, data: {...userModal.data, name: e.target.value}})} placeholder="성명" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
-                      <input type="email" value={userModal.data.email} onChange={e=>setUserModal({...userModal, data: {...userModal.data, email: e.target.value}})} placeholder="이메일" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required disabled={userModal.type === 'edit'} />
+                      <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">성명</span><input type="text" value={userModal.data.name} onChange={e=>setUserModal({...userModal, data: {...userModal.data, name: e.target.value}})} placeholder="성명" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required /></div>
+                      <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">이메일</span><input type="email" value={userModal.data.email} onChange={e=>setUserModal({...userModal, data: {...userModal.data, email: e.target.value}})} placeholder="이메일" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required disabled={userModal.type === 'edit'} /></div>
                     </div>
-                    <input type="password" value={userModal.data.password} onChange={e=>setUserModal({...userModal, data: {...userModal.data, password: e.target.value}})} placeholder={userModal.type === 'edit' ? "비밀번호 변경 시에만 입력" : "비밀번호 설정"} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required={userModal.type === 'add'} />
+                    <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">비밀번호 {userModal.type === 'edit' && '(변경 시에만)'}</span><input type="password" value={userModal.data.password} onChange={e=>setUserModal({...userModal, data: {...userModal.data, password: e.target.value}})} placeholder="비밀번호 설정" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required={userModal.type === 'add'} /></div>
+                    
+                    {/* ✅ [추가] 라이선스 만료일 설정 */}
+                    <div className="space-y-3">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2 flex items-center gap-2"><Calendar size={12}/> 라이선스 만료일 설정</span>
+                      <input type="date" value={userModal.data.licenseExpiry ? userModal.data.licenseExpiry.split('T')[0] : ''} onChange={e=>setUserModal({...userModal, data: {...userModal.data, licenseExpiry: new Date(e.target.value).toISOString()}})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
+                    </div>
+
                     <div className="space-y-3">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">보안 권한 등급</span>
                       <div className="flex gap-2">
@@ -324,12 +338,12 @@ const CompanyAdminView = ({
                     </div>
                     <div>
                       <p className="text-[10px] font-black uppercase text-blue-200 tracking-widest">만료 예정일</p>
-                      <p className="text-xl font-black italic mt-1">{user?.licenseExpiry ? new Date(user.licenseExpiry).toLocaleDateString() : '체험 종료 시'}</p>
+                      <p className="text-xl font-black italic mt-1">{isAdmin ? '영구 라이선스' : (user?.licenseExpiry ? new Date(user.licenseExpiry).toLocaleDateString() : '체험 종료 시')}</p>
                     </div>
                   </div>
                 </div>
                 <div className="bg-white/10 p-4 rounded-2xl border border-white/10 mt-8">
-                  <p className="text-[10px] font-bold leading-relaxed">잔여 기간 이후에는 데이터 접근이 제한되오니 정기적으로 갱신하시기 바랍니다.</p>
+                  <p className="text-[10px] font-bold leading-relaxed">{isAdmin ? '관리자님은 모든 기능을 제한 없이 이용할 수 있습니다.' : '잔여 기간 이후에는 데이터 접근이 제한되오니 정기적으로 갱신하시기 바랍니다.'}</p>
                 </div>
               </div>
             </div>
