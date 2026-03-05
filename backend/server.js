@@ -356,7 +356,7 @@ app.post("/api/paypal/create-order", verifyToken, async (req, res) => {
         purchase_units: [
           {
             description: `${planName} 구독 결제`,
-            amount: { currency_code: "USD", value: amount }, // 테스트용으로 USD 사용
+            amount: { currency_code: "USD", value: amount },
           },
         ],
       }),
@@ -369,10 +369,10 @@ app.post("/api/paypal/create-order", verifyToken, async (req, res) => {
   }
 });
 
-// 결제 주문 승인 (캡처)
+// 결제 주문 승인 (캡처 및 승인 대기열 등록)
 app.post("/api/paypal/capture-order", verifyToken, async (req, res) => {
   try {
-    const { orderID } = req.body;
+    const { orderID, planName } = req.body;
     const accessToken = await getPayPalAccessToken();
     const response = await fetch(`${PAYPAL_API}/v2/checkout/orders/${orderID}/capture`, {
       method: "POST",
@@ -385,20 +385,75 @@ app.post("/api/paypal/capture-order", verifyToken, async (req, res) => {
     const data = await response.json();
 
     if (data.status === "COMPLETED") {
-      // ✅ [라이선스 연장 로직] 결제 성공 시 30일 연장
-      const user = await getDocByAny(req.user.uid);
-      const currentExpiry = user.licenseExpiry ? new Date(user.licenseExpiry) : new Date();
-      const newExpiry = new Date(currentExpiry.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      // ✅ [반자동 로직] 즉시 연장하지 않고 승인 요청 데이터 생성
+      await addDoc("payment_requests", {
+        userId: req.user.uid,
+        userEmail: req.user.email,
+        userName: req.user.name,
+        orderID,
+        planName,
+        status: "PENDING", // 승인 대기 상태
+        amount: data.purchase_units[0].payments.captures[0].amount.value
+      });
+
+      await logAction(req.user.uid, req.user.email, req.user.name, "PAYMENT_REQUEST_SUBMITTED", "PAYPAL_ENGINE", `구독 승인 요청됨: ${planName} (관리자 확인 후 개통)`);
       
-      await updateDoc("pms_admins", req.user.uid, { licenseExpiry: newExpiry });
-      await logAction(req.user.uid, req.user.email, req.user.name, "PAYMENT_SUCCESS", "PAYPAL_ENGINE", `구독 결제 성공: ${orderID} (라이선스 30일 연장)`);
-      
-      return res.json({ success: true, newExpiry });
+      return res.json({ success: true, message: "결제가 완료되었습니다. 관리자 승인 후 기능이 활성화됩니다." });
     }
 
     res.status(400).json({ error: "결제 승인 실패" });
   } catch (err) {
     res.status(500).json({ error: "결제 캡처 실패" });
+  }
+});
+
+// ────── 구독 관리 (관리자 전용) ──────
+
+// 승인 대기 중인 결제 목록 조회
+app.get("/api/admin/subscriptions/pending", verifyToken, checkAccess("user_manage"), async (req, res) => {
+  const requests = await getCollection("payment_requests");
+  res.json(requests.filter(r => r.status === "PENDING"));
+});
+
+// 결제 승인 처리 (기능 오픈)
+app.post("/api/admin/subscriptions/approve/:id", verifyToken, checkAccess("user_manage"), async (req, res) => {
+  try {
+    const store = readDB();
+    const reqIdx = (store.payment_requests || []).findIndex(r => r.id === req.params.id);
+    
+    if (reqIdx === -1) return res.status(404).json({ error: "요청을 찾을 수 없습니다." });
+    
+    const request = store.payment_requests[reqIdx];
+    const userIdx = (store.pms_admins || []).findIndex(u => u.id === request.userId);
+    
+    if (userIdx !== -1) {
+      const user = store.pms_admins[userIdx];
+      // 라이선스 30일 연장
+      const currentExpiry = user.licenseExpiry ? new Date(user.licenseExpiry) : new Date();
+      const newExpiry = new Date(currentExpiry.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      
+      // 권한 업그레이드 (비즈니스 플랜 기준 예시)
+      const basePermissions = ["dashboard", "member_db", "security_vault", "policy_manage", "subscription", "my_settings"];
+      
+      store.pms_admins[userIdx] = { 
+        ...user, 
+        licenseExpiry: newExpiry,
+        permissions: basePermissions // 유료 기능 전면 개방
+      };
+      
+      request.status = "APPROVED";
+      request.approvedAt = new Date().toISOString();
+      
+      writeDB(store);
+      
+      await logAction(req.user.uid, req.user.email, req.user.name, "SUBSCRIPTION_APPROVED", "ADMIN_ENGINE", `구독 승인 완료: ${request.userEmail} (기능 개통)`);
+      
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: "사용자를 찾을 수 없습니다." });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "승인 처리 실패" });
   }
 });
 

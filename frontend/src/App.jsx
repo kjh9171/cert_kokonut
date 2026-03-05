@@ -303,6 +303,7 @@ function CompanyAdminView({
   const [passSuccess, setPassSuccess] = useState('');
   const [otpSetup, setOtpSetup] = useState({ open: false, qrCode: '', secret: '', code: '' });
   const [revealedIds, setRevealedIds] = useState([]);
+  const [pendingSubs, setPendingSubscriptions] = useState([]);
 
   const authFetch = useCallback((url, options = {}) =>
     fetch(url, {
@@ -324,10 +325,23 @@ function CompanyAdminView({
     finally { setUsersLoading(false); }
   }, [authFetch, isSandbox]);
 
+  const loadPendingSubs = useCallback(async () => {
+    if (isSandbox || user?.role !== 'admin') return;
+    try { const res = await authFetch('/api/admin/subscriptions/pending'); if (res.ok) setPendingSubscriptions(await res.json()); } catch { }
+  }, [authFetch, isSandbox, user]);
+
   useEffect(() => {
     if (activeTab === 'dashboard') loadAuditLogs();
-    if (activeTab === 'user_manage') loadUsers();
-  }, [activeTab, loadAuditLogs, loadUsers]);
+    if (activeTab === 'user_manage') { loadUsers(); loadPendingSubs(); }
+  }, [activeTab, loadAuditLogs, loadUsers, loadPendingSubs]);
+
+  const handleApproveSub = async (id) => {
+    if (!confirm('결제를 확인하셨습니까? 승인 즉시 기능이 활성화됩니다.')) return;
+    try {
+      const res = await authFetch(`/api/admin/subscriptions/approve/${id}`, { method: 'POST' });
+      if (res.ok) { alert('구독 승인이 완료되었습니다!'); loadUsers(); loadPendingSubs(); }
+    } catch { alert('승인 처리 실패'); }
+  };
 
   const handleUserAction = async (e) => {
     e.preventDefault();
@@ -433,15 +447,38 @@ function CompanyAdminView({
         );
       case 'user_manage':
         return (
-          <div className="space-y-8 animate-in zoom-in-95">
-            <div className="flex justify-between items-center gap-4"><h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">이용자 계정 관리</h2>{!isSandbox && <button onClick={() => setUserModal({ open: true, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'], licenseExpiry: new Date(Date.now() + 30*24*60*60*1000).toISOString() } })} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-black transition shadow-lg shadow-slate-200 uppercase italic"><Plus size={16} /> 신규 이용자 추가</button>}</div>
-            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
-              <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">권한/상태</th><th className="py-4 px-6">라이선스 키</th><th className="py-4 px-6">만료일</th><th className="py-4 px-6 text-right">관리</th></tr></thead><tbody className="divide-y divide-slate-50">
-                {isSandbox ? <tr><td colSpan={6} className="py-10 text-center italic text-slate-400">체험 모드 이용자 조회 불가</td></tr> : users.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic uppercase">{u.name}</td><td className="py-5 px-6 font-medium text-slate-500">{u.email}</td><td className="py-5 px-6"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{u.role === 'admin' ? '관리자' : '일반'}</span></td><td className="py-5 px-6 text-xs font-mono text-slate-400">{u.licenseKey || 'N/A'}</td><td className={`py-5 px-6 text-xs font-bold ${u.role !== 'admin' && getDaysLeft(u.licenseExpiry) < 7 ? 'text-rose-600 animate-pulse' : 'text-slate-400'}`}>{u.licenseExpiry ? new Date(u.licenseExpiry).toLocaleDateString() : '-'}</td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300"><Edit3 size={18} className="cursor-pointer hover:text-blue-600" onClick={() => setUserModal({ open: true, type: 'edit', data: { ...u, permissions: u.permissions || ['dashboard'], password: '', licenseExpiry: u.licenseExpiry || '' } })} /><Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => {if(confirm('삭제하시겠습니까?')) authFetch(`/api/admin/admins/${u.id}`, {method:'DELETE'}).then(()=>loadUsers());}} /></td></tr>
-                ))}
-              </tbody></table></div>
+          <div className="space-y-12 animate-in zoom-in-95">
+            <div className="space-y-8">
+              <div className="flex justify-between items-center gap-4"><h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">이용자 계정 관리</h2>{!isSandbox && <button onClick={() => setUserModal({ open: true, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'], licenseExpiry: new Date(Date.now() + 30*24*60*60*1000).toISOString() } })} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-black transition shadow-lg shadow-slate-200 uppercase italic"><Plus size={16} /> 신규 이용자 추가</button>}</div>
+              <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
+                <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">권한/상태</th><th className="py-4 px-6">라이선스 키</th><th className="py-4 px-6">만료일</th><th className="py-4 px-6 text-right">관리</th></tr></thead><tbody className="divide-y divide-slate-50">
+                  {isSandbox ? <tr><td colSpan={6} className="py-10 text-center italic text-slate-400">체험 모드 이용자 조회 불가</td></tr> : users.map(u => (
+                    <tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic uppercase">{u.name}</td><td className="py-5 px-6 font-medium text-slate-500">{u.email}</td><td className="py-5 px-6"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{u.role === 'admin' ? '관리자' : '일반'}</span></td><td className="py-5 px-6 text-xs font-mono text-slate-400">{u.licenseKey || 'N/A'}</td><td className={`py-5 px-6 text-xs font-bold ${u.role !== 'admin' && getDaysLeft(u.licenseExpiry) < 7 ? 'text-rose-600 animate-pulse' : 'text-slate-400'}`}>{u.licenseExpiry ? new Date(u.licenseExpiry).toLocaleDateString() : '-'}</td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300"><Edit3 size={18} className="cursor-pointer hover:text-blue-600" onClick={() => setUserModal({ open: true, type: 'edit', data: { ...u, permissions: u.permissions || ['dashboard'], password: '', licenseExpiry: u.licenseExpiry || '' } })} /><Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => {if(confirm('삭제하시겠습니까?')) authFetch(`/api/admin/admins/${u.id}`, {method:'DELETE'}).then(()=>loadUsers());}} /></td></tr>
+                  ))}
+                </tbody></table></div>
+              </div>
             </div>
+
+            {isAdmin && pendingSubs.length > 0 && (
+              <div className="space-y-8 animate-in slide-in-from-top-10">
+                <div className="flex items-center gap-3"><div className="bg-amber-100 p-2 rounded-xl text-amber-600"><Zap size={20}/></div><h3 className="text-2xl font-black text-slate-900 uppercase italic">구독 승인 대기 목록</h3></div>
+                <div className="grid grid-cols-1 gap-4">
+                  {pendingSubs.map(req => (
+                    <div key={req.id} className="bg-white p-8 rounded-[2.5rem] border-2 border-amber-100 shadow-xl flex items-center justify-between">
+                      <div className="flex items-center gap-6">
+                        <div className="bg-slate-50 p-4 rounded-2xl text-slate-400"><CardIcon size={24}/></div>
+                        <div>
+                          <p className="text-sm font-black text-slate-900 italic uppercase">{req.userName} ({req.userEmail})</p>
+                          <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{req.planName} 플랜 | 결제액: USD {req.amount} | ID: {req.orderID}</p>
+                        </div>
+                      </div>
+                      <button onClick={() => handleApproveSub(req.id)} className="px-8 py-4 bg-amber-500 text-white rounded-2xl font-black text-xs hover:bg-amber-600 transition shadow-lg shadow-amber-100 uppercase italic">결제 확인 및 승인</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {userModal.open && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in">
                 <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl p-12 relative overflow-y-auto max-h-[90vh]"><button onClick={() => setUserModal({ ...userModal, open: false })} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900"><X size={24}/></button><h3 className="text-3xl font-black text-slate-900 uppercase italic mb-8">{userModal.type === 'add' ? '이용자 추가' : '정보 수정'}</h3>
@@ -493,9 +530,9 @@ function CompanyAdminView({
                           return order.id;
                         }}
                         onApprove={async (data) => {
-                          const res = await authFetch("/api/paypal/capture-order", { method: "POST", body: JSON.stringify({ orderID: data.orderID }) });
+                          const res = await authFetch("/api/paypal/capture-order", { method: "POST", body: JSON.stringify({ orderID: data.orderID, planName: plan.n }) });
                           if (res.ok) {
-                            alert("결제가 완료되었습니다! 라이선스가 30일 연장되었습니다.");
+                            alert("결제가 완료되었습니다! 관리자 승인 후 30일간 기능이 활성화됩니다.");
                             onRefresh();
                             setActiveTab('dashboard');
                           } else {
@@ -514,7 +551,7 @@ function CompanyAdminView({
               <div className="bg-blue-600 p-4 rounded-2xl text-white shadow-lg"><Info size={24}/></div>
               <div>
                 <p className="text-sm font-black text-blue-900 uppercase italic">결제 및 환불 안내</p>
-                <p className="text-xs font-bold text-blue-700/70 mt-1 leading-relaxed">모든 결제는 페이팔 보안 결제 시스템을 통해 안전하게 처리됩니다. 구독 결제 즉시 라이선스 기간이 연장되며, 디지털 서비스 특성상 결제 후에는 환불이 제한될 수 있습니다. 문의사항은 고객센터로 연락 바랍니다.</p>
+                <p className="text-xs font-bold text-blue-700/70 mt-1 leading-relaxed">모든 결제는 페이팔 보안 결제 시스템을 통해 안전하게 처리됩니다. 구독 결제 시 관리자 승인을 거쳐 라이선스 기간이 연장되며, 디지털 서비스 특성상 결제 후에는 환불이 제한될 수 있습니다. 문의사항은 고객센터로 연락 바랍니다.</p>
               </div>
             </div>
           </div>

@@ -36,6 +36,20 @@
       ],
       "otpEnabled": false,
       "createdAt": "2026-03-05T11:57:38.987Z"
+    },
+    {
+      "id": "1772714771393erwf2",
+      "email": "test@test.com",
+      "password": "$2a$10$B9S6Qg5vEvWKYcxDt8pKYuD1O7p8fHTJ7NhKlsoLvh3Yd4kkBFpzS",
+      "name": "홍길동",
+      "role": "user",
+      "licenseKey": "CERT-VIJT-59WM-MCXP",
+      "licenseExpiry": "2026-04-04T12:46:11.391Z",
+      "permissions": [
+        "dashboard"
+      ],
+      "otpEnabled": false,
+      "createdAt": "2026-03-05T12:46:11.393Z"
     }
   ],
   "privacy_records": [
@@ -209,6 +223,46 @@
       "target": "AUTH_ENGINE",
       "reason": "보안 로그인 성공",
       "createdAt": "2026-03-05T12:24:48.222Z"
+    },
+    {
+      "id": "1772714733836wva7l",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "GOOGLE_LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "구글 계정 로그인 성공",
+      "createdAt": "2026-03-05T12:45:33.837Z"
+    },
+    {
+      "id": "1772714771401q3ab1",
+      "userId": "1772714771393erwf2",
+      "user": "test@test.com",
+      "userName": "홍길동",
+      "action": "USER_REGISTERED",
+      "target": "AUTH_ENGINE",
+      "reason": "신규 회원 가입 성공",
+      "createdAt": "2026-03-05T12:46:11.401Z"
+    },
+    {
+      "id": "1772714801495okfjp",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "보안 로그인 성공",
+      "createdAt": "2026-03-05T12:46:41.495Z"
+    },
+    {
+      "id": "17727148373962elpz",
+      "userId": "1772714771393erwf2",
+      "user": "test@test.com",
+      "userName": "홍길동",
+      "action": "LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "보안 로그인 성공",
+      "createdAt": "2026-03-05T12:47:17.396Z"
     }
   ]
 }
