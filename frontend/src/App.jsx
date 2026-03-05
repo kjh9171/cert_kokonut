@@ -63,7 +63,7 @@ const LandingView = ({ onNavigate }) => (
       </div>
       <div className="flex gap-4">
         <button onClick={() => onNavigate('login')} className="text-sm font-bold text-slate-600 px-4 hover:text-blue-600 transition">보안 로그인</button>
-        <button onClick={() => onNavigate('signup_intro')} className="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-black transition shadow-lg shadow-slate-200">무료 시작하기</button>
+        <button onClick={() => onNavigate('signup')} className="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-black transition shadow-lg shadow-slate-200">무료 시작하기</button>
       </div>
     </nav>
 
@@ -74,7 +74,7 @@ const LandingView = ({ onNavigate }) => (
         <p className="text-xl text-slate-500 font-medium mb-12 max-w-2xl mx-auto">복잡한 보안 컴플라이언스 대응부터 데이터 암호화 보관까지,<br />기업의 보안 리스크를 단 하나의 플랫폼으로 해결하세요.</p>
         <div className="flex justify-center gap-4">
           <button onClick={() => onNavigate('sandbox')} className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-2xl shadow-blue-200">무료 체험하기 (가입 없이)</button>
-          <button onClick={() => onNavigate('signup_intro')} className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition shadow-2xl">워크스페이스 개설하기</button>
+          <button onClick={() => onNavigate('signup')} className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition shadow-2xl">지금 바로 도입하기 (가입)</button>
         </div>
       </div>
       <div className="mt-24 max-w-6xl mx-auto px-4 mb-20 text-left">
@@ -110,11 +110,7 @@ const CompanyAdminView = ({
   const [logsLoading, setLogsLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(false);
-  
-  // 이용자 추가/수정 모달 상태
   const [userModal, setUserModal] = useState({ open: false, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'] } });
-  
-  // 비밀번호 변경 폼
   const [passForm, setPassForm] = useState({ current: '', new: '', confirm: '' });
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
@@ -148,10 +144,8 @@ const CompanyAdminView = ({
     e.preventDefault();
     const isEdit = userModal.type === 'edit';
     const url = isEdit ? `/api/admin/admins/${userModal.data.id}` : '/api/admin/admins';
-    const method = isEdit ? 'PUT' : 'POST';
-    
     try {
-      const res = await authFetch(url, { method, body: JSON.stringify(userModal.data) });
+      const res = await authFetch(url, { method: isEdit ? 'PUT' : 'POST', body: JSON.stringify(userModal.data) });
       if (res.ok) { setUserModal({ ...userModal, open: false }); loadUsers(); }
       else { const d = await res.json(); alert(d.error); }
     } catch { alert('서버 통신 실패'); }
@@ -161,12 +155,8 @@ const CompanyAdminView = ({
     e.preventDefault();
     if (isSandbox) { alert('체험 모드에서는 기능을 지원하지 않습니다.'); return; }
     if (passForm.new !== passForm.confirm) { setPassError('새 비밀번호가 일치하지 않습니다.'); return; }
-    setPassError(''); setPassSuccess('');
     try {
-      const res = await authFetch('/api/auth/change-password', {
-        method: 'PUT',
-        body: JSON.stringify({ currentPassword: passForm.current, newPassword: passForm.new })
-      });
+      const res = await authFetch('/api/auth/change-password', { method: 'PUT', body: JSON.stringify({ currentPassword: passForm.current, newPassword: passForm.new }) });
       const data = await res.json();
       if (res.ok) { setPassSuccess(data.message); setPassForm({ current: '', new: '', confirm: '' }); }
       else { setPassError(data.error); }
@@ -217,21 +207,20 @@ const CompanyAdminView = ({
               {!isSandbox && <button onClick={() => setUserModal({ open: true, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'] } })} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-black transition shadow-lg shadow-slate-200 uppercase italic"><Plus size={16} /> 신규 이용자 추가</button>}
             </div>
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
-              <div className="overflow-x-auto"><table className="w-full text-left border-collapse text-sm font-bold text-slate-700"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">권한</th><th className="py-4 px-6">상태</th><th className="py-4 px-6 text-right">관리</th></tr></thead><tbody className="divide-y divide-slate-50">
-                {isSandbox ? <tr><td colSpan={5} className="py-10 text-center italic text-slate-400">체험 모드에서는 이용자 조회가 제한됩니다.</td></tr> : users.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic uppercase">{u.name}</td><td className="py-5 px-6 font-medium text-slate-500">{u.email}</td><td className="py-5 px-6"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{u.role === 'admin' ? '관리자' : '일반'}</span></td><td className="py-5 px-6 text-xs text-slate-400">{new Date(u.createdAt).toLocaleDateString()}</td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300">
+              <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">권한</th><th className="py-4 px-6 text-right">관리</th></tr></thead><tbody className="divide-y divide-slate-50">
+                {isSandbox ? <tr><td colSpan={4} className="py-10 text-center italic text-slate-400">체험 모드 이용자 조회 불가</td></tr> : users.map(u => (
+                  <tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic uppercase">{u.name}</td><td className="py-5 px-6 font-medium text-slate-500">{u.email}</td><td className="py-5 px-6"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{u.role === 'admin' ? '관리자' : '일반'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300">
                     <Edit3 size={18} className="cursor-pointer hover:text-blue-600" onClick={() => setUserModal({ open: true, type: 'edit', data: { ...u, password: '' } })} />
                     <Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => {if(confirm('삭제하시겠습니까?')) authFetch(`/api/admin/admins/${u.id}`, {method:'DELETE'}).then(()=>loadUsers());}} />
                   </td></tr>
                 ))}
               </tbody></table></div>
             </div>
-            {/* 이용자 추가/수정 모달 */}
             {userModal.open && (
-              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in duration-300">
-                <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl p-12 border border-slate-100 relative">
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6 animate-in fade-in">
+                <div className="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl p-12 relative overflow-y-auto max-h-[90vh]">
                   <button onClick={() => setUserModal({ ...userModal, open: false })} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900"><X size={24}/></button>
-                  <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic mb-8">{userModal.type === 'add' ? 'Add User' : 'Edit User'}</h3>
+                  <h3 className="text-3xl font-black text-slate-900 uppercase italic mb-8">{userModal.type === 'add' ? '이용자 추가' : '정보 수정'}</h3>
                   <form onSubmit={handleUserAction} className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <input type="text" value={userModal.data.name} onChange={e=>setUserModal({...userModal, data: {...userModal.data, name: e.target.value}})} placeholder="성명" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
@@ -239,27 +228,25 @@ const CompanyAdminView = ({
                     </div>
                     <input type="password" value={userModal.data.password} onChange={e=>setUserModal({...userModal, data: {...userModal.data, password: e.target.value}})} placeholder={userModal.type === 'edit' ? "비밀번호 변경 시에만 입력" : "비밀번호 설정"} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required={userModal.type === 'add'} />
                     <div className="space-y-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">보안 권한 설정</span>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">보안 권한 등급</span>
                       <div className="flex gap-2">
-                        <button type="button" onClick={() => setUserModal({...userModal, data: {...userModal.data, role: 'admin'}})} className={`flex-1 py-3 rounded-xl font-black text-xs border transition-all ${userModal.data.role === 'admin' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white text-slate-400 border-slate-100'}`}>관리자(Admin)</button>
-                        <button type="button" onClick={() => setUserModal({...userModal, data: {...userModal.data, role: 'user'}})} className={`flex-1 py-3 rounded-xl font-black text-xs border transition-all ${userModal.data.role === 'user' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white text-slate-400 border-slate-100'}`}>일반이용자(User)</button>
+                        <button type="button" onClick={() => setUserModal({...userModal, data: {...userModal.data, role: 'admin'}})} className={`flex-1 py-3 rounded-xl font-black text-xs border ${userModal.data.role === 'admin' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white text-slate-400 border-slate-100'}`}>관리자 (Admin)</button>
+                        <button type="button" onClick={() => setUserModal({...userModal, data: {...userModal.data, role: 'user'}})} className={`flex-1 py-3 rounded-xl font-black text-xs border ${userModal.data.role === 'user' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white text-slate-400 border-slate-100'}`}>일반이용자 (User)</button>
                       </div>
                     </div>
                     <div className="space-y-3">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">메뉴 접근 제어</span>
-                      <div className="grid grid-cols-2 gap-2">
-                        {ALL_PERMISSIONS.map(p => (
-                          <label key={p.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
-                            <input type="checkbox" checked={userModal.data.permissions.includes(p.id)} onChange={(e) => {
-                              const next = e.target.checked ? [...userModal.data.permissions, p.id] : userModal.data.permissions.filter(id => id !== p.id);
-                              setUserModal({...userModal, data: {...userModal.data, permissions: next}});
-                            }} className="w-4 h-4 rounded border-slate-200 text-blue-600" />
-                            <span className="text-xs font-bold text-slate-600">{p.label}</span>
-                          </label>
-                        ))}
-                      </div>
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">메뉴 접근 제어 (ACL)</span>
+                      <div className="grid grid-cols-2 gap-2">{ALL_PERMISSIONS.map(p => (
+                        <label key={p.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors">
+                          <input type="checkbox" checked={userModal.data.permissions.includes(p.id)} onChange={(e) => {
+                            const next = e.target.checked ? [...userModal.data.permissions, p.id] : userModal.data.permissions.filter(id => id !== p.id);
+                            setUserModal({...userModal, data: {...userModal.data, permissions: next}});
+                          }} className="w-4 h-4 rounded border-slate-200 text-blue-600" />
+                          <span className="text-xs font-bold text-slate-600">{p.label}</span>
+                        </label>
+                      ))}</div>
                     </div>
-                    <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 shadow-xl shadow-blue-100 uppercase italic mt-4">{userModal.type === 'add' ? 'Create Account' : 'Save Changes'}</button>
+                    <button type="submit" className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 shadow-xl shadow-blue-100 uppercase italic">{userModal.type === 'add' ? '이용자 계정 생성' : '변경 사항 저장'}</button>
                   </form>
                 </div>
               </div>
@@ -271,25 +258,16 @@ const CompanyAdminView = ({
           <div className="max-w-2xl mx-auto space-y-8 animate-in zoom-in-95">
             <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">내 정보 관리</h2>
             <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm">
-              <h3 className="text-xl font-black text-slate-800 uppercase italic mb-8 flex items-center gap-2"><Key size={20} className="text-blue-600"/> 비밀번호 변경</h3>
+              <h3 className="text-xl font-black text-slate-800 italic uppercase mb-8 flex items-center gap-2"><Key size={20} className="text-blue-600"/> 비밀번호 변경</h3>
               <form onSubmit={handlePasswordChange} className="space-y-6">
-                <div className="space-y-2">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">현재 비밀번호</span>
-                  <input type="password" value={passForm.current} onChange={e=>setPassForm({...passForm, current:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" />
-                </div>
+                <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">현재 비밀번호</span><input type="password" value={passForm.current} onChange={e=>setPassForm({...passForm, current:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" /></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">새 비밀번호</span>
-                    <input type="password" value={passForm.new} onChange={e=>setPassForm({...passForm, new:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" />
-                  </div>
-                  <div className="space-y-2">
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">새 비밀번호 확인</span>
-                    <input type="password" value={passForm.confirm} onChange={e=>setPassForm({...passForm, confirm:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" />
-                  </div>
+                  <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">새 비밀번호</span><input type="password" value={passForm.new} onChange={e=>setPassForm({...passForm, new:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" /></div>
+                  <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">새 비밀번호 확인</span><input type="password" value={passForm.confirm} onChange={e=>setPassForm({...passForm, confirm:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" /></div>
                 </div>
                 {passError && <p className="text-rose-500 text-xs font-bold text-center">{passError}</p>}
                 {passSuccess && <p className="text-emerald-500 text-xs font-bold text-center">{passSuccess}</p>}
-                <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition-all shadow-xl shadow-slate-200">비밀번호 업데이트</button>
+                <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition-all">비밀번호 업데이트</button>
               </form>
             </div>
           </div>
@@ -301,14 +279,14 @@ const CompanyAdminView = ({
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
               <div className="flex justify-between items-center mb-10"><h3 className="text-2xl font-black text-slate-800 uppercase italic">고객 회원 자산 DB</h3><button onClick={() => setActiveTab('security_vault')} className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100 uppercase italic"><Plus size={16} /> 대량 보안 처리</button></div>
               <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">연락처</th><th className="py-4 px-6">상태</th><th className="py-4 px-6 text-right">제어</th></tr></thead><tbody className="divide-y divide-slate-50">
-                {memberLoading ? <tr><td colSpan={4} className="py-10 text-center">로드 중...</td></tr> : memberRecords.length === 0 ? <tr><td colSpan={4} className="py-10 text-center italic text-slate-400">데이터가 없습니다.</td></tr> : memberRecords.map((row) => (
-                  <tr key={row.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic">{row.name}</td><td className="py-5 px-6 tabular-nums">{row.phone || '***-****-****'}</td><td className="py-5 px-6"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${row.status === 'ENCRYPTED' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>{row.status === 'ENCRYPTED' ? '보안 암호화' : '평문 노출'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300"><Eye size={18} className="cursor-pointer hover:text-blue-600" /><Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => handleDeleteRecord(row.id)} /></td></tr>
+                {memberLoading ? <tr><td colSpan={4} className="py-10 text-center">로드 중...</td></tr> : memberRecords.map((row) => (
+                  <tr key={row.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic">{row.name}</td><td className="py-5 px-6 tabular-nums">{row.phone || '***-****-****'}</td><td className="py-5 px-6"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black ${row.status === 'ENCRYPTED' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>{row.status === 'ENCRYPTED' ? '보안 암호화' : '평문 노출'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300"><Eye size={18} className="cursor-pointer hover:text-blue-600" /><Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => handleDeleteRecord(row.id)} /></td></tr>
                 ))}
               </tbody></table></div>
             </div>
           </div>
         );
-      default: return <div className="p-24 text-center font-black text-slate-400 uppercase italic">접근 권한이 없거나 개발 중인 모듈입니다.</div>;
+      default: return <div className="p-24 text-center font-black text-slate-400 uppercase italic">개발 중인 보안 모듈입니다.</div>;
     }
   };
 
@@ -317,7 +295,7 @@ const CompanyAdminView = ({
       <aside className={`bg-slate-900 text-white flex flex-col transition-all duration-500 shrink-0 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
         <div className="h-20 flex items-center px-6 border-b border-slate-800 cursor-pointer overflow-hidden" onClick={() => onNavigate('landing')}><Shield className="text-blue-500 shrink-0" size={28} />{sidebarOpen && <span className="ml-3 font-black text-xl tracking-tighter uppercase whitespace-nowrap">PMS 센터</span>}</div>
         <nav className="flex-1 py-8 px-3 space-y-1 no-scrollbar overflow-y-auto">
-          {COMPANY_MENU.filter(m => !m.adminOnly || (user && user.role === 'admin')).map((m) => (
+          {COMPANY_MENU.filter(m => !m.adminOnly || (user && user.role === 'admin')).filter(m => isSandbox || (user && user.permissions && user.permissions.includes(m.id))).map((m) => (
             <button key={m.id} onClick={() => setActiveTab(m.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === m.id ? 'bg-blue-600 shadow-xl shadow-blue-900/40 font-bold' : 'text-slate-500 hover:bg-slate-800 hover:text-white'}`}><m.icon size={20} className="shrink-0" /><span className={`text-sm whitespace-nowrap ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>{m.label}</span></button>
           ))}
         </nav>
@@ -326,7 +304,7 @@ const CompanyAdminView = ({
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 flex justify-between items-center sticky top-0 z-30">
           <div className="flex items-center gap-6"><button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2.5 hover:bg-slate-50 rounded-xl text-slate-400 border border-slate-100 shadow-sm"><Menu size={20} /></button><SessionTimer initialTime={4800} onLogout={onLogout} isSandbox={isSandbox} /></div>
-          <div className="flex items-center gap-4"><div className="text-right hidden sm:block"><p className="text-sm font-black text-slate-800 uppercase italic">{isSandbox ? '익명 이용자 (체험)' : `${user?.name || '보안 담당자'} (${user?.role === 'admin' ? '관리자' : '일반'})`}</p><div className="flex justify-end items-center gap-1.5 mt-0.5"><span className={`w-1.5 h-1.5 ${isSandbox ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full animate-pulse`}></span><p className={`text-[9px] ${isSandbox ? 'text-amber-500' : 'text-emerald-500'} font-bold uppercase tracking-widest`}>{isSandbox ? '체험 계정' : '시스템 인증됨'}</p></div></div><div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-500 shadow-inner"><Users size={18} /></div></div>
+          <div className="flex items-center gap-4"><div className="text-right hidden sm:block"><p className="text-sm font-black text-slate-800 uppercase italic">{isSandbox ? '익명 이용자 (체험)' : `${user?.name || '보안 담당자'} (${user?.role === 'admin' ? '관리자' : '일반'})`}</p><div className="flex justify-end items-center gap-1.5 mt-0.5"><span className={`w-1.5 h-1.5 ${isSandbox ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full animate-pulse`}></span><p className={`text-[9px] ${isSandbox ? 'text-amber-500' : 'text-emerald-500'} font-bold uppercase tracking-widest`}>{isSandbox ? '체험 계정' : '인증됨'}</p></div></div><div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-500 shadow-inner"><Users size={18} /></div></div>
         </header>
         <main className="flex-1 p-10 max-w-7xl mx-auto w-full overflow-y-auto no-scrollbar">{renderContent()}</main>
       </div>
@@ -347,9 +325,7 @@ export default function App() {
   const [memberLoading, setMemberLoading] = useState(false);
 
   // 계정 폼 상태
-  const [signupStep, setSignupStep] = useState('email'); 
   const [email, setEmail] = useState('');
-  const [verifyCode, setVerifyCode] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -370,79 +346,62 @@ export default function App() {
 
   useEffect(() => { if ((currentScreen === 'company_admin' || currentScreen === 'sandbox') && (authToken || currentScreen === 'sandbox')) loadData(); }, [currentScreen, authToken, loadData]);
 
-  const handleSendCode = async () => {
-    if (!email) { setError('이메일을 입력하세요.'); return; }
-    setLoading(true); try { const r = await fetch('/api/auth/send-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) }); if (r.ok) setSignupStep('verify'); else setError('발송 실패'); } catch { setError('서버 오류'); } finally { setLoading(false); }
+  const handleSignup = async (e) => {
+    e?.preventDefault();
+    if(!email || !password || !name) { setError('모든 항목을 입력하세요.'); return; }
+    setLoading(true); setError('');
+    try {
+      const res = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, name }) });
+      const d = await res.json();
+      if (res.ok) { localStorage.setItem('pms_token', d.token); setAuthToken(d.token); setCurrentUser(d.user); setCurrentScreen('company_admin'); }
+      else setError(d.error);
+    } catch { setError('서버 연결 실패'); } finally { setLoading(false); }
   };
 
-  const handleVerifyCode = async () => {
-    setLoading(true); try { const r = await fetch('/api/auth/verify-code', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, code: verifyCode }) }); if (r.ok) setSignupStep('info'); else setError('인증 코드 불일치'); } catch { setError('서버 오류'); } finally { setLoading(false); }
-  };
-
-  const handleSignupComplete = async () => {
-    setLoading(true); try { const r = await fetch('/api/auth/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, name }) }); const d = await r.json(); if (r.ok) { localStorage.setItem('pms_token', d.token); setAuthToken(d.token); setCurrentUser(d.user); setCurrentScreen('company_admin'); } else setError(d.error); } catch { setError('서버 오류'); } finally { setLoading(false); }
-  };
-
-  const handleLogin = async () => {
-    setLoading(true); try { const r = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) }); const d = await r.json(); if (r.ok) { localStorage.setItem('pms_token', d.token); setAuthToken(d.token); setCurrentUser(d.user); setCurrentScreen('company_admin'); } else setError(d.error); } catch { setError('서버 오류'); } finally { setLoading(false); }
+  const handleLogin = async (e) => {
+    e?.preventDefault();
+    if(!email || !password) { setError('정보를 입력하세요.'); return; }
+    setLoading(true); setError('');
+    try {
+      const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+      const d = await res.json();
+      if (res.ok) { localStorage.setItem('pms_token', d.token); setAuthToken(d.token); setCurrentUser(d.user); setCurrentScreen('company_admin'); }
+      else setError(d.error);
+    } catch { setError('서버 연결 실패'); } finally { setLoading(false); }
   };
 
   return (
     <div className="selection:bg-blue-600 selection:text-white h-screen overflow-hidden bg-white font-['Noto_Sans_KR']">
-      <div className="h-full overflow-y-auto no-scrollbar scroll-smooth">
+      <div className="h-full overflow-y-auto scroll-smooth">
         {currentScreen === 'landing' && <LandingView onNavigate={setCurrentScreen} />}
         {currentScreen === 'login' && (
           <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
-            <div className="w-full max-w-[440px] bg-white rounded-[4rem] shadow-2xl p-14 border border-slate-100 relative group">
+            <div className="w-full max-w-[440px] bg-white rounded-[4rem] shadow-2xl p-14 border border-slate-100 relative">
               <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
-              <div className="flex flex-col items-center mb-12 cursor-pointer" onClick={() => setCurrentScreen('landing')}><div className="bg-blue-600 p-4 rounded-3xl text-white mb-5 shadow-2xl shadow-blue-200 group-hover:scale-110 transition-transform"><Shield size={32} /></div><h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">보안 포털 접속</h2></div>
-              <div className="space-y-6">
-                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="보안 이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" />
-                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" />
+              <div className="flex flex-col items-center mb-12 cursor-pointer" onClick={() => setCurrentScreen('landing')}><div className="bg-blue-600 p-4 rounded-3xl text-white mb-5 shadow-2xl shadow-blue-200"><Shield size={32} /></div><h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">보안 포털 접속</h2></div>
+              <form onSubmit={handleLogin} className="space-y-6">
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="보안 이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" required />
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none text-sm font-black focus:border-blue-500 transition-all" required />
                 {error && <p className="text-rose-500 text-sm font-bold text-center">{error}</p>}
-                <button onClick={handleLogin} disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-2xl hover:bg-blue-700 transition-all active:scale-[0.98] uppercase italic">{loading ? '인증 중...' : '접속 승인 요청'}</button>
-                <div className="flex flex-col gap-3 mt-6">
-                  <p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600 transition" onClick={()=>{setError(''); setSignupStep('email'); setCurrentScreen('signup');}}>신규 보안 워크스페이스 생성</p>
-                  <p className="text-center text-slate-300 text-[10px] font-black uppercase tracking-widest cursor-pointer hover:text-amber-500" onClick={()=>setCurrentScreen('sandbox')}>먼저 무료 체험하기</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {currentScreen === 'signup_intro' && (
-          <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 animate-in fade-in">
-            <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white p-12 rounded-[3rem] shadow-xl border border-slate-100 flex flex-col justify-between hover:border-blue-500 transition-all group">
-                <div>
-                  <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all"><Zap size={32}/></div>
-                  <h3 className="text-3xl font-black text-slate-900 mb-4 tracking-tighter">실시간 체험 모드</h3>
-                  <p className="text-slate-500 font-medium leading-relaxed">별도의 가입 없이 즉시 대시보드와 암호화 엔진을 테스트해 보세요. 데이터는 서버에 저장되지 않고 브라우저 종료 시 삭제됩니다.</p>
-                </div>
-                <button onClick={()=>setCurrentScreen('sandbox')} className="mt-12 py-5 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase">체험 시작하기</button>
-              </div>
-              <div className="bg-slate-900 p-12 rounded-[3rem] shadow-2xl flex flex-col justify-between hover:scale-[1.02] transition-all group">
-                <div>
-                  <div className="w-16 h-16 bg-white/10 text-blue-400 rounded-2xl flex items-center justify-center mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all"><ShieldCheck size={32}/></div>
-                  <h3 className="text-3xl font-black text-white mb-4 tracking-tighter">정식 워크스페이스 개설</h3>
-                  <p className="text-slate-400 font-medium leading-relaxed">이메일 인증을 통해 나만의 보안 워크스페이스를 생성하세요. 팀원 관리, 데이터 영구 저장 및 무결성 감사 로그 기능을 제공합니다.</p>
-                </div>
-                <button onClick={()=>{setSignupStep('email'); setCurrentScreen('signup');}} className="mt-12 py-5 bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-700 transition-all uppercase">회원가입 (무료 시작)</button>
-              </div>
+                <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-2xl font-black text-lg shadow-2xl hover:bg-blue-700 transition-all uppercase italic">{loading ? '인증 중...' : '접속 승인 요청'}</button>
+                <div className="flex flex-col gap-3 mt-6"><p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600" onClick={()=>{setError(''); setCurrentScreen('signup');}}>신규 보안 워크스페이스 생성</p><p className="text-center text-slate-300 text-[10px] font-black uppercase cursor-pointer hover:text-amber-500" onClick={()=>setCurrentScreen('sandbox')}>무료 체험 모드 입장</p></div>
+              </form>
             </div>
           </div>
         )}
         {currentScreen === 'signup' && (
           <div className="min-h-screen bg-white flex items-center justify-center p-6 animate-in fade-in duration-500">
             <div className="w-full max-w-[480px] bg-white rounded-[4rem] shadow-2xl p-16 border border-slate-100 relative">
-              <button onClick={()=>setCurrentScreen('signup_intro')} className="absolute top-10 left-10 text-slate-300 hover:text-slate-900 transition-colors"><ChevronLeft size={32}/></button>
+              <button onClick={()=>setCurrentScreen('landing')} className="absolute top-10 left-10 text-slate-300 hover:text-slate-900"><ChevronLeft size={32}/></button>
               <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase mb-12 text-center italic">시스템 초기화</h2>
-              <div className="space-y-6 animate-in slide-in-from-bottom-5">
-                {signupStep === 'email' && (<><div className="space-y-2 mb-4"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">인증 단계: 01 이메일 입력</span><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="회사 이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" /></div><button onClick={handleSendCode} disabled={loading} className="w-full py-6 bg-slate-900 text-white rounded-3xl font-black text-xl hover:bg-black transition-all flex items-center justify-center gap-3"><Send size={20}/> 인증 코드 발송</button></>)}
-                {signupStep === 'verify' && (<><div className="text-center space-y-2 mb-4 font-bold text-slate-400"><p className="text-xs uppercase tracking-widest">인증 단계: 02 코드 확인</p><p className="text-[10px] italic">서버 콘솔에서 6자리 보안 코드를 확인하십시오.</p></div><input type="text" value={verifyCode} onChange={e=>setVerifyCode(e.target.value)} maxLength="6" placeholder="000000" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl text-center text-3xl font-black text-blue-600 outline-none" /><button onClick={handleVerifyCode} disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl hover:bg-blue-700 transition-all">코드 인증 완료</button><p className="text-center text-xs text-slate-300 cursor-pointer" onClick={()=>setSignupStep('email')}>이메일 주소 수정</p></>)}
-                {signupStep === 'info' && (<><div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">인증 단계: 03 상세 정보</span><input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="담당자 성명" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" /></div><input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호 설정" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" /><button onClick={handleSignupComplete} disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-2xl hover:bg-blue-700 transition-all uppercase italic">보안 워크스페이스 개설</button></>)}
+              <form onSubmit={handleSignup} className="space-y-6">
+                <input type="text" value={name} onChange={e=>setName(e.target.value)} placeholder="담당자 성명" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
+                <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="회사 이메일 주소" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
+                <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="비밀번호 설정" className="w-full px-8 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold" required />
                 {error && <p className="text-rose-500 text-sm font-bold text-center">{error}</p>}
+                <button type="submit" disabled={loading} className="w-full py-6 bg-blue-600 text-white rounded-3xl font-black text-xl shadow-2xl hover:bg-blue-700 uppercase italic">{loading ? '워크스페이스 생성 중...' : '보안 워크스페이스 개설'}</button>
                 <p className="text-center text-slate-400 text-xs font-bold cursor-pointer hover:text-blue-600 transition mt-6" onClick={()=>{setError(''); setCurrentScreen('login');}}>이미 계정이 있습니까? 로그인</p>
-              </div>
+              </form>
             </div>
           </div>
         )}
@@ -455,7 +414,6 @@ export default function App() {
             handleDeleteRecord={(id) => { if(confirm('영구 파기하시겠습니까?')) authFetch(`/api/admin/records/${id}`, {method:'DELETE'}).then(()=>loadData()); }}
             onVaultComplete={async (data) => {
               if (currentScreen === 'sandbox') { alert('체험 모드에서는 저장이 지원되지 않습니다.'); return; }
-              if (!data.records || data.records.length === 0) return;
               try { const r = await authFetch('/api/admin/records/batch', { method: 'POST', body: JSON.stringify({ records: data.records }) }); if (r.ok) loadData(); } catch { }
             }}
             isSandbox={currentScreen === 'sandbox'}

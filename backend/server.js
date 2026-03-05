@@ -56,7 +56,6 @@ const deleteDoc = async (col, id) => {
 
 const findUserByEmail = async (email) => {
   const store = readDB();
-  // 관리자/사용자 통합 테이블(pms_admins)에서 검색
   return (store.pms_admins || []).find((u) => u.email === email) || null;
 };
 
@@ -97,37 +96,12 @@ function decrypt(text) {
 
 // ────── 인증 및 가입 API ──────
 
-app.post("/api/auth/send-code", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const store = readDB();
-    store.verification_codes = (store.verification_codes || []).filter(c => c.email !== email);
-    store.verification_codes.push({ email, code, expiresAt: Date.now() + 300000 });
-    writeDB(store);
-    console.log(`[CERT 보안알림] ${email} 인증 코드: [${code}]`);
-    res.json({ success: true, message: "인증 코드가 발송되었습니다. (콘솔 확인)" });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
-app.post("/api/auth/verify-code", async (req, res) => {
-  try {
-    const { email, code } = req.body;
-    const store = readDB();
-    const record = (store.verification_codes || []).find(c => c.email === email && c.code === code);
-    if (!record || record.expiresAt < Date.now()) return res.status(400).json({ error: "코드가 일치하지 않거나 만료되었습니다." });
-    record.verified = true;
-    writeDB(store);
-    res.json({ success: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
-});
-
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { email, password, name } = req.body;
-    const store = readDB();
-    const isVerified = (store.verification_codes || []).some(c => c.email === email && c.verified);
-    if (!isVerified) return res.status(400).json({ error: "이메일 인증이 필요합니다." });
+    if (!email || !password || !name) return res.status(400).json({ error: "필수 정보가 누락되었습니다." });
+    
+    // ✅ [수정] 이메일 인증 코드 확인 절차 삭제 (대표님 요청)
     if (await findUserByEmail(email)) return res.status(400).json({ error: "이미 가입된 이메일입니다." });
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -151,7 +125,7 @@ app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const userData = await findUserByEmail(email);
-    if (!userData) return res.status(401).json({ error: "등록되지 않은 이메일입니다." });
+    if (!userData) return res.status(401).json({ error: "가입되지 않은 이메일입니다." });
     if (!(await bcrypt.compare(password, userData.password))) return res.status(401).json({ error: "비밀번호가 일치하지 않습니다." });
 
     const token = jwt.sign({ uid: userData.id, email: userData.email, role: userData.role, name: userData.name }, JWT_SECRET, { expiresIn: "8h" });
@@ -159,7 +133,7 @@ app.post("/api/auth/login", async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ────── 이용자 관리 API (관리자 전용) ──────
+// ────── 이용자 관리 API ──────
 
 app.get("/api/admin/admins", verifyToken, async (req, res) => {
   try {
@@ -171,10 +145,8 @@ app.get("/api/admin/admins", verifyToken, async (req, res) => {
 
 app.post("/api/admin/admins", verifyToken, async (req, res) => {
   try {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: "관리자만 이용자를 추가할 수 있습니다." });
+    if (req.user.role !== 'admin') return res.status(403).json({ error: "관리자 전용 기능입니다." });
     const { email, password, name, role, permissions } = req.body;
-    if (await findUserByEmail(email)) return res.status(400).json({ error: "이미 가입된 이메일입니다." });
-
     const hashedPassword = await bcrypt.hash(password, 10);
     const userData = { email, password: hashedPassword, name, role: role || 'user', permissions: permissions || ['dashboard'] };
     const newDoc = await addDoc("pms_admins", userData);
@@ -198,6 +170,17 @@ app.put("/api/admin/admins/:id", verifyToken, async (req, res) => {
 
     await updateDoc("pms_admins", req.params.id, updateData);
     res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.put("/api/auth/change-password", verifyToken, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await getDocByAny(req.user.uid);
+    if (!user || !(await bcrypt.compare(currentPassword, user.password))) return res.status(401).json({ error: "현재 비밀번호가 일치하지 않습니다." });
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await updateDoc("pms_admins", req.user.uid, { password: hashedPassword });
+    res.json({ success: true, message: "비밀번호가 변경되었습니다." });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
