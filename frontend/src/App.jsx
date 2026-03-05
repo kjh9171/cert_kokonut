@@ -68,7 +68,7 @@ function LandingView({ onNavigate, isLoggedIn }) {
         </div>
         <div className="flex gap-4">
           <button onClick={() => onNavigate(isLoggedIn ? 'company_admin' : 'login')} className="text-sm font-bold text-slate-600 px-4 hover:text-blue-600 transition">{isLoggedIn ? '대시보드 이동' : '보안 로그인'}</button>
-          {!isLoggedIn && <button onClick={() => onNavigate('sandbox')} className="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-black transition shadow-lg shadow-slate-200">무료 시작하기</button>}
+          {!isLoggedIn && <button onClick={() => onNavigate('signup')} className="text-sm font-bold bg-slate-900 text-white px-6 py-2.5 rounded-xl hover:bg-black transition shadow-lg shadow-slate-200">무료 시작하기</button>}
         </div>
       </nav>
 
@@ -79,7 +79,7 @@ function LandingView({ onNavigate, isLoggedIn }) {
           <p className="text-xl text-slate-500 font-medium mb-12 max-w-2xl mx-auto">복잡한 보안 컴플라이언스 대응부터 데이터 암호화 보관까지,<br />기업의 보안 리스크를 단 하나의 플랫폼으로 해결하세요.</p>
           <div className="flex justify-center gap-4">
             <button onClick={() => onNavigate(isLoggedIn ? 'company_admin' : 'sandbox')} className="px-12 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition shadow-2xl shadow-blue-200">{isLoggedIn ? '대시보드로 가기' : '무료 체험하기 (가입 없이)'}</button>
-            <button onClick={() => onNavigate(isLoggedIn ? 'company_admin' : 'sandbox')} className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition shadow-2xl">{isLoggedIn ? '운영 관리 센터' : '지금 바로 도입하기 (체험)'}</button>
+            <button onClick={() => onNavigate(isLoggedIn ? 'company_admin' : 'signup')} className="px-12 py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition shadow-2xl">{isLoggedIn ? '운영 관리 센터' : '지금 바로 도입하기 (회원가입)'}</button>
           </div>
         </div>
         <div className="mt-24 max-w-6xl mx-auto px-4 mb-20 text-left">
@@ -633,10 +633,12 @@ export default function App() {
   };
 
   const handleGoogleLogin = async () => {
+    const googleEmail = prompt("테스트용 구글 이메일을 입력하세요 (실제 OAuth 연동 시 브라우저 팝업이 뜹니다):", "user@gmail.com");
+    if (!googleEmail) return;
+    
     setLoading(true);
     try {
-      // ✅ [보안 개정] 구글 로그인 시뮬레이션: 고정된 테스트 계정 사용
-      const res = await fetch('/api/auth/google-mock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'google-user@cert.pms' }) });
+      const res = await fetch('/api/auth/google-mock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: googleEmail }) });
       const d = await res.json();
       if (res.ok) {
         if (d.requiresOTP) { setOtpMode({ active: true, tempToken: d.tempToken, code: '' }); }

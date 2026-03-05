@@ -8,7 +8,18 @@
       "role": "admin",
       "otpSecret": "243fa058f153a159baa516ca0493d3fb:7416c1f86821a2d5d2f0f2509cbfdcf9d1102744401b301acce84d748d7dded825d0406f004cdf4366cfa2df9873dbf7",
       "otpEnabled": false,
-      "createdAt": "2026-03-04T04:32:26.675Z"
+      "createdAt": "2026-03-04T04:32:26.675Z",
+      "permissions": [
+        "dashboard",
+        "user_manage",
+        "policy_manage",
+        "my_settings",
+        "subscription",
+        "security_vault",
+        "member_db"
+      ],
+      "licenseExpiry": "2999-03-31T00:00:00.000Z",
+      "tempOtpSecret": "MQZUKTKSN52UYP3ELVNXQOLYFIZDCPR7G4SGSRTTME4VIZ3RM44Q"
     },
     {
       "id": "1772598802213",
@@ -18,9 +29,181 @@
       "role": "user",
       "otpSecret": "d61f2099634f8cc33d93f968fed9d209:27a1b628a64842a3e24e796df3d6ba885b2f8f2e7938eb19f9307aa48d0196023806d27039fbcc636c4c9c959789d575",
       "otpEnabled": false,
-      "createdAt": "2026-03-04T04:33:22.212Z"
+      "createdAt": "2026-03-04T04:33:22.212Z",
+      "permissions": [
+        "dashboard",
+        "member_db",
+        "security_vault",
+        "my_settings",
+        "policy_manage"
+      ],
+      "licenseExpiry": "2026-03-31T00:00:00.000Z"
+    },
+    {
+      "id": "1772711795251an5xq",
+      "email": "test2@test.com",
+      "password": "$2b$10$SLWG7dDwEb79wq3z1t3.0..6WESiwF/e9EOKNLpGIG5Z3T4iHfn42",
+      "name": "홍길순",
+      "role": "user",
+      "permissions": [
+        "dashboard",
+        "security_vault",
+        "member_db",
+        "my_settings"
+      ],
+      "licenseExpiry": "2026-04-04T11:56:14.007Z",
+      "licenseKey": "CERT-61MA-FX61-FIC0",
+      "otpEnabled": false,
+      "createdAt": "2026-03-05T11:56:35.251Z"
+    },
+    {
+      "id": "1772711858987rs308",
+      "email": "google-user@cert.pms",
+      "password": "$2b$10$lju/LhwEfO5Y1ldavHv8n.CUhEQnzgPut6WKSrwVMkaQvo13AxTGu",
+      "name": "google-user",
+      "role": "user",
+      "licenseKey": "CERT-NJ9P-BQP8-FQUL",
+      "licenseExpiry": "2026-04-04T11:57:38.986Z",
+      "permissions": [
+        "dashboard",
+        "member_db",
+        "security_vault"
+      ],
+      "otpEnabled": false,
+      "createdAt": "2026-03-05T11:57:38.987Z"
     }
   ],
-  "privacy_records": [],
-  "pms_users": []
+  "privacy_records": [
+    {
+      "id": "177271182192591",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "17727118219258162",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "1772711821925981",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "17727118219255876",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "1772711821925667",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "17727118219252258",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "17727118219258557",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "17727118219253079",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "17727118219251309",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "17727118219252664",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    },
+    {
+      "id": "17727118219250034",
+      "name": "미식별",
+      "phone": "",
+      "email": "",
+      "status": "ENCRYPTED",
+      "createdAt": "2026-03-05T11:57:01.925Z"
+    }
+  ],
+  "pms_users": [],
+  "security_logs": [
+    {
+      "id": "17727118218967nls2",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "LOCAL_ENCRYPT",
+      "target": "DEC_RESTORED_SECURED_[2월대개봉_코코넛] 위험조치 이행계획서_v0.1.csv",
+      "reason": "파일 암호화 완료 (레코드: 11건)",
+      "createdAt": "2026-03-05T11:57:01.896Z"
+    },
+    {
+      "id": "1772711843818hsf8k",
+      "userId": "1772711795251an5xq",
+      "user": "test2@test.com",
+      "userName": "홍길순",
+      "action": "LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "보안 로그인 성공",
+      "createdAt": "2026-03-05T11:57:23.818Z"
+    },
+    {
+      "id": "1772711858989ecvnw",
+      "userId": "1772711858987rs308",
+      "user": "google-user@cert.pms",
+      "userName": "google-user",
+      "action": "GOOGLE_SIGNUP",
+      "target": "AUTH_ENGINE",
+      "reason": "구글 계정 자동 가입 및 연동",
+      "createdAt": "2026-03-05T11:57:38.989Z"
+    },
+    {
+      "id": "1772711858993lyzbn",
+      "userId": "1772711858987rs308",
+      "user": "google-user@cert.pms",
+      "userName": "google-user",
+      "action": "GOOGLE_LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "구글 계정 로그인 성공",
+      "createdAt": "2026-03-05T11:57:38.993Z"
+    }
+  ]
 }
