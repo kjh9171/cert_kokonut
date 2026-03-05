@@ -263,6 +263,26 @@
       "target": "AUTH_ENGINE",
       "reason": "보안 로그인 성공",
       "createdAt": "2026-03-05T12:47:17.396Z"
+    },
+    {
+      "id": "1772715927443mw1s1",
+      "userId": "1772714771393erwf2",
+      "user": "test@test.com",
+      "userName": "홍길동",
+      "action": "LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "보안 로그인 성공",
+      "createdAt": "2026-03-05T13:05:27.443Z"
+    },
+    {
+      "id": "1772715959076vpic5",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "보안 로그인 성공",
+      "createdAt": "2026-03-05T13:05:59.077Z"
     }
   ]
 }
