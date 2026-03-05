@@ -8,7 +8,7 @@ import {
   History, Mail, CreditCard, HelpCircle, Eye, ShieldCheck,
   ChevronRight, Lock, CheckCircle, AlertTriangle, UserPlus, LogIn, 
   ArrowLeft, Globe, Zap, Check, Activity, BarChart3, TrendingUp,
-  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft
+  Smartphone, EyeOff, Share2, Clock, ExternalLink, Scale, Info, FileSearch, Save, Trash2, RefreshCw, UserCheck, Edit3, Send, User, ChevronLeft, CreditCard as CardIcon
 } from 'lucide-react';
 // 데이터 시각화 라이브러리 (보안 관제용)
 import { 
@@ -40,14 +40,14 @@ const SessionTimer = ({ initialTime, onLogout, isSandbox }) => {
   }, [onLogout, isSandbox]);
   const formatTime = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
   
-  if (isSandbox) return <div className="bg-amber-50 text-amber-600 px-4 py-2 rounded-full border border-amber-100 text-[10px] font-black animate-pulse">무료 체험 모드 (저장 불가)</div>;
+  if (isSandbox) return <div className="bg-amber-50 text-amber-600 px-4 py-2 rounded-full border border-amber-100 text-[10px] font-black animate-pulse whitespace-nowrap">무료 체험 모드 (저장 불가)</div>;
 
   return (
-    <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-full border border-blue-100 shadow-inner">
+    <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-full border border-blue-100 shadow-inner whitespace-nowrap">
       <Clock size={14} className="text-blue-600" />
       <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest hidden sm:inline">세션 잔여 시간</span>
       <span className="text-sm font-black text-blue-600 tabular-nums">{formatTime(timeLeft)}</span>
-      <button onClick={() => setTimeLeft(4800)} className="text-[10px] font-black bg-blue-600 text-white px-2 py-0.5 rounded ml-2 hover:bg-blue-700 transition">연장</button>
+      <button onClick={() => setTimeLeft(4800)} className="text-[10px] font-black bg-blue-600 text-white px-2 py-0.5 rounded ml-2 hover:bg-blue-700 transition shadow-sm border border-blue-500">연장</button>
     </div>
   );
 };
@@ -102,6 +102,23 @@ const LandingView = ({ onNavigate }) => (
   </div>
 );
 
+// 접근 제한 및 구독 유도 뷰
+const RestrictedView = ({ title, message, onUpgrade }) => (
+  <div className="h-full flex flex-col items-center justify-center p-10 animate-in zoom-in-95 duration-500">
+    <div className="w-24 h-24 bg-rose-50 text-rose-500 rounded-[2rem] flex items-center justify-center mb-8 shadow-inner border border-rose-100 animate-bounce">
+      <Lock size={48} />
+    </div>
+    <h3 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic mb-4">{title}</h3>
+    <p className="text-slate-500 font-medium text-center mb-10 leading-relaxed max-w-md">{message}</p>
+    <div className="flex gap-4">
+      <button onClick={onUpgrade} className="px-10 py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 shadow-2xl shadow-blue-100 transition-all flex items-center gap-3">
+        <CreditCard size={20} /> 프리미엄 구독하기
+      </button>
+    </div>
+    <p className="mt-8 text-[10px] font-black text-slate-300 uppercase tracking-widest">Secured by CERT Total Management</p>
+  </div>
+);
+
 const CompanyAdminView = ({ 
   activeTab, setActiveTab, sidebarOpen, setSidebarOpen, onLogout, onNavigate,
   dashStats, memberRecords, memberLoading, handleDeleteRecord, onVaultComplete, isSandbox, user 
@@ -124,14 +141,20 @@ const CompanyAdminView = ({
   const loadAuditLogs = useCallback(async () => {
     if (isSandbox) return;
     setLogsLoading(true);
-    try { const res = await authFetch('/api/admin/logs'); if (res.ok) setAuditLogs(await res.json()); } catch { }
+    try { 
+      const res = await authFetch('/api/admin/logs'); 
+      if (res.ok) setAuditLogs(await res.json()); 
+    } catch { }
     finally { setLogsLoading(false); }
   }, [authFetch, isSandbox]);
 
   const loadUsers = useCallback(async () => {
     if (isSandbox) return;
     setUsersLoading(true);
-    try { const res = await authFetch('/api/admin/admins'); if (res.ok) setUsers(await res.json()); } catch { }
+    try { 
+      const res = await authFetch('/api/admin/admins'); 
+      if (res.ok) setUsers(await res.json()); 
+    } catch { }
     finally { setUsersLoading(false); }
   }, [authFetch, isSandbox]);
 
@@ -147,7 +170,7 @@ const CompanyAdminView = ({
     try {
       const res = await authFetch(url, { method: isEdit ? 'PUT' : 'POST', body: JSON.stringify(userModal.data) });
       if (res.ok) { setUserModal({ ...userModal, open: false }); loadUsers(); }
-      else { const d = await res.json(); alert(d.error); }
+      else { const d = await res.json(); alert(d.message || d.error); }
     } catch { alert('서버 통신 실패'); }
   };
 
@@ -163,21 +186,39 @@ const CompanyAdminView = ({
     } catch { setPassError('서버 통신 실패'); }
   };
 
+  const getDaysLeft = (expiry) => {
+    if (!expiry) return 0;
+    const diff = new Date(expiry) - new Date();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
+
   const renderContent = () => {
+    const daysLeft = isSandbox ? 30 : getDaysLeft(user?.licenseExpiry);
+    const hasPermission = isSandbox || (user?.permissions || []).includes(activeTab);
+    const isExpired = !isSandbox && daysLeft <= 0;
+
+    if (isExpired && activeTab !== 'my_settings') {
+      return <RestrictedView title="라이선스 만료됨" message="보안 서비스 이용 기간이 종료되었습니다. 계속 이용하시려면 라이선스를 갱신하거나 구독을 연장해 주십시오." onUpgrade={() => alert('구독 결제 시스템 준비 중입니다.')} />;
+    }
+
+    if (!hasPermission) {
+      return <RestrictedView title="접근 권한 제한" message="해당 기능은 현재 대표님의 권한 등급에서는 접근이 제한되어 있습니다. 업그레이드를 통해 모든 보안 기능을 활성화하세요." onUpgrade={() => alert('구독 업그레이드 페이지로 이동합니다.')} />;
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return (
           <div className="space-y-8 animate-in slide-in-from-bottom-5">
-            <div className="flex justify-between items-end">
+            <div className="flex justify-between items-end gap-4">
               <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">운영 관제 센터</h2>
               <button onClick={loadAuditLogs} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><RefreshCw size={18} className={logsLoading ? 'animate-spin' : ''} /></button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[{ l: '총 보관 자산', v: dashStats.total.toLocaleString(), i: Database }, { l: '정보 동의율', v: (dashStats.consentRate || 98) + '%', i: ShieldCheck }, { l: '금일 보안 활동', v: String(dashStats.today || 0), i: Activity }, { l: '라이선스 상태', v: '유효', i: CreditCard }].map((s, idx) => (
+              {[{ l: '총 보관 자산', v: dashStats.total.toLocaleString(), i: Database, c: 'text-blue-600' }, { l: '정보 동의율', v: (dashStats.consentRate || 98) + '%', i: ShieldCheck, c: 'text-emerald-600' }, { l: '금일 보안 활동', v: String(dashStats.today || 0), i: Activity, c: 'text-indigo-600' }, { l: '라이선스 잔여', v: daysLeft + '일', i: CreditCard, c: daysLeft < 7 ? 'text-rose-600' : 'text-amber-600' }].map((s, idx) => (
                 <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all">
                   <div className="bg-slate-50 p-2.5 rounded-xl text-slate-400 w-fit mb-6"><s.i size={20} /></div>
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{s.l}</p>
-                  <p className="text-3xl font-black italic">{s.v}</p>
+                  <p className={`text-3xl font-black italic ${s.c}`}>{s.v}</p>
                 </div>
               ))}
             </div>
@@ -202,14 +243,14 @@ const CompanyAdminView = ({
       case 'user_manage':
         return (
           <div className="space-y-8 animate-in zoom-in-95">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center gap-4">
               <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">이용자 계정 관리</h2>
               {!isSandbox && <button onClick={() => setUserModal({ open: true, type: 'add', data: { name: '', email: '', password: '', role: 'user', permissions: ['dashboard'] } })} className="flex items-center gap-2 px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs hover:bg-black transition shadow-lg shadow-slate-200 uppercase italic"><Plus size={16} /> 신규 이용자 추가</button>}
             </div>
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
-              <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">권한</th><th className="py-4 px-6 text-right">관리</th></tr></thead><tbody className="divide-y divide-slate-50">
-                {isSandbox ? <tr><td colSpan={4} className="py-10 text-center italic text-slate-400">체험 모드 이용자 조회 불가</td></tr> : users.map(u => (
-                  <tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic uppercase">{u.name}</td><td className="py-5 px-6 font-medium text-slate-500">{u.email}</td><td className="py-5 px-6"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{u.role === 'admin' ? '관리자' : '일반'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300">
+              <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">이메일</th><th className="py-4 px-6">권한/상태</th><th className="py-4 px-6">라이선스 키</th><th className="py-4 px-6">만료일</th><th className="py-4 px-6 text-right">관리</th></tr></thead><tbody className="divide-y divide-slate-50">
+                {isSandbox ? <tr><td colSpan={6} className="py-10 text-center italic text-slate-400">체험 모드 이용자 조회 불가</td></tr> : users.map(u => (
+                  <tr key={u.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic uppercase">{u.name}</td><td className="py-5 px-6 font-medium text-slate-500">{u.email}</td><td className="py-5 px-6"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${u.role === 'admin' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>{u.role === 'admin' ? '관리자' : '일반'}</span></td><td className="py-5 px-6 text-xs font-mono text-slate-400">{u.licenseKey || 'N/A'}</td><td className="py-5 px-6 text-xs text-slate-400">{u.licenseExpiry ? new Date(u.licenseExpiry).toLocaleDateString() : '-'}</td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300">
                     <Edit3 size={18} className="cursor-pointer hover:text-blue-600" onClick={() => setUserModal({ open: true, type: 'edit', data: { ...u, permissions: u.permissions || ['dashboard'], password: '' } })} />
                     <Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => {if(confirm('삭제하시겠습니까?')) authFetch(`/api/admin/admins/${u.id}`, {method:'DELETE'}).then(()=>loadUsers());}} />
                   </td></tr>
@@ -256,20 +297,41 @@ const CompanyAdminView = ({
         );
       case 'my_settings':
         return (
-          <div className="max-w-2xl mx-auto space-y-8 animate-in zoom-in-95">
+          <div className="max-w-4xl mx-auto space-y-8 animate-in zoom-in-95 duration-500">
             <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">내 정보 관리</h2>
-            <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm">
-              <h3 className="text-xl font-black text-slate-800 italic uppercase mb-8 flex items-center gap-2"><Key size={20} className="text-blue-600"/> 비밀번호 변경</h3>
-              <form onSubmit={handlePasswordChange} className="space-y-6">
-                <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">현재 비밀번호</span><input type="password" value={passForm.current} onChange={e=>setPassForm({...passForm, current:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" /></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">새 비밀번호</span><input type="password" value={passForm.new} onChange={e=>setPassForm({...passForm, new:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" /></div>
-                  <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">새 비밀번호 확인</span><input type="password" value={passForm.confirm} onChange={e=>setPassForm({...passForm, confirm:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" /></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="md:col-span-2 bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm">
+                <h3 className="text-xl font-black text-slate-800 uppercase italic mb-8 flex items-center gap-2"><Key size={20} className="text-blue-600"/> 비밀번호 변경</h3>
+                <form onSubmit={handlePasswordChange} className="space-y-6">
+                  <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">현재 비밀번호</span><input type="password" value={passForm.current} onChange={e=>setPassForm({...passForm, current:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 transition-all font-bold" /></div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">새 비밀번호</span><input type="password" value={passForm.new} onChange={e=>setPassForm({...passForm, new:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" /></div>
+                    <div className="space-y-2"><span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">새 비밀번호 확인</span><input type="password" value={passForm.confirm} onChange={e=>setPassForm({...passForm, confirm:e.target.value})} className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none focus:ring-4 focus:ring-blue-100 font-bold" /></div>
+                  </div>
+                  {passError && <p className="text-rose-500 text-xs font-bold text-center">{passError}</p>}
+                  {passSuccess && <p className="text-emerald-500 text-xs font-bold text-center">{passSuccess}</p>}
+                  <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition-all shadow-xl shadow-slate-200">비밀번호 업데이트</button>
+                </form>
+              </div>
+              <div className="bg-blue-600 text-white rounded-[3rem] p-10 shadow-2xl flex flex-col justify-between relative overflow-hidden">
+                <div className="absolute top-[-20px] right-[-20px] opacity-10"><Shield size={150} /></div>
+                <div>
+                  <h3 className="text-xl font-black uppercase italic mb-6">나의 라이선스</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-blue-200 tracking-widest">라이선스 키</p>
+                      <p className="text-sm font-mono font-black mt-1 bg-white/10 p-2 rounded-lg break-all">{user?.licenseKey || 'TEMP-SANDBOX-KEY'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase text-blue-200 tracking-widest">만료 예정일</p>
+                      <p className="text-xl font-black italic mt-1">{user?.licenseExpiry ? new Date(user.licenseExpiry).toLocaleDateString() : '체험 종료 시'}</p>
+                    </div>
+                  </div>
                 </div>
-                {passError && <p className="text-rose-500 text-xs font-bold text-center">{passError}</p>}
-                {passSuccess && <p className="text-emerald-500 text-xs font-bold text-center">{passSuccess}</p>}
-                <button type="submit" className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black text-lg hover:bg-black transition-all">비밀번호 업데이트</button>
-              </form>
+                <div className="bg-white/10 p-4 rounded-2xl border border-white/10 mt-8">
+                  <p className="text-[10px] font-bold leading-relaxed">잔여 기간 이후에는 데이터 접근이 제한되오니 정기적으로 갱신하시기 바랍니다.</p>
+                </div>
+              </div>
             </div>
           </div>
         );
@@ -278,7 +340,7 @@ const CompanyAdminView = ({
         return (
           <div className="space-y-8 animate-in zoom-in-95">
             <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
-              <div className="flex justify-between items-center mb-10"><h3 className="text-2xl font-black text-slate-800 uppercase italic">고객 회원 자산 DB</h3><button onClick={() => setActiveTab('security_vault')} className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100 uppercase italic"><Plus size={16} /> 대량 보안 처리</button></div>
+              <div className="flex justify-between items-center mb-10 gap-4"><h3 className="text-2xl font-black text-slate-800 uppercase italic">고객 회원 자산 DB</h3><button onClick={() => setActiveTab('security_vault')} className="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs hover:bg-blue-700 transition shadow-lg shadow-blue-100 uppercase italic whitespace-nowrap"><Plus size={16} /> 대량 보안 처리</button></div>
               <div className="overflow-x-auto text-sm font-bold text-slate-700"><table className="w-full text-left border-collapse"><thead><tr className="border-b-2 border-slate-50 text-[10px] text-slate-400 uppercase tracking-widest"><th className="py-4 px-6">성명</th><th className="py-4 px-6">연락처</th><th className="py-4 px-6">상태</th><th className="py-4 px-6 text-right">제어</th></tr></thead><tbody className="divide-y divide-slate-50">
                 {memberLoading ? <tr><td colSpan={4} className="py-10 text-center">로드 중...</td></tr> : memberRecords.length === 0 ? <tr><td colSpan={4} className="py-10 text-center italic text-slate-400">데이터가 없습니다.</td></tr> : memberRecords.map((row) => (
                   <tr key={row.id} className="hover:bg-slate-50 transition-colors"><td className="py-5 px-6 italic">{row.name}</td><td className="py-5 px-6 tabular-nums">{row.phone || '***-****-****'}</td><td className="py-5 px-6"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${row.status === 'ENCRYPTED' ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>{row.status === 'ENCRYPTED' ? '보안 암호화' : '평문 노출'}</span></td><td className="py-5 px-6 text-right flex justify-end gap-3 text-slate-300"><Eye size={18} className="cursor-pointer hover:text-blue-600" /><Trash2 size={18} className="cursor-pointer hover:text-rose-600" onClick={() => handleDeleteRecord(row.id)} /></td></tr>
@@ -287,27 +349,28 @@ const CompanyAdminView = ({
             </div>
           </div>
         );
-      default: return <div className="p-24 text-center font-black text-slate-400 uppercase italic">개발 중인 보안 모듈입니다.</div>;
+      case 'policy_manage': return <div className="p-24 text-center font-black text-slate-400 uppercase italic">약관 관리 모듈 준비 중...</div>;
+      default: return <div className="p-24 text-center font-black text-slate-400 uppercase italic">접근 권한이 없거나 개발 중인 보안 모듈입니다.</div>;
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex animate-in fade-in duration-700 overflow-hidden">
-      <aside className={`bg-slate-900 text-white flex flex-col transition-all duration-500 shrink-0 ${sidebarOpen ? 'w-64' : 'w-20'}`}>
+    <div className="h-screen bg-[#f8fafc] flex animate-in fade-in duration-700 overflow-hidden">
+      <aside className={`bg-slate-900 text-white flex flex-col transition-all duration-500 shrink-0 ${sidebarOpen ? 'w-64' : 'w-20'} z-50`}>
         <div className="h-20 flex items-center px-6 border-b border-slate-800 cursor-pointer overflow-hidden" onClick={() => onNavigate('landing')}><Shield className="text-blue-500 shrink-0" size={28} />{sidebarOpen && <span className="ml-3 font-black text-xl tracking-tighter uppercase whitespace-nowrap">PMS 센터</span>}</div>
         <nav className="flex-1 py-8 px-3 space-y-1 no-scrollbar overflow-y-auto">
-          {COMPANY_MENU.filter(m => !m.adminOnly || (user && user.role === 'admin')).filter(m => isSandbox || (user && (user.permissions || []).includes(m.id))).map((m) => (
-            <button key={m.id} onClick={() => setActiveTab(m.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === m.id ? 'bg-blue-600 shadow-xl shadow-blue-900/40 font-bold' : 'text-slate-500 hover:bg-slate-800 hover:text-white'}`}><m.icon size={20} className="shrink-0" /><span className={`text-sm whitespace-nowrap ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>{m.label}</span></button>
+          {COMPANY_MENU.filter(m => !m.adminOnly || (user && user.role === 'admin')).map((m) => (
+            <button key={m.id} onClick={() => setActiveTab(m.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === m.id ? 'bg-blue-600 shadow-xl shadow-blue-900/40 font-bold text-white' : 'text-slate-500 hover:bg-slate-800 hover:text-white'}`}><m.icon size={20} className="shrink-0" /><span className={`text-sm whitespace-nowrap transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>{m.label}</span></button>
           ))}
         </nav>
-        <div className="p-6 border-t border-slate-800"><button onClick={onLogout} className="flex items-center gap-4 p-4 text-slate-500 hover:text-white transition-all w-full"><LogIn size={20} className="shrink-0" />{sidebarOpen && <span className="text-xs font-black uppercase tracking-widest">보안 로그아웃</span>}</button></div>
+        <div className="p-6 border-t border-slate-800"><button onClick={onLogout} className="flex items-center gap-4 p-4 text-slate-500 hover:text-white transition-all w-full"><LogIn size={20} className="shrink-0" />{sidebarOpen && <span className="text-xs font-black uppercase tracking-widest whitespace-nowrap">보안 로그아웃</span>}</button></div>
       </aside>
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+      <div className="flex-1 flex flex-col min-w-0 h-full">
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 px-8 flex justify-between items-center sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-6"><button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2.5 hover:bg-slate-50 rounded-xl text-slate-400 border border-slate-100 shadow-sm"><Menu size={20} /></button><SessionTimer initialTime={4800} onLogout={onLogout} isSandbox={isSandbox} /></div>
-          <div className="flex items-center gap-4"><div className="text-right hidden sm:block"><p className="text-sm font-black text-slate-800 uppercase italic">{isSandbox ? '익명 이용자 (체험)' : `${user?.name || '보안 담당자'} (${user?.role === 'admin' ? '관리자' : '일반'})`}</p><div className="flex justify-end items-center gap-1.5 mt-0.5"><span className={`w-1.5 h-1.5 ${isSandbox ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full animate-pulse`}></span><p className={`text-[9px] ${isSandbox ? 'text-amber-500' : 'text-emerald-500'} font-bold uppercase tracking-widest`}>{isSandbox ? '체험 계정' : '인증됨'}</p></div></div><div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-500 shadow-inner"><Users size={18} /></div></div>
+          <div className="flex items-center gap-4"><div className="text-right hidden sm:block"><p className="text-sm font-black text-slate-800 uppercase italic truncate max-w-[150px]">{isSandbox ? '익명 이용자 (체험)' : `${user?.name || '보안 담당자'} (${user?.role === 'admin' ? '관리자' : '일반'})`}</p><div className="flex justify-end items-center gap-1.5 mt-0.5"><span className={`w-1.5 h-1.5 ${isSandbox ? 'bg-amber-500' : 'bg-emerald-500'} rounded-full animate-pulse`}></span><p className={`text-[9px] ${isSandbox ? 'text-amber-500' : 'text-emerald-500'} font-bold uppercase tracking-widest`}>{isSandbox ? '체험 계정' : '인증됨'}</p></div></div><div className="w-10 h-10 rounded-2xl bg-slate-50 flex items-center justify-center border border-slate-200 text-slate-500 shadow-inner shrink-0"><Users size={18} /></div></div>
         </header>
-        <main className="flex-1 p-10 max-w-7xl mx-auto w-full overflow-y-auto no-scrollbar">{renderContent()}</main>
+        <main className="flex-1 p-6 md:p-10 max-w-7xl mx-auto w-full overflow-y-auto no-scrollbar">{renderContent()}</main>
       </div>
     </div>
   );
@@ -341,11 +404,12 @@ export default function App() {
       setMemberRecords([{ id: '1', name: '홍길동(예시)', phone: '010-1234-5678', status: 'ENCRYPTED' }]);
       return;
     }
+    if (!authToken) return;
     authFetch('/api/admin/db/stats').then(r => r.ok && r.json().then(setDashStats));
     setMemberLoading(true); authFetch('/api/admin/records').then(r => r.ok && r.json().then(setMemberRecords)).finally(()=>setMemberLoading(false));
-  }, [authFetch, currentScreen]);
+  }, [authFetch, currentScreen, authToken]);
 
-  useEffect(() => { if ((currentScreen === 'company_admin' || currentScreen === 'sandbox') && (authToken || currentScreen === 'sandbox')) loadData(); }, [currentScreen, authToken, loadData]);
+  useEffect(() => { if ((currentScreen === 'company_admin' || currentScreen === 'sandbox')) loadData(); }, [currentScreen, authToken, loadData]);
 
   const handleSignup = async (e) => {
     e?.preventDefault();
@@ -373,11 +437,11 @@ export default function App() {
 
   return (
     <div className="selection:bg-blue-600 selection:text-white h-screen overflow-hidden bg-white font-['Noto_Sans_KR']">
-      <div className="h-full overflow-y-auto scroll-smooth">
+      <div className={`h-full ${currentScreen === 'company_admin' || currentScreen === 'sandbox' ? 'overflow-hidden' : 'overflow-y-auto scroll-smooth'}`}>
         {currentScreen === 'landing' && <LandingView onNavigate={setCurrentScreen} />}
         {currentScreen === 'login' && (
           <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 animate-in fade-in zoom-in duration-500">
-            <div className="w-full max-w-[440px] bg-white rounded-[4rem] shadow-2xl p-14 border border-slate-100 relative group">
+            <div className="w-full max-w-[440px] bg-white rounded-[4rem] shadow-2xl p-14 border border-slate-100 relative">
               <div className="absolute top-0 left-0 w-full h-2 bg-blue-600"></div>
               <div className="flex flex-col items-center mb-12 cursor-pointer" onClick={() => setCurrentScreen('landing')}><div className="bg-blue-600 p-4 rounded-3xl text-white mb-5 shadow-2xl shadow-blue-200 group-hover:scale-110 transition-transform duration-500"><Shield size={32} /></div><h2 className="text-3xl font-black text-slate-900 tracking-tighter italic uppercase">보안 포털 접속</h2></div>
               <form onSubmit={handleLogin} className="space-y-6">
