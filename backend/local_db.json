@@ -22,41 +22,6 @@
       "tempOtpSecret": "MQZUKTKSN52UYP3ELVNXQOLYFIZDCPR7G4SGSRTTME4VIZ3RM44Q"
     },
     {
-      "id": "1772598802213",
-      "email": "test@test.com",
-      "password": "$2b$10$q7JwY9cPbrFvSX0bcm7EgOoAdgTlayZxbrMF8iXlfMqGQmm7dvm9K",
-      "name": "홍길동",
-      "role": "user",
-      "otpSecret": "d61f2099634f8cc33d93f968fed9d209:27a1b628a64842a3e24e796df3d6ba885b2f8f2e7938eb19f9307aa48d0196023806d27039fbcc636c4c9c959789d575",
-      "otpEnabled": false,
-      "createdAt": "2026-03-04T04:33:22.212Z",
-      "permissions": [
-        "dashboard",
-        "member_db",
-        "security_vault",
-        "my_settings",
-        "policy_manage"
-      ],
-      "licenseExpiry": "2026-03-31T00:00:00.000Z"
-    },
-    {
-      "id": "1772711795251an5xq",
-      "email": "test2@test.com",
-      "password": "$2b$10$SLWG7dDwEb79wq3z1t3.0..6WESiwF/e9EOKNLpGIG5Z3T4iHfn42",
-      "name": "홍길순",
-      "role": "user",
-      "permissions": [
-        "dashboard",
-        "security_vault",
-        "member_db",
-        "my_settings"
-      ],
-      "licenseExpiry": "2026-04-04T11:56:14.007Z",
-      "licenseKey": "CERT-61MA-FX61-FIC0",
-      "otpEnabled": false,
-      "createdAt": "2026-03-05T11:56:35.251Z"
-    },
-    {
       "id": "1772711858987rs308",
       "email": "google-user@cert.pms",
       "password": "$2b$10$lju/LhwEfO5Y1ldavHv8n.CUhEQnzgPut6WKSrwVMkaQvo13AxTGu",
@@ -204,6 +169,36 @@
       "target": "AUTH_ENGINE",
       "reason": "구글 계정 로그인 성공",
       "createdAt": "2026-03-05T11:57:38.993Z"
+    },
+    {
+      "id": "1772712466559q62v7",
+      "userId": "1772712466543ni55t",
+      "user": "test3@test.com",
+      "userName": "홍길시",
+      "action": "USER_REGISTERED",
+      "target": "AUTH_ENGINE",
+      "reason": "신규 회원 가입 성공",
+      "createdAt": "2026-03-05T12:07:46.559Z"
+    },
+    {
+      "id": "1772712480274yxodr",
+      "userId": "1772598802213",
+      "user": "test@test.com",
+      "userName": "홍길동",
+      "action": "LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "보안 로그인 성공",
+      "createdAt": "2026-03-05T12:08:00.274Z"
+    },
+    {
+      "id": "17727125150855wyvs",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "LOGIN_SUCCESS",
+      "target": "AUTH_ENGINE",
+      "reason": "보안 로그인 성공",
+      "createdAt": "2026-03-05T12:08:35.085Z"
     }
   ]
 }
