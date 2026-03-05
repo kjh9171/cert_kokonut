@@ -97,14 +97,13 @@ function LandingView({ onNavigate, isLoggedIn }) {
           </div>
         </div>
       </main>
-      <footer className="mt-20 py-24 bg-slate-50 border-t border-slate-100">
-        <div className="max-w-7xl mx-auto px-10 flex flex-col items-center text-center">
-          <div className="flex items-center gap-2 mb-8 opacity-50"><Shield size={24} className="text-slate-900" /><span className="font-black text-2xl tracking-tighter text-slate-900 uppercase">PMS 센터</span></div>
-          <p className="text-slate-400 text-[10px] font-bold uppercase mb-4">주식회사 개인정보관리서비스 | 대표이사: 김종환 | 사업자번호: 000-00-00000</p>
-          <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.1em]">© 2026 PMS CENTER INC. SECURED BY CERT TEAM. ALL RIGHTS RESERVED.</p>
-        </div>
-      </footer>
-    </div>
+          <footer className="mt-20 py-24 bg-slate-50 border-t border-slate-100">
+            <div className="max-w-7xl mx-auto px-10 flex flex-col items-center text-center">
+              <div className="flex items-center gap-2 mb-8 opacity-50"><Shield size={24} className="text-slate-900" /><span className="font-black text-2xl tracking-tighter text-slate-900 uppercase">PMS 센터</span></div>
+              <p className="text-slate-400 text-[10px] font-bold uppercase mb-4">주식회사 개인정보관리서비스 | 대표이사: PMS센터 관리자 | 사업자번호: 000-00-00000</p>
+              <p className="text-slate-300 text-[10px] font-black uppercase tracking-[0.1em]">© 2026 PMS CENTER INC. SECURED BY CERT TEAM. ALL RIGHTS RESERVED.</p>
+            </div>
+          </footer>    </div>
   );
 }
 
@@ -141,7 +140,48 @@ function PolicyAIView({ authFetch }) {
   const generateSample = () => {
     setLoading(true);
     setTimeout(() => {
-      const sample = `[개인정보 처리방침 초안]\n\n1. 개인정보의 수집 및 이용 목적\n- 회사는 원활한 보안 서비스 제공을 위해 최소한의 개인정보를 수집합니다.\n\n2. 수집하는 개인정보 항목\n- 필수: 성명, 이메일, 접속 로그\n\n3. 개인정보의 보유 및 이용 기간\n- 회원 탈퇴 시 혹은 라이선스 종료 시 즉시 파기\n\n4. 개인정보의 파기 절차 및 방법\n- 복구 불가능한 기술적 방법으로 영구 삭제`;
+      const sample = `[개인정보 처리방침 (2025.04 개정 지침 반영)]
+
+개인정보 처리방침은 개인정보 처리자가 이용자의 권리 보장을 위해 처리 현황을 투명하게 공개하는 문서입니다. 개인정보보호위원회는 2025년 4월, 정보주체의 가독성을 높이고 처리 중심의 체계를 반영한 '개인정보 처리방침 작성지침' 개정본을 공개하였습니다. [1, 2, 3, 4, 5]
+
+1. 작성 및 공개의 기본 원칙
+- 법령 부합성: 「개인정보 보호법」 및 시행령의 절차와 기준을 준수해야 합니다.
+- 투명성 및 정확성: 실제 처리 현황과 일치하게 작성하며, 동의 없이 처리 가능한 항목과 동의가 필요한 항목을 구체화해야 합니다.
+- 명확성 및 가독성: 정보주체가 이해하기 쉬운 언어를 사용하고, 필요한 경우 기호나 도표 등을 활용합니다.
+- 접근성 및 지속성: 홈페이지 첫 화면 등 이용자가 쉽게 찾을 수 있는 곳에 지속적으로 게재해야 합니다. [1, 6, 7, 8, 9]
+
+2. 주요 포함 항목 (개정 지침 반영)
+- 처리 목적 및 항목: 수집·이용 목적, 수집하는 항목 및 법적 근거를 명시합니다.
+- 보유 및 이용 기간: 개인정보의 보유 기간과 파기 절차 및 방법을 포함합니다.
+- 제3자 제공 및 위탁: 제공받는 자, 목적, 항목 등을 명시하며, 지속적인 제공 시 기준을 공개해야 합니다.
+- 정보주체의 권리와 의무: 열람, 정정, 삭제, 처리정지 요구 등 권리 행사 방법과 절차를 안내합니다.
+- 고충 처리 부서: 개인정보 보호 책임자의 성명과 연락처, 또는 고충을 직접 처리하는 부서의 정보를 기재합니다.
+- 가명정보 및 민감정보: 가명정보 처리 사항을 명시하고, 서비스 제공 중 민감정보 공개 가능성이 있다면 이를 선택·비공개하는 방법을 알려야 합니다. [1, 2, 8, 10, 11]
+
+3. 변경 및 평가 가이드
+- 변경 공지: 방침 변경 시 시행일 최소 7일 전부터 공지사항을 통해 고지해야 합니다.
+- 평가제 실시: 개인정보보호위원회는 처리방침의 적정성, 가독성, 접근성 등을 평가하여 개선을 권고할 수 있습니다. [8, 12]
+
+상세한 작성 양식과 최신 지침 전문은 [개인정보 포털](https://www.privacy.go.kr/)의 지침·가이드라인 게시판에서 다운로드할 수 있습니다. [13, 14]
+
+작성 중인 서비스의 주요 이용자층(예: 아동, 노령층)에 따라 강조해야 할 항목이 달라질 수 있습니다. 어떤 성격의 서비스용 방침을 준비 중이신가요?
+
+---
+[참고 문헌 및 출처]
+[1] cela.kr - 개인정보 처리방침 작성지침(2025.04.21.)
+[2] youtube.com - 개인정보보호위원회 채널
+[3] catchsecu.com - 개인정보 처리방침의 정의와 준수 지침
+[4] cheongchul.com - 2025년 최신 개정본 주요 내용
+[5] intn.co.kr - 위원회 개정본 공개 보도자료
+[6] boannews.com - 작성 4대 원칙 분석
+[7] law.go.kr - 표준 개인정보 보호지침 제18조
+[8] youtube.com - 보호법 위반 사례 및 작성 팁
+[9] blog.naver.com - 시행령 제31조 준수 가이드
+[10] policy.naver.com - 정보주체의 권리 행사 예시
+[11] mss.go.kr - 고충 처리 부서 명시 기준
+[12] privacy.go.kr - 처리방침 변경 고지 의무
+[13] privacy.go.kr - 지침·가이드라인 공식 다운로드
+[14] catchsecu.com - 위원회 가이드라인 배포판 자료`;
       setPolicy(sample);
       setLoading(false);
     }, 1500);
@@ -151,7 +191,7 @@ function PolicyAIView({ authFetch }) {
     if (!userInput) return;
     setLoading(true);
     setTimeout(() => {
-      setPolicy(prev => prev + `\n\n[AI 업데이트 반영 사항]\n- 추가 요청: ${userInput}\n- 반영 내용: 해당 항목에 대한 법적 근거 및 관리 지침이 본 처리방침에 추가되었습니다.`);
+      setPolicy(prev => prev + `\n\n[CERT AI 에이전트 전문 개정 권고안]\n\n● 분석 컨텍스트: 대표님께서 요청하신 "${userInput}" 사항을 2025년 4월 개정 지침의 핵심 가치인 '정보주체 권리 보장'과 '처리 투명성' 관점에서 심층 분석하였습니다.\n\n● 반영된 법적 근거: 개인정보 보호법 제15조(수집·이용) 및 제39조의3(개인정보의 이용내역 통지)에 부합하도록 문구를 최적화했습니다.\n\n● 세부 개정 사항:\n1. 요청하신 항목의 처리 목적을 명확화하여 법적 리스크를 최소화했습니다.\n2. 개정 지침에 따라 '동의 없이 처리 가능한 항목'과 '선택적 동의 항목'을 엄격히 구분하여 기술했습니다.\n3. 정보주체의 가독성을 위해 평이한 용어를 사용하고 절차를 도식화하는 방향으로 문장을 재구성했습니다.\n\n● 향후 조치 가이드: 본 개정 내용은 시행 7일 전 서비스 공지사항을 통해 반드시 게시되어야 하며, 변경 전후의 대조표를 제공하는 것이 가독성 평가에서 유리하게 작용합니다.`);
       setUserInput("");
       setLoading(false);
     }, 2000);
