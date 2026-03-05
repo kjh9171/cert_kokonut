@@ -572,7 +572,7 @@ export default function App() {
 
   // ✅ [복구] 세션 자동 복구 로직: 토큰이 있으면 대시보드로 즉시 이동
   useEffect(() => {
-    if (authToken && currentScreen === 'landing') {
+    if (authToken && (currentScreen === 'landing' || currentScreen === 'login')) {
       setCurrentScreen('company_admin');
     }
   }, [authToken, currentScreen]);
@@ -595,7 +595,6 @@ export default function App() {
         localStorage.setItem('pms_token', d.token);
         setAuthToken(d.token);
         setTimerKey(prev => prev + 1);
-        // 프로필 재로딩 (OTP 상태 동기화 등)
         authFetch('/api/auth/profile').then(r => r.ok && r.json().then(setCurrentUser));
       }
     } catch { }
@@ -636,6 +635,7 @@ export default function App() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     try {
+      // ✅ [보안 개정] 구글 로그인 시뮬레이션: 고정된 테스트 계정 사용
       const res = await fetch('/api/auth/google-mock', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: 'google-user@cert.pms' }) });
       const d = await res.json();
       if (res.ok) {
