@@ -1,84 +1,69 @@
-# 🛡️ PMS Center - 지능형 개인정보 관리 통합 플랫폼
+# 🛡️ PMS 센터 (Personal Information Management Service) - 지능형 보안 통합 플랫폼
 
-![PMS Center Banner](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_success.png)
+![PMS 센터 성공](https://raw.githubusercontent.com/wonseokjung/solopreneur-ai-agents/main/agents/kodari/assets/kodari_success.png)
 
 ## 1. 시스템 개요
 
-PMS Center는 기업의 개인정보 보호와 컴플라이언스 대응을 자동화하는 고성능 보안 플랫폼입니다. 강력한 시각화 대시보드와 암호화 엔진을 기반으로 기업의 보안 리스크를 원스톱으로 관리합니다.
+PMS 센터는 기업의 개인정보 보호와 보안 컴플라이언스 대응을 자동화하는 고성능 통합 플랫폼입니다. 강력한 엑셀 암/복호화 엔진인 **보안 금고(Security Vault)**와 **실시간 감사 로그 시스템**을 통해 기업의 개인정보 자산을 안전하고 투명하게 관리합니다.
 
-### 기술 스택 (Tech Stack)
+### 🚀 핵심 기술 스택
 
-- Frontend: React.js (Vite Core), Lucide Icons, Recharts (Data Visualization)
-- UI/UX: Vanilla CSS 기반 프리미엄 디자인, 반응형 레이아웃, 다크 모드 지원
-- Backend: Node.js/Express (Dockerized Microservices)
-- Database: Firebase Auth & Firestore (Field-level AES-256 Encryption)
-- Infrastructure: Docker & Docker Compose (Zero-config Deployment)
+- **프론트엔드:** React.js (Vite Core), Tailwind CSS, Lucide Icons, Recharts (데이터 시각화)
+- **백엔드:** Node.js/Express (Dockerized Serverless Architecture)
+- **보안 엔진:** Web Crypto API (AES-256-GCM, PBKDF2), JWT 인증, Bcrypt 비밀번호 해싱
+- **데이터 저장:** 로컬 파일 시스템 기반 JSON 데이터베이스 (Auto-sync)
+- **인프라:** Docker & Docker Compose (Zero-config 배포 환경)
 
 ---
 
-## 2. 빠른 시작 (Quick Start)
+## 2. ⚡ 빠른 시작 (Quick Start)
 
-대표님의 서버 환경에서 PMS Center를 즉시 가동하는 방법입니다.
+도커 환경에서 전체 시스템을 즉시 가동합니다.
 
 ```bash
 # 터미널에서 프로젝트 루트 디렉토리로 이동 후 실행
 docker-compose down && docker-compose up -d --build
 ```
 
-- 운영 대시보드 (사용자용): http://localhost:5173
-- 통합 관제 센터 (시스템용): http://localhost:5173 (로그인 후 데모 버튼 클릭)
-- API 서버 엔진: http://localhost:8081
+- **운영 대시보드 (Admin UI):** [http://localhost:5173](http://localhost:5173)
+- **보안 API 엔진:** [http://localhost:8081](http://localhost:8081)
 
 ---
 
-## 3. 핵심 시스템 모듈
+## 3. 주요 시스템 모듈 및 기능
 
-### 📊 통합 관제 센터 (System Ops)
+### 🔐 보안 금고 (Security Vault) - [핵심]
+- **엑셀/CSV 보안 처리:** 대량의 고객 정보를 엑셀 파일 단위로 암호화하거나 복호화합니다.
+- **다중 알고리즘 지원:** AES-256-GCM(군사급), AES-128-GCM(강력), PBKDF2(비밀번호 기반) 중 선택 가능합니다.
+- **필드 수준 매핑:** 파일 내 특정 열(성명, 이메일, 전화번호 등)을 분석하여 회원 DB와 실시간으로 자동 연동합니다.
+- **보안 키 발급:** 암호화 완료 시 해당 파일 전용 보안 키(.txt)를 발급하며, 복호화 시 반드시 필요합니다.
 
-- 실시간 트래픽 분석 차트 (Recharts 연동)
-- 노드별 서버 헬스 체크 및 리소스 모니터링
-- 다크 테마 기반의 전문적인 제어 인터페이스
+### 📊 운영 관제 및 감사 로그 (Audit Logs)
+- **보안 감사 정보 기록:** 모든 암/복호화 작업 시 '수행 사유' 입력을 의무화하여 법적 증적을 확보합니다.
+- **실시간 감사 로그:** 대시보드에서 '누가, 언제, 어떤 자산을, 왜' 처리했는지 실시간으로 감시할 수 있습니다.
+- **통계 시각화:** 총 보관 자산 수, 개인정보 활용 동의율 등을 대시보드 카드로 한눈에 파악합니다.
 
-### �️ 지능형 보안 엔진
-
-- 데이터 암호화: AES-256 대칭키 암호화 및 AWS KMS 수준의 키 관리 시뮬레이션
-- 컴플라이언스 자동화: ISMS-P 인증에 필요한 증적 자료 관리 프레임워크 제공
-- 데이터 영속성: 브라우저 로컬 저장소를 활용한 설정 정보 실시간 동기화
-
-### 🏢 기업 관리 대시보드
-
-- 직관적인 지표 카드 시스템
-- 사이드바 확장/축소를 통한 업무 몰입도 향상
-- 회사 정보 개정 및 보안 정책 관리
+### 👥 회원 DB 및 계정 관리
+- **회원 자산 DB:** 보안 금고를 통해 처리된 데이터가 자동으로 회원 DB에 등록되어 통합 관리됩니다.
+- **보안 상태 모니터링:** 각 회원의 데이터가 '보안 암호화' 상태인지 '평문 노출' 상태인지 실시간 배지로 표시합니다.
+- **이용자 계정 제어:** 최고 보안 관리자가 시스템 이용자들의 계정을 조회하고 권한을 통제할 수 있습니다.
 
 ---
 
-## 4. 로컬 개발 환경 구성
+## 4. 보안 운영 표준 절차 (SOP)
 
-수동으로 각 모듈을 제어해야 할 때 사용하세요.
-
-### Backend Engine 기동
-
-```bash
-cd backend
-npm install
-npm start
-```
-
-### Frontend UI 가동
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
+1. **데이터 준비:** 암호화가 필요한 고객 정보 파일을 준비합니다. (.xlsx, .csv 지원)
+2. **보안 금고 접속:** 사이드바의 '보안 금고' 메뉴를 통해 파일을 업로드합니다.
+3. **감사 사유 입력:** 해당 데이터를 처리하는 법적/업무적 근거 사유를 상세히 기록합니다.
+4. **보안 키 보관:** 발급된 보안 키 파일은 반드시 물리적으로 분리된 안전한 저장소에 보관하십시오.
+5. **이력 확인:** 대시보드의 '보안 감사 로그'를 통해 정상적으로 기록되었는지 최종 확인합니다.
 
 ---
 
-## 5. 보안 및 운영 필독 사항 (CERT 총괄 강조)
+## 5. 관리자 유의 사항 (CERT 총괄 강조)
 
-1. 서비스 계정 인증: backend/service-account.json 파일은 반드시 대표님의 실제 Firebase 키 파일로 교체해야 데이터 영속성이 100% 보장됩니다.
-2. 암호화 키 관리: docker-compose.yml 내의 ENCRYPTION_KEY 값을 정기적으로 개정하여 보안 강도를 유지하십시오.
-3. 세션 종료 프로토콜: 업무 종료 시 사이드바 하단의 '시스템 종료(TERMINATE)' 버튼을 사용하여 안전하게 로그아웃할 것을 권장합니다.
+- **보안 무결성:** `local_db.json` 파일은 도커 컨테이너 내부에 직접 마운트되어 관리됩니다. 정기적인 백업을 권장합니다.
+- **키 유출 주의:** 발급된 보안 키를 분실하거나 외부에 유출할 경우, 개인정보 노출 및 영구 손실의 리스크가 있습니다.
+- **세션 보안:** 업무 종료 시 반드시 '보안 로그아웃'을 통해 인증 토큰을 파기하십시오.
 
-© 2026 PMS Center Inc. All Assets Secured by CERT.
+© 2026 PMS Center Inc. 모든 보안 자산은 CERT 팀에 의해 보호됩니다. (Secured by CERT)
