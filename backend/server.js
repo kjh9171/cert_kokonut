@@ -67,6 +67,17 @@ const writeDB = (store) =>
 
 const getCollection = async (col) => readDB()[col] || [];
 
+// ✅ [FIX] DB 초기화 시 security_logs 추가
+const initDB = () => {
+  const store = readDB();
+  let changed = false;
+  ['pms_admins', 'privacy_records', 'pms_users', 'security_logs'].forEach(col => {
+    if (!store[col]) { store[col] = []; changed = true; }
+  });
+  if (changed) writeDB(store);
+};
+initDB();
+
 const getDoc = async (col, id) =>
   (readDB()[col] || []).find((i) => i.id === id) || null;
 
@@ -397,6 +408,39 @@ app.delete("/api/admin/records/:id", verifyToken, async (req, res) => {
   try {
     await deleteDoc("privacy_records", req.params.id);
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 보안 감사 로그 기록
+app.post("/api/admin/logs", verifyToken, async (req, res) => {
+  try {
+    const { action, target, reason, details } = req.body;
+    const newLog = {
+      user: req.user.email,
+      userName: req.user.name || "관리자",
+      action, // 'ENCRYPT' | 'DECRYPT'
+      target, // 파일명 또는 데이터명
+      reason, // 수행 사유
+      details, // 처리 건수 등 상세 정보
+    };
+    await addDoc("security_logs", newLog);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 보안 감사 로그 조회
+app.get("/api/admin/logs", verifyToken, async (req, res) => {
+  try {
+    const logs = await getCollection("security_logs");
+    // 최신순으로 정렬하여 최근 20개만 반환
+    const sortedLogs = [...logs].sort((a, b) => 
+      new Date(b.createdAt) - new Date(a.createdAt)
+    ).slice(0, 20);
+    res.json(sortedLogs);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

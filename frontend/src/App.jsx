@@ -246,6 +246,25 @@ const CompanyAdminView = ({
   activeTab, setActiveTab, sidebarOpen, setSidebarOpen, onLogout, onNavigate,
   dashStats, memberRecords, memberLoading, handleDeleteRecord, handleVaultComplete, encryptedRecords 
 }) => {
+  // ────── ✅ [FIX] 보안 감사 로그 상태 및 로딩 함수 추가 ──────
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(false);
+
+  const loadAuditLogs = useCallback(async () => {
+    setLogsLoading(true);
+    try {
+      const res = await fetch('/api/admin/logs', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('pms_token')}` }
+      });
+      if (res.ok) setAuditLogs(await res.json());
+    } catch { console.error('로그 로딩 실패'); }
+    finally { setLogsLoading(false); }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'dashboard') loadAuditLogs();
+  }, [activeTab, loadAuditLogs]);
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -253,8 +272,11 @@ const CompanyAdminView = ({
           <div className="space-y-8 animate-in slide-in-from-bottom-5 duration-500">
             <div className="flex justify-between items-end">
               <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">Operations Center</h2>
-              <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 text-xs font-bold text-slate-500 flex items-center gap-2">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> 서버 상태: <span className="text-emerald-500 uppercase">Optimal</span>
+              <div className="flex items-center gap-2">
+                <button onClick={loadAuditLogs} className="p-2 text-slate-400 hover:text-blue-600 transition-colors"><RefreshCw size={18} className={logsLoading ? 'animate-spin' : ''} /></button>
+                <div className="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 text-xs font-bold text-slate-500 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span> 서버 상태: <span className="text-emerald-500 uppercase">Optimal</span>
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -271,6 +293,46 @@ const CompanyAdminView = ({
                 </div>
               ))}
             </div>
+            
+            {/* ────── ✅ [FIX] 보안 감사 로그 섹션 추가 ────── */}
+            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
+              <h3 className="text-xl font-black text-slate-800 italic uppercase mb-8 flex items-center gap-3">
+                <History size={20} className="text-blue-600" /> Recent Security Audit Logs
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm font-bold border-collapse">
+                  <thead>
+                    <tr className="border-b-2 border-slate-50">
+                      <th className="py-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">일시</th>
+                      <th className="py-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">작업자</th>
+                      <th className="py-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">구분</th>
+                      <th className="py-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">대상 자산</th>
+                      <th className="py-4 px-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">수행 사유</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50 text-xs">
+                    {logsLoading && auditLogs.length === 0 ? (
+                      <tr><td colSpan={5} className="py-10 text-center text-slate-400">데이터를 불러오는 중...</td></tr>
+                    ) : auditLogs.length === 0 ? (
+                      <tr><td colSpan={5} className="py-10 text-center text-slate-400 italic font-medium uppercase tracking-widest">No activity logs recorded yet.</td></tr>
+                    ) : auditLogs.map((log) => (
+                      <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4 px-4 text-slate-400 tabular-nums">{new Date(log.createdAt).toLocaleString('ko-KR')}</td>
+                        <td className="py-4 px-4 text-slate-700">{log.userName} <span className="text-[10px] text-slate-300 font-medium block">{log.user}</span></td>
+                        <td className="py-4 px-4">
+                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${log.action === 'ENCRYPT' ? 'bg-blue-50 text-blue-600 border border-blue-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="py-4 px-4 text-slate-600 italic font-medium">{log.target}</td>
+                        <td className="py-4 px-4 text-slate-500 font-medium max-w-xs truncate">{log.reason}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm h-96">
                 <h3 className="font-black text-slate-800 uppercase tracking-tighter mb-8 flex items-center gap-2"><Activity size={18} className="text-blue-600" /> API Traffic Trace</h3>
