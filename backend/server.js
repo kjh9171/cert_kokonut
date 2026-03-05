@@ -16,7 +16,12 @@ const __dirname = path.dirname(__filename);
 
 const LOCAL_DB_PATH = path.join(__dirname, "local_db.json");
 if (!fs.existsSync(LOCAL_DB_PATH)) {
-  fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({ pms_admins: [], privacy_records: [], pms_users: [], security_logs: [], verification_codes: [] }, null, 2));
+  fs.writeFileSync(LOCAL_DB_PATH, JSON.stringify({ 
+    pms_admins: [], 
+    privacy_records: [], 
+    security_logs: [], 
+    policies: [] 
+  }, null, 2));
 }
 
 const app = express();
@@ -57,6 +62,18 @@ const generateLicenseKey = () => {
   return `CERT-${part()}-${part()}-${part()}`;
 };
 
+// ✅ [추가] 통합 로깅 시스템 함수
+const logAction = async (uid, email, name, action, target, reason = "정기 모니터링") => {
+  await addDoc("security_logs", { 
+    userId: uid || 'SYSTEM', 
+    user: email || 'system@cert.pms', 
+    userName: name || '시스템에이전트', 
+    action, 
+    target, 
+    reason 
+  });
+};
+
 // ────── 보안 미들웨어 ──────
 const verifyToken = (req, res, next) => {
   const token = (req.headers["authorization"] || "").split(" ")[1];
@@ -64,34 +81,86 @@ const verifyToken = (req, res, next) => {
   try { 
     req.user = jwt.verify(token, JWT_SECRET); 
     next(); 
-  } catch { return res.status(403).json({ error: "세션이 만료되었습니다. 다시 로그인해 주세요." }); }
+  } catch { return res.status(403).json({ error: "세션 만료" }); }
 };
 
 const checkAccess = (requiredPermission) => {
   return async (req, res, next) => {
     try {
       const user = await getDocByAny(req.user.uid);
-      if (!user) return res.status(404).json({ error: "사용자를 찾을 수 없습니다." });
+      if (!user) return res.status(404).json({ error: "사용자 없음" });
+      
       if (user.role === 'admin') return next();
+      
       const now = new Date();
-      if (!user.licenseExpiry || new Date(user.licenseExpiry) < now) return res.status(402).json({ error: "라이선스 만료", code: "LICENSE_EXPIRED" });
-      if (requiredPermission && (!user.permissions || !user.permissions.includes(requiredPermission))) return res.status(403).json({ error: "권한 없음" });
+      if (!user.licenseExpiry || new Date(user.licenseExpiry) < now) {
+        await logAction(user.id, user.email, user.name, "ACCESS_DENIED", requiredPermission, "라이선스 만료로 인한 차단");
+        return res.status(402).json({ error: "라이선스 만료", code: "LICENSE_EXPIRED" });
+      }
+      
+      if (requiredPermission && (!user.permissions || !user.permissions.includes(requiredPermission))) {
+        await logAction(user.id, user.email, user.name, "ACCESS_DENIED", requiredPermission, "권한 부족으로 인한 차단");
+        return res.status(403).json({ error: "권한 없음" });
+      }
       next();
-    } catch { res.status(500).json({ error: "보안 검증 오류" }); }
+    } catch { res.status(500).json({ error: "보안 오류" }); }
   };
 };
 
-// ────── 인증 및 가입 API ──────
+// ────── 인증 API ──────
+
+app.get("/api/auth/profile", verifyToken, async (req, res) => {
+  try {
+    const userData = await getDocByAny(req.user.uid);
+    if (!userData) return res.status(404).send();
+    const { password, otpSecret, tempOtpSecret, ...safeData } = userData;
+    res.json(safeData);
+  } catch { res.status(500).send(); }
+});
+
+app.get("/api/auth/refresh", verifyToken, async (req, res) => {
+  try {
+    const token = jwt.sign({ uid: req.user.uid, email: req.user.email, role: req.user.role, name: req.user.name }, JWT_SECRET, { expiresIn: "1h" });
+    await logAction(req.user.uid, req.user.email, req.user.name, "SESSION_REFRESH", "AUTH_ENGINE", "사용자 요청에 의한 세션 연장");
+    res.json({ success: true, token });
+  } catch { res.status(500).send(); }
+});
+
+app.post("/api/auth/google-mock", async (req, res) => {
+  try {
+    const { email } = req.body;
+    let userData = await findUserByEmail(email);
+    if (!userData) {
+      const expiry = new Date(); expiry.setDate(expiry.getDate() + 30);
+      userData = await addDoc("pms_admins", { 
+        email, name: email.split('@')[0], role: "user", 
+        licenseKey: generateLicenseKey(), licenseExpiry: expiry.toISOString(), 
+        permissions: ['dashboard'], otpEnabled: false, otpSecret: '' 
+      });
+      await logAction(userData.id, email, userData.name, "GOOGLE_REGISTER", "AUTH_ENGINE", "구글 계정 자동 가입");
+    }
+
+    if (userData.otpEnabled) {
+      const tempToken = jwt.sign({ uid: userData.id, email: userData.email, isPendingOTP: true }, JWT_SECRET, { expiresIn: "5m" });
+      return res.json({ success: true, requiresOTP: true, tempToken });
+    }
+
+    const token = jwt.sign({ uid: userData.id, email: userData.email, role: userData.role, name: userData.name }, JWT_SECRET, { expiresIn: "1h" });
+    await logAction(userData.id, email, userData.name, "LOGIN_SUCCESS", "GOOGLE_AUTH", "구글 로그인 접속 승인");
+    res.json({ success: true, token, user: { email: userData.email, name: userData.name, role: userData.role, permissions: userData.permissions || [], licenseKey: userData.licenseKey, licenseExpiry: userData.licenseExpiry, otpEnabled: userData.otpEnabled } });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 
 app.post("/api/auth/register", async (req, res) => {
   try {
     const { email, password, name } = req.body;
-    if (await findUserByEmail(email)) return res.status(400).json({ error: "이미 가입된 이메일입니다." });
+    if (await findUserByEmail(email)) return res.status(400).json({ error: "이미 가입됨" });
     const hashedPassword = await bcrypt.hash(password, 10);
     const expiry = new Date(); expiry.setFullYear(expiry.getFullYear() + 10);
-    const userData = { email, password: hashedPassword, name, role: "admin", licenseKey: generateLicenseKey(), licenseExpiry: expiry.toISOString(), permissions: ['dashboard', 'member_db', 'user_manage', 'security_vault', 'policy_manage', 'my_settings'], otpEnabled: false, otpSecret: '' };
+    const userData = { email, password: hashedPassword, name, role: "admin", licenseKey: generateLicenseKey(), licenseExpiry: expiry.toISOString(), permissions: ['dashboard', 'member_db', 'user_manage', 'security_vault', 'policy_manage', 'my_settings', 'subscription'], otpEnabled: false, otpSecret: '' };
     const newDoc = await addDoc("pms_admins", userData);
     const token = jwt.sign({ uid: newDoc.id, email, role: "admin", name }, JWT_SECRET, { expiresIn: "1h" });
+    await logAction(newDoc.id, email, name, "REGISTER_SUCCESS", "AUTH_ENGINE", "신규 보안 워크스페이스 개설");
     res.status(201).json({ success: true, token, user: { email, name, role: "admin", licenseKey: userData.licenseKey, licenseExpiry: userData.licenseExpiry, permissions: userData.permissions, otpEnabled: false } });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -100,76 +169,76 @@ app.post("/api/auth/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const userData = await findUserByEmail(email);
-    if (!userData || !(await bcrypt.compare(password, userData.password))) return res.status(401).json({ error: "인증 정보가 일치하지 않습니다." });
-
-    // ✅ OTP가 활성화된 경우, 임시 토큰과 함께 OTP 요구 응답 반환
+    if (!userData || !(await bcrypt.compare(password, userData.password))) {
+      await logAction(null, email, "UNKNOWN", "LOGIN_FAILED", "AUTH_ENGINE", "비밀번호 불일치 또는 미가입 계정");
+      return res.status(401).json({ error: "정보 불일치" });
+    }
     if (userData.otpEnabled) {
       const tempToken = jwt.sign({ uid: userData.id, email: userData.email, isPendingOTP: true }, JWT_SECRET, { expiresIn: "5m" });
       return res.json({ success: true, requiresOTP: true, tempToken });
     }
-
     const token = jwt.sign({ uid: userData.id, email: userData.email, role: userData.role, name: userData.name }, JWT_SECRET, { expiresIn: "1h" });
+    await logAction(userData.id, email, userData.name, "LOGIN_SUCCESS", "AUTH_ENGINE", "보안 로그인 접속 승인");
     res.json({ success: true, token, user: { email: userData.email, name: userData.name, role: userData.role, permissions: userData.permissions || [], licenseKey: userData.licenseKey, licenseExpiry: userData.licenseExpiry, otpEnabled: userData.otpEnabled } });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-// ✅ OTP 검증 로그인
 app.post("/api/auth/login/otp", async (req, res) => {
   try {
     const { tempToken, otpCode } = req.body;
     const decoded = jwt.verify(tempToken, JWT_SECRET);
-    if (!decoded.isPendingOTP) return res.status(403).json({ error: "잘못된 접근입니다." });
-
     const userData = await getDocByAny(decoded.uid);
     const verified = speakeasy.totp.verify({ secret: userData.otpSecret, encoding: 'base32', token: otpCode });
-    if (!verified) return res.status(401).json({ error: "OTP 코드가 일치하지 않습니다." });
-
+    if (!verified) {
+      await logAction(userData.id, userData.email, userData.name, "OTP_FAILED", "2FA_ENGINE", "OTP 코드 불일치");
+      return res.status(401).json({ error: "OTP 불일치" });
+    }
     const token = jwt.sign({ uid: userData.id, email: userData.email, role: userData.role, name: userData.name }, JWT_SECRET, { expiresIn: "1h" });
+    await logAction(userData.id, userData.email, userData.name, "LOGIN_SUCCESS_OTP", "2FA_ENGINE", "OTP 인증 통과 및 접속 승인");
     res.json({ success: true, token, user: { email: userData.email, name: userData.name, role: userData.role, permissions: userData.permissions || [], licenseKey: userData.licenseKey, licenseExpiry: userData.licenseExpiry, otpEnabled: true } });
-  } catch { res.status(403).json({ error: "인증 세션 만료" }); }
+  } catch { res.status(403).send(); }
 });
 
-// ✅ OTP 설정 생성
-app.get("/api/auth/otp/setup", verifyToken, async (req, res) => {
-  try {
-    const secret = speakeasy.generateSecret({ name: `PMS-Center:${req.user.email}` });
-    const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
-    // 임시 저장 (확정 전)
-    await updateDoc("pms_admins", req.user.uid, { tempOtpSecret: secret.base32 });
-    res.json({ qrCodeUrl, secret: secret.base32 });
-  } catch { res.status(500).json({ error: "OTP 설정 중 오류" }); }
-});
-
-// ✅ OTP 활성화 확정
 app.post("/api/auth/otp/enable", verifyToken, async (req, res) => {
   try {
-    const { otpCode } = req.body;
     const user = await getDocByAny(req.user.uid);
-    const verified = speakeasy.totp.verify({ secret: user.tempOtpSecret, encoding: 'base32', token: otpCode });
-    if (!verified) return res.status(400).json({ error: "인증 코드가 일치하지 않습니다." });
+    const verified = speakeasy.totp.verify({ secret: user.tempOtpSecret, encoding: 'base32', token: req.body.otpCode });
+    if (!verified) return res.status(400).json({ error: "코드 불일치" });
     await updateDoc("pms_admins", req.user.uid, { otpSecret: user.tempOtpSecret, otpEnabled: true, tempOtpSecret: '' });
-    res.json({ success: true, message: "2단계 인증이 활성화되었습니다." });
-  } catch { res.status(500).json({ error: "OTP 활성화 오류" }); }
+    await logAction(req.user.uid, req.user.email, req.user.name, "OTP_ENABLED", "2FA_ENGINE", "2단계 인증 신규 활성화");
+    res.json({ success: true });
+  } catch { res.status(500).send(); }
 });
 
-// ✅ OTP 비활성화
 app.post("/api/auth/otp/disable", verifyToken, async (req, res) => {
-  try {
-    await updateDoc("pms_admins", req.user.uid, { otpEnabled: false, otpSecret: '' });
-    res.json({ success: true, message: "2단계 인증이 해제되었습니다." });
-  } catch { res.status(500).json({ error: "OTP 해제 오류" }); }
+  try { 
+    await updateDoc("pms_admins", req.user.uid, { otpEnabled: false, otpSecret: '' }); 
+    await logAction(req.user.uid, req.user.email, req.user.name, "OTP_DISABLED", "2FA_ENGINE", "2단계 인증 보안 해제");
+    res.json({ success: true }); 
+  } catch { res.status(500).send(); }
 });
 
-// ────── 이용자 및 데이터 API (기존 로직 유지) ──────
+app.put("/api/auth/change-password", verifyToken, async (req, res) => {
+  try {
+    const user = await getDocByAny(req.user.uid);
+    if (!user || !(await bcrypt.compare(req.body.currentPassword, user.password))) return res.status(401).json({ error: "현재 비밀번호 불일치" });
+    await updateDoc("pms_admins", req.user.uid, { password: await bcrypt.hash(req.body.newPassword, 10) });
+    await logAction(req.user.uid, req.user.email, req.user.name, "PASSWORD_CHANGED", "AUTH_ENGINE", "보안 비밀번호 변경 완료");
+    res.json({ success: true });
+  } catch { res.status(500).send(); }
+});
+
+// ────── 관리 API ──────
 app.get("/api/admin/admins", verifyToken, checkAccess("user_manage"), async (req, res) => {
   try { res.json((await getCollection("pms_admins")).map(({ password, otpSecret, ...rest }) => rest)); } catch { res.status(500).send(); }
 });
 app.post("/api/admin/admins", verifyToken, checkAccess("user_manage"), async (req, res) => {
   try {
     const { email, password, name, role, permissions, licenseExpiry } = req.body;
-    const expiry = licenseExpiry ? new Date(licenseExpiry) : new Date(); if (!licenseExpiry) expiry.setDate(expiry.getDate() + 30);
+    const expiry = licenseExpiry ? new Date(licenseExpiry) : new Date(Date.now() + 30*24*60*60*1000);
     const hashedPassword = await bcrypt.hash(password, 10);
     const newDoc = await addDoc("pms_admins", { email, password: hashedPassword, name, role: role || 'user', licenseKey: generateLicenseKey(), licenseExpiry: expiry.toISOString(), permissions: permissions || ['dashboard'], otpEnabled: false });
+    await logAction(req.user.uid, req.user.email, req.user.name, "USER_CREATED", `USER:${email}`, `신규 이용자 생성 (역할: ${role || 'user'})`);
     res.status(201).json({ success: true, id: newDoc.id });
   } catch { res.status(500).send(); }
 });
@@ -178,30 +247,56 @@ app.put("/api/admin/admins/:id", verifyToken, async (req, res) => {
     if (req.user.role !== 'admin' && req.user.uid !== req.params.id) return res.status(403).send();
     const { name, role, permissions, password, licenseExpiry } = req.body;
     const updateData = { name };
-    if (req.user.role === 'admin') { if (role) updateData.role = role; if (permissions) updateData.permissions = permissions; if (licenseExpiry) updateData.licenseExpiry = licenseExpiry; }
+    if (req.user.role === 'admin') { 
+      if (role) updateData.role = role; 
+      if (permissions) updateData.permissions = permissions; 
+      if (licenseExpiry) updateData.licenseExpiry = licenseExpiry; 
+    }
     if (password) updateData.password = await bcrypt.hash(password, 10);
     await updateDoc("pms_admins", req.params.id, updateData);
+    await logAction(req.user.uid, req.user.email, req.user.name, "USER_UPDATED", `USER_ID:${req.params.id}`, "이용자 권한 및 정보 수정");
     res.json({ success: true });
   } catch { res.status(500).send(); }
 });
 app.delete("/api/admin/admins/:id", verifyToken, checkAccess("user_manage"), async (req, res) => {
-  try { await deleteDoc("pms_admins", req.params.id); res.json({ success: true }); } catch { res.status(500).send(); }
+  try { 
+    await deleteDoc("pms_admins", req.params.id); 
+    await logAction(req.user.uid, req.user.email, req.user.name, "USER_DELETED", `USER_ID:${req.params.id}`, "이용자 계정 영구 삭제");
+    res.json({ success: true }); 
+  } catch { res.status(500).send(); }
 });
-app.get("/api/admin/db/stats", verifyToken, async (req, res) => { res.json({ total: (await getCollection("privacy_records")).length, today: 0, consentRate: 100 }); });
-app.get("/api/admin/records", verifyToken, checkAccess("member_db"), async (req, res) => { res.json(await getCollection("privacy_records")); });
+
+app.get("/api/admin/records", verifyToken, checkAccess("member_db"), async (req, res) => { 
+  await logAction(req.user.uid, req.user.email, req.user.name, "DATA_ACCESS", "MEMBER_RECORDS", "고객 회원 자산 리스트 열람");
+  res.json(await getCollection("privacy_records")); 
+});
+
 app.post("/api/admin/records/batch", verifyToken, checkAccess("security_vault"), async (req, res) => {
   try {
     const { records } = req.body; const store = readDB();
     const newRecords = records.map(r => ({ id: (Date.now() + Math.random()).toString(), ...r, createdAt: new Date().toISOString() }));
     store.privacy_records.push(...newRecords); writeDB(store);
+    await logAction(req.user.uid, req.user.email, req.user.name, "DATA_BATCH_UPLOAD", "MEMBER_RECORDS", `${newRecords.length}건의 보안 자산 신규 등록`);
     res.json({ success: true, count: newRecords.length });
   } catch { res.status(500).send(); }
 });
-app.get("/api/admin/logs", verifyToken, async (req, res) => { res.json((await getCollection("security_logs")).reverse().slice(0, 20)); });
-app.post("/api/admin/logs", verifyToken, async (req, res) => {
-  await addDoc("security_logs", { user: req.user.email, userName: req.user.name, action: req.body.action, target: req.body.target, reason: req.body.reason });
-  res.json({ success: true });
+
+// ✅ [추가] 약관/처리방침 API
+app.get("/api/admin/policies", verifyToken, async (req, res) => {
+  const policies = await getCollection("policies");
+  res.json(policies.reverse()[0] || { content: "" });
 });
+
+app.post("/api/admin/policies", verifyToken, checkAccess("policy_manage"), async (req, res) => {
+  try {
+    const { content, reason } = req.body;
+    const newPolicy = await addDoc("policies", { content, editor: req.user.name });
+    await logAction(req.user.uid, req.user.email, req.user.name, "POLICY_UPDATED", "PRIVACY_POLICY", reason || "개인정보처리방침 개정");
+    res.json({ success: true, policy: newPolicy });
+  } catch { res.status(500).send(); }
+});
+
+app.get("/api/admin/logs", verifyToken, async (req, res) => { res.json((await getCollection("security_logs")).reverse().slice(0, 50)); });
 
 const PORT = 8080;
 app.listen(PORT, () => console.log(`[CERT] PMS Backend running on port ${PORT}`));
