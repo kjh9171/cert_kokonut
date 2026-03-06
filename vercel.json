@@ -16,16 +16,18 @@
     "rewrites": [
       {
         "source": "/api/(.*)",
-        "destination": "backend/server.js"
+        "destination": "/backend/server.js"
+      },
+      {
+        "source": "/((?!api/).*)",
+        "destination": "/frontend/$1"
+      },
+      {
+        "handle": "filesystem"
       },
       {
         "source": "/(.*)",
-        "destination": "frontend/$1",
-        "check": true
-      },
-      {
-        "source": "/(.*)",
-        "destination": "frontend/index.html"
+        "destination": "/frontend/index.html"
       }
     ]
   }
