@@ -132,10 +132,12 @@ function RestrictedView({ title, message, onUpgrade }) {
 function PolicyAIView({ authFetch }) {
   const [policy, setPolicy] = useState("");
   const [loading, setLoading] = useState(false);
-  const [refining, setRefining] = useState({}); // 필드별 정제 상태 관리
+  const [refining, setRefining] = useState({});
   const [saving, setSaveLoading] = useState(false);
   const [history, setHistory] = useState([]);
   const [activeGroup, setActiveGroup] = useState('basic');
+  const [knowledge, setKnowledge] = useState([]); // 학습 지식 상태
+  const [syncing, setSyncing] = useState(false);
 
   // 표준 가이드라인 기반 12대 핵심 항목 상태
   const [formData, setFormData] = useState({
@@ -160,9 +162,24 @@ function PolicyAIView({ authFetch }) {
     }));
   }, [authFetch, policy]);
 
-  useEffect(() => { loadHistory(); }, [loadHistory]);
+  const loadKnowledge = useCallback(() => {
+    authFetch('/api/admin/knowledge').then(r => r.ok && r.json().then(setKnowledge));
+  }, [authFetch]);
 
-  // AI를 통한 개별 필드 문구 고도화 정제
+  useEffect(() => { loadHistory(); loadKnowledge(); }, [loadHistory, loadKnowledge]);
+
+  const handleSyncKnowledge = async () => {
+    setSyncing(true);
+    try {
+      const res = await authFetch('/api/admin/knowledge/sync', { method: 'POST' });
+      if (res.ok) {
+        alert('최신 법령 및 외부 방침 패턴 동기화 완료!');
+        loadKnowledge();
+      }
+    } catch { alert('동기화 실패'); }
+    finally { setSyncing(false); }
+  };
+
   const handleRefineField = async (key) => {
     setRefining(prev => ({ ...prev, [key]: true }));
     try {
@@ -174,7 +191,7 @@ function PolicyAIView({ authFetch }) {
         const data = await res.json();
         setFormData(prev => ({ ...prev, [key]: data.refinedFields[key] }));
       }
-    } catch (err) { alert('문구 정제 실패'); }
+    } catch { alert('정제 엔진 통신 실패'); }
     finally { setRefining(prev => ({ ...prev, [key]: false })); }
   };
 
@@ -256,29 +273,49 @@ function PolicyAIView({ authFetch }) {
           <p className="text-slate-400 font-bold flex items-center gap-2"><Scale size={16}/> 표준 개인정보 처리방침 가이드라인 준수 모드</p>
         </div>
         <div className="flex gap-4">
+          <div className="hidden lg:flex items-center gap-4 bg-slate-900 px-6 py-3 rounded-2xl border border-slate-800 shadow-xl">
+            <div className="flex flex-col items-end">
+              <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">AI Learning Status</span>
+              <span className="text-[10px] font-bold text-emerald-400">Latest Sync: {knowledge[0]?.lastUpdated ? new Date(knowledge[0].lastUpdated).toLocaleDateString() : 'Syncing...'}</span>
+            </div>
+            <button 
+              onClick={handleSyncKnowledge} 
+              disabled={syncing}
+              className={`p-2 rounded-xl border border-slate-700 text-slate-400 hover:text-white transition-all ${syncing ? 'animate-spin border-blue-500 text-blue-500' : ''}`}
+              title="최신 법령 동기화"
+            >
+              <RefreshCw size={16} />
+            </button>
+          </div>
           <button onClick={() => downloadFile('txt')} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-xl font-black text-xs text-slate-500 hover:bg-slate-50 transition uppercase"><FileDown size={16}/> Text</button>
           <button onClick={() => downloadFile('excel')} className="flex items-center gap-2 px-5 py-3 bg-emerald-50 border border-emerald-100 rounded-xl font-black text-xs text-emerald-600 hover:bg-emerald-100 transition uppercase"><Database size={16}/> CSV Export</button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-        {/* 왼쪽: 입력 폼 (UX 강화형 + AI 정제 기능) */}
         <div className="xl:col-span-5 space-y-6">
-          <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-2xl overflow-hidden flex flex-col min-h-[850px]">
+          <div className="bg-emerald-50 border border-emerald-100 rounded-[2rem] p-6 flex items-center gap-4 animate-in slide-in-from-top-5">
+            <div className="bg-emerald-500 p-3 rounded-xl text-white shadow-lg shadow-emerald-200"><Activity size={20}/></div>
+            <div className="flex-1">
+              <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">Continuous Learning Engine</p>
+              <p className="text-[11px] font-bold text-emerald-800 leading-tight">AI가 현재 {knowledge.length}개의 최신 법령 및 패턴을 학습 중입니다.</p>
+            </div>
+            <div className="flex gap-1.5">{knowledge.map((k, i) => (<div key={i} className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" style={{animationDelay: `${i*0.2}s`}}></div>))}</div>
+          </div>
+
+          <div className="bg-white rounded-[3rem] p-1 border border-slate-100 shadow-2xl overflow-hidden flex flex-col min-h-[850px]">
             <div className="bg-slate-900 p-10 text-white relative overflow-hidden shrink-0">
               <div className="absolute top-[-30px] right-[-30px] opacity-10 rotate-12"><Sparkles size={250} /></div>
               <div className="flex items-center gap-3 mb-8 relative z-10">
                 <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-900/50"><Wand2 size={24}/></div>
                 <h3 className="text-2xl font-black italic uppercase tracking-tighter">Policy AI Agent</h3>
               </div>
-              
-              {/* 그룹 탭 스텝퍼 */}
               <div className="flex justify-between relative z-10 bg-white/5 p-2 rounded-[1.5rem] backdrop-blur-sm border border-white/10">
                 {groups.map(g => (
                   <button 
                     key={g.id} 
                     onClick={() => setActiveGroup(g.id)}
-                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl transition-all duration-300 ${activeGroup === g.id ? 'bg-blue-600 text-white shadow-2xl scale-105' : 'text-white/30 hover:text-white/60 hover:bg-white/5'}`}
+                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl transition-all duration-300 ${activeGroup === g.id ? 'bg-blue-600 text-white shadow-2xl scale-105' : 'text-white/40 hover:text-white/60 hover:bg-white/5'}`}
                   >
                     <g.icon size={20} />
                     <span className="text-[10px] font-black uppercase tracking-tighter">{g.label}</span>
@@ -343,7 +380,7 @@ function PolicyAIView({ authFetch }) {
           </div>
 
           <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History size={14}/> 최근 개정 히스토리</h4>
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History size={14}/> 최근 발행 히스토리</h4>
             <div className="space-y-3 max-h-[250px] overflow-y-auto no-scrollbar">
               {history.length === 0 ? (
                 <p className="text-xs text-slate-300 italic text-center py-6">저장된 데이터가 없습니다.</p>
@@ -367,7 +404,6 @@ function PolicyAIView({ authFetch }) {
           </div>
         </div>
 
-        {/* 오른쪽: 결과물 확인 및 편집 */}
         <div className="xl:col-span-7 space-y-6">
           <div className="bg-white rounded-[3.5rem] p-1 border border-slate-100 shadow-sm flex flex-col h-[1200px]">
             <header className="p-12 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
@@ -766,7 +802,7 @@ function CompanyAdminView({
         <div className="h-20 flex items-center px-6 border-b border-slate-800 cursor-pointer overflow-hidden" onClick={() => setActiveTab('dashboard')}><Shield className="text-blue-500 shrink-0" size={28} />{sidebarOpen && <span className="ml-3 font-black text-xl tracking-tighter uppercase whitespace-nowrap">PMS 센터</span>}</div>
         <nav className="flex-1 py-8 px-3 space-y-1 no-scrollbar overflow-y-auto">
           {COMPANY_MENU.filter(m => !m.adminOnly || (user && user.role === 'admin')).map((m) => (
-            <button key={m.id} onClick={() => setActiveTab(m.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === m.id ? 'bg-blue-600 shadow-xl shadow-blue-900/40 font-bold text-white' : 'text-slate-500 hover:bg-slate-800 hover:text-white'}`}><m.icon size={20} className="shrink-0" /><span className={`text-sm whitespace-nowrap transition-opacity duration-300 ${sidebarOpen ? 'opacity-100' : 'opacity-0'}`}>{m.label}</span></button>
+            <button key={m.id} onClick={() => setActiveTab(m.id)} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === m.id ? 'bg-blue-600 shadow-xl shadow-blue-900/40 font-bold text-white' : 'text-slate-500 hover:bg-slate-800 hover:text-white'}`}><m.icon size={20} className="shrink-0" /><span className={`text-sm whitespace-nowrap transition-opacity duration-300 ${sidebarOpen ? opacity-100' : 'opacity-0'}`}>{m.label}</span></button>
           ))}
         </nav>
         <div className="p-6 border-t border-slate-800"><button onClick={onLogout} className="flex items-center gap-4 p-4 text-slate-500 hover:text-white transition-all w-full"><LogIn size={20} className="shrink-0" />{sidebarOpen && <span className="text-xs font-black uppercase tracking-widest whitespace-nowrap">보안 로그아웃</span>}</button></div>
@@ -805,6 +841,16 @@ export default function App() {
 
   const authFetch = useCallback((url, options = {}) =>
     fetch(url, { ...options, headers: { 'Content-Type': 'application/json', ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}), ...(options.headers || {}) } }), [authToken]);
+
+  // 시스템 초기화 체크 및 처리
+  const checkInitialSetup = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/init', { method: 'POST' });
+      if (res.ok) console.log("[CERT] System auto-initialized");
+    } catch (e) {}
+  }, []);
+
+  useEffect(() => { checkInitialSetup(); }, [checkInitialSetup]);
 
   // ✅ [복구] 세션 자동 복구 로직: 토큰이 있으면 대시보드로 즉시 이동
   useEffect(() => {
