@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "root-build": "cd frontend && npm install && npm run build",
-    "root-install": "npm install --prefix frontend && npm install --prefix backend"
+    "build": "cd frontend && npm install && npm run build && cp -r dist/* .."
   }
 }
