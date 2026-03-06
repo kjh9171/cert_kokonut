@@ -30,8 +30,6 @@ async function connectToDatabase() {
   try {
     // 서버리스 환경에 최적화된 연결 옵션 적용
     const db = await mongoose.connect(MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000, // 5초 안에 연결 안되면 타임아웃
     });
     cachedDb = db;
