@@ -134,14 +134,22 @@ function PolicyAIView({ authFetch }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaveLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [activeGroup, setActiveGroup] = useState('basic');
 
-  // 대표님 제안 5대 핵심 항목 상태
+  // 법무부 가이드라인 기반 12대 핵심 항목 확장 상태
   const [formData, setFormData] = useState({
-    purpose: "회원 가입 관리 및 파일 악성 여부 분석",
-    duration: "회원 탈퇴 시까지 (분석 파일은 7일간 보관)",
-    outsourcing: "AWS (서버 운영), Cloudflare (보안 인프라)",
-    rights: "이메일(support@example.com)을 통한 열람 및 삭제 요청",
-    responsible: "보안팀 홍길동 (02-1234-5678)"
+    purpose: "서비스 회원 가입 관리 및 본인 확인",
+    items: "성명, 이메일, 전화번호, 접속 로그",
+    duration: "회원 탈퇴 시까지 또는 법정 보존 기간",
+    thirdParty: "현재 해당사항 없음",
+    outsourcing: "AWS (서버 운영), 카카오알림톡 (발송)",
+    rights: "개인정보 열람·정정·삭제·처리정지 요구",
+    destruction: "파쇄 또는 전자기적 방법으로 복구 불가 삭제",
+    safety: "암호화 저장, 접근 권한 관리, 침입 차단 시스템 운영",
+    cookies: "브라우저 설정 메뉴에서 쿠키 저장 거부 가능",
+    responsible: "개인정보 보호책임자: 홍길동 (support@example.com)",
+    access: "보안팀 (02-1234-5678)",
+    remedies: "개인정보분쟁조정위원회, 경찰청 사이버수사국"
   });
 
   const loadHistory = useCallback(() => {
@@ -174,7 +182,7 @@ function PolicyAIView({ authFetch }) {
     try {
       const res = await authFetch('/api/admin/policies', {
         method: 'POST',
-        body: JSON.stringify({ content: policy, reason: 'AI 법령 준수 에이전트 기반 생성' })
+        body: JSON.stringify({ content: policy, reason: '법무부 표준 가이드라인 기반 AI 생성' })
       });
       if (res.ok) {
         alert('정책이 데이터베이스에 안전하게 게시되었습니다.');
@@ -186,7 +194,7 @@ function PolicyAIView({ authFetch }) {
   const downloadFile = (format) => {
     if (!policy) return;
     let content = policy;
-    let fileName = `Privacy_Policy_${new Date().toISOString().split('T')[0]}`;
+    let fileName = `Privacy_Policy_MOJ_Style_${new Date().toISOString().split('T')[0]}`;
     let type = "text/plain";
     if (format === 'excel') {
       content = "\ufeff" + "내용\n" + policy.replace(/"/g, '""');
@@ -200,73 +208,102 @@ function PolicyAIView({ authFetch }) {
     URL.revokeObjectURL(url);
   };
 
+  const groups = [
+    { id: 'basic', label: '기본 및 수집', fields: [
+      { k: 'purpose', l: '제1조: 처리 목적', p: '예: 회원 가입 및 관리' },
+      { k: 'items', l: '제3조: 수집 항목', p: '예: 성명, 이메일 등' },
+      { k: 'duration', l: '제2조: 보유 기간', p: '예: 탈퇴 시까지' }
+    ]},
+    { id: 'sharing', label: '공유 및 위탁', fields: [
+      { k: 'thirdParty', l: '제4조: 제3자 제공', p: '제공받는 자, 목적 등' },
+      { k: 'outsourcing', l: '제5조: 업무 위탁', p: '수탁업체 및 위탁업무' }
+    ]},
+    { id: 'rights', label: '권리 및 파기', fields: [
+      { k: 'rights', l: '제6조: 정보주체 권리', p: '행사 방법 및 절차' },
+      { k: 'destruction', l: '제7조: 파기 방법', p: '파기 절차 및 수단' }
+    ]},
+    { id: 'security', label: '보안 및 지원', fields: [
+      { k: 'safety', l: '제8조: 안전조치', p: '기술적/관리적 대책' },
+      { k: 'cookies', l: '제9조: 쿠키 정책', p: '거부 방법 등' },
+      { k: 'responsible', l: '제10조: 보호책임자', p: '성명 및 연락처' },
+      { k: 'access', l: '제11조: 열람청구부서', p: '담당 부서명' },
+      { k: 'remedies', l: '제12조: 권익구제', p: '외부 상담 기관' }
+    ]}
+  ];
+
   return (
-    <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in zoom-in-95 duration-500 pb-20">
+    <div className="max-w-[1600px] mx-auto space-y-10 animate-in fade-in zoom-in-95 duration-500 pb-20">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic mb-2">약관 및 처리방침 관리</h2>
-          <p className="text-slate-400 font-bold flex items-center gap-2"><Scale size={16}/> 대한민국 개인정보 보호법 제30조 준수 시스템</p>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic mb-2">약관 및 처리방침 고도화 관리</h2>
+          <p className="text-slate-400 font-bold flex items-center gap-2"><Scale size={16}/> 법무부 표준 개인정보 처리방침 가이드라인 준수 모드</p>
         </div>
         <div className="flex gap-4">
           <button onClick={() => downloadFile('txt')} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-xl font-black text-xs text-slate-500 hover:bg-slate-50 transition uppercase"><FileDown size={16}/> Text</button>
-          <button onClick={() => downloadFile('excel')} className="flex items-center gap-2 px-5 py-3 bg-emerald-50 border border-emerald-100 rounded-xl font-black text-xs text-emerald-600 hover:bg-emerald-100 transition uppercase"><Database size={16}/> Excel Export</button>
+          <button onClick={() => downloadFile('excel')} className="flex items-center gap-2 px-5 py-3 bg-emerald-50 border border-emerald-100 rounded-xl font-black text-xs text-emerald-600 hover:bg-emerald-100 transition uppercase"><Database size={16}/> CSV</button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* 왼쪽: 법령 기반 입력 폼 */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-blue-600 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
-            <div className="absolute top-[-30px] right-[-30px] opacity-10 rotate-12"><Sparkles size={200} /></div>
-            <div className="flex items-center gap-3 mb-8">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
+        {/* 왼쪽: 법령 기반 입력 폼 (광역 확장형) */}
+        <div className="xl:col-span-5 space-y-6">
+          <div className="bg-blue-600 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden flex flex-col min-h-[850px]">
+            <div className="absolute top-[-30px] right-[-30px] opacity-10 rotate-12"><Sparkles size={250} /></div>
+            <div className="flex items-center gap-3 mb-10">
               <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md"><Wand2 size={24}/></div>
-              <h3 className="text-2xl font-black italic uppercase">Legal AI Agent</h3>
+              <h3 className="text-2xl font-black italic uppercase">MOJ Standards AI</h3>
             </div>
             
-            <div className="space-y-5 relative z-10">
-              {[
-                { k: 'purpose', l: '제1호: 처리 목적', p: '예: 서비스 제공, 마케팅 등' },
-                { k: 'duration', l: '제2호: 보유 기간', p: '예: 회원 탈퇴 시까지 등' },
-                { k: 'outsourcing', l: '제4호: 업무 위탁', p: '예: AWS, 결제 대행사 등' },
-                { k: 'rights', l: '제6호: 권리 행사', p: '예: 고객센터 접수 등' },
-                { k: 'responsible', l: '제10호: 보호책임자', p: '성명, 연락처' }
-              ].map(field => (
-                <div key={field.k} className="space-y-1.5">
+            {/* 카테고리 탭 */}
+            <div className="flex gap-2 mb-8 overflow-x-auto no-scrollbar pb-2">
+              {groups.map(g => (
+                <button 
+                  key={g.id} 
+                  onClick={() => setActiveGroup(g.id)}
+                  className={`px-4 py-2 rounded-full text-[10px] font-black uppercase whitespace-nowrap transition-all ${activeGroup === g.id ? 'bg-white text-blue-600' : 'bg-white/10 text-white/60 hover:bg-white/20'}`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 space-y-6 relative z-10">
+              {groups.find(g => g.id === activeGroup).fields.map(field => (
+                <div key={field.k} className="space-y-2">
                   <label className="text-[10px] font-black uppercase opacity-60 ml-2">{field.l}</label>
-                  <input 
-                    type="text" 
+                  <textarea 
                     value={formData[field.k]} 
                     onChange={e => setFormData({...formData, [field.k]: e.target.value})}
                     placeholder={field.p}
-                    className="w-full px-5 py-3.5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold text-sm placeholder:text-white/30 focus:bg-white/20 transition-all"
+                    className="w-full px-6 py-4 bg-white/10 border border-white/20 rounded-3xl outline-none font-bold text-sm placeholder:text-white/30 focus:bg-white/20 transition-all min-h-[80px] no-scrollbar resize-none"
                   />
                 </div>
               ))}
-              
-              <button 
-                onClick={handleGenerate} 
-                disabled={loading}
-                className="w-full mt-4 py-5 bg-white text-blue-600 rounded-[2rem] font-black text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-3 shadow-xl"
-              >
-                {loading ? <RefreshCw className="animate-spin" size={20}/> : <Sparkles size={20}/>}
-                {loading ? '에이전트 법령 분석 중...' : '법령 기반 방침 생성'}
-              </button>
             </div>
+            
+            <button 
+              onClick={handleGenerate} 
+              disabled={loading}
+              className="w-full mt-10 py-6 bg-white text-blue-600 rounded-[2.5rem] font-black text-xl hover:bg-blue-50 transition-all flex items-center justify-center gap-4 shadow-2xl"
+            >
+              {loading ? <RefreshCw className="animate-spin" size={24}/> : <Sparkles size={24}/>}
+              {loading ? '법무부 가이드 분석 중...' : '공공기관 표준 방침 생성'}
+            </button>
           </div>
 
           <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History size={14}/> 개정 이력 (DB)</h4>
-            <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History size={14}/> 개정 이력 감사 로그</h4>
+            <div className="space-y-4 max-h-[250px] overflow-y-auto no-scrollbar">
               {history.length === 0 ? (
-                <p className="text-xs text-slate-300 italic text-center py-4">저장된 이력이 없습니다.</p>
+                <p className="text-xs text-slate-300 italic text-center py-4">저장된 데이터가 없습니다.</p>
               ) : history.map((h, idx) => (
                 <div 
                   key={h.id} 
                   onClick={() => setPolicy(h.content)}
-                  className="p-4 bg-slate-50 rounded-2xl border border-slate-50 cursor-pointer hover:border-blue-200 transition-all group"
+                  className="p-5 bg-slate-50 rounded-2xl border border-slate-50 cursor-pointer hover:border-blue-200 transition-all group"
                 >
-                  <p className="text-[11px] font-black text-slate-800 mb-1 group-hover:text-blue-600">v{history.length - idx}.0 개정안</p>
-                  <p className="text-[9px] font-bold text-slate-400">{new Date(h.createdAt).toLocaleDateString()} · {h.author}</p>
+                  <p className="text-[11px] font-black text-slate-800 mb-1 group-hover:text-blue-600">제{history.length - idx}차 개정안</p>
+                  <p className="text-[9px] font-bold text-slate-400">{new Date(h.createdAt).toLocaleString()} · {h.author}</p>
                 </div>
               ))}
             </div>
@@ -274,35 +311,37 @@ function PolicyAIView({ authFetch }) {
         </div>
 
         {/* 오른쪽: 결과물 확인 및 편집 */}
-        <div className="lg:col-span-8 space-y-6">
-          <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col h-[850px]">
-            <div className="flex justify-between items-center mb-6">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                Draft Preview (Markdown Ready)
+        <div className="xl:col-span-7 space-y-6">
+          <div className="bg-white rounded-[3rem] p-12 border border-slate-100 shadow-sm flex flex-col h-[1150px]">
+            <div className="flex justify-between items-center mb-8">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-3">
+                <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
+                MOJ Comprehensive Template Preview
               </span>
               <div className="flex gap-2">
-                <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase">Auto-Compliance Check: PASS</span>
+                <span className="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-wider border border-blue-100">Official Standard</span>
               </div>
             </div>
             
             <textarea 
               value={policy} 
               onChange={e=>setPolicy(e.target.value)} 
-              className="flex-1 w-full p-10 bg-slate-50 rounded-[2.5rem] border border-slate-100 outline-none font-medium text-sm leading-relaxed no-scrollbar resize-none border-dashed" 
-              placeholder="왼쪽 폼을 입력하고 '방침 생성' 버튼을 누르시면 최신 법령을 준수하는 초안이 이곳에 작성됩니다." 
+              className="flex-1 w-full p-12 bg-slate-50 rounded-[3rem] border border-slate-100 outline-none font-medium text-sm leading-relaxed no-scrollbar resize-none border-dashed text-slate-700" 
+              placeholder="데이터를 입력하고 생성 버튼을 누르면 법무부 표준 개인정보 처리방침 조항에 맞춘 초안이 이곳에 작성됩니다." 
             />
             
-            <div className="mt-8">
+            <div className="mt-10">
               <button 
                 onClick={handleSave} 
                 disabled={saving || !policy} 
-                className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xl hover:bg-black transition-all flex items-center justify-center gap-4 shadow-2xl shadow-slate-200"
+                className="w-full py-7 bg-slate-900 text-white rounded-[2.5rem] font-black text-2xl hover:bg-black transition-all flex items-center justify-center gap-5 shadow-2xl shadow-slate-200"
               >
-                {saving ? <RefreshCw className="animate-spin" size={20}/> : <SaveIcon size={24}/>}
-                {saving ? '데이터베이스 암호화 저장 중...' : '최종 승인 및 서비스 게시'}
+                {saving ? <RefreshCw className="animate-spin" size={28}/> : <ShieldCheck size={28}/>}
+                {saving ? '암호화 저장 중...' : '보안 감사 승인 및 게시'}
               </button>
-              <p className="text-center text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-tighter italic">※ 저장 시 보안 감사 로그에 기록되며, 즉시 외부 서비스에 적용됩니다.</p>
+              <p className="text-center text-[10px] font-bold text-slate-400 mt-6 uppercase tracking-widest italic opacity-70">
+                ※ 위 문서는 「개인정보 보호법」 및 법무부 표준 지침을 준수하여 작성되었으며, 저장 즉시 법적 효력이 발생하는 공개 문서로 전환됩니다.
+              </p>
             </div>
           </div>
         </div>

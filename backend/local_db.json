@@ -283,6 +283,36 @@
       "target": "AUTH_ENGINE",
       "reason": "보안 로그인 성공",
       "createdAt": "2026-03-05T13:05:59.077Z"
+    },
+    {
+      "id": "1772761698007e2h98",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "POLICY_GENERATED_BY_AI",
+      "target": "POLICY_ENGINE",
+      "reason": "목적: 회원 가입 관리 및 파일 악성 여부 분석 기반 정책 생성",
+      "createdAt": "2026-03-06T01:48:18.007Z"
+    },
+    {
+      "id": "1772761764411jrqag",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "POLICY_GENERATED_BY_AI",
+      "target": "POLICY_ENGINE",
+      "reason": "목적: 회원 가입 관리 및 파일 악성 여부 분석 기반 정책 생성",
+      "createdAt": "2026-03-06T01:49:24.411Z"
+    },
+    {
+      "id": "1772761769772pa816",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "POLICY_GENERATED_BY_AI",
+      "target": "POLICY_ENGINE",
+      "reason": "목적: test 기반 정책 생성",
+      "createdAt": "2026-03-06T01:49:29.772Z"
     }
   ]
 }
