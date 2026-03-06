@@ -313,6 +313,16 @@
       "target": "POLICY_ENGINE",
       "reason": "목적: test 기반 정책 생성",
       "createdAt": "2026-03-06T01:49:29.772Z"
+    },
+    {
+      "id": "1772762499336xyku8",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "POLICY_GENERATED_MOJ_STYLE",
+      "target": "POLICY_ENGINE",
+      "reason": "법무부 표준 가이드라인 기반 정책 생성",
+      "createdAt": "2026-03-06T02:01:39.336Z"
     }
   ]
 }

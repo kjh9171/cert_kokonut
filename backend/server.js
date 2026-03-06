@@ -231,7 +231,7 @@ app.get("/api/admin/policies", verifyToken, checkAccess("policy_manage"), async 
   res.json([...policies].reverse());
 });
 
-// AI 기반 개인정보처리방침 생성 (법무부 스타일 및 최신 법령 반영)
+// AI 기반 개인정보처리방침 생성 (표준 가이드라인 및 최신 법령 반영)
 app.post("/api/admin/policies/generate", verifyToken, checkAccess("policy_manage"), async (req, res) => {
   try {
     const { 
@@ -239,15 +239,15 @@ app.post("/api/admin/policies/generate", verifyToken, checkAccess("policy_manage
       rights, destruction, safety, cookies, responsible, access, remedies 
     } = req.body;
     
-    console.log(`[CERT AI AGENT] 법무부 스타일 정책 생성 개시`);
+    console.log(`[CERT AI AGENT] 표준 개인정보 처리방침 생성 개시`);
 
-    // ── 대표님께서 주신 최고급 시스템 프롬프트 (법무부 표준 지침 반영) ──
-    const systemPrompt = `너는 대한민국 '개인정보 보호법' 및 공공기관(법무부 등) 개인정보 처리방침 가이드라인 전문가이다.
-사용자의 입력을 바탕으로 [법무부 개인정보 처리방침] 수준의 전문적이고 상세한 문서를 작성하라.
+    // ── 대표님께서 지시하신 표준 시스템 프롬프트 (대한민국 개인정보 보호법 준수) ──
+    const systemPrompt = `너는 대한민국 '개인정보 보호법' 및 표준 개인정보 처리방침 가이드라인 전문가이다.
+사용자의 입력을 바탕으로 전문적이고 상세한 개인정보 처리방침 문서를 작성하라.
 
 # 참조 원칙 (Reference)
 - 개인정보 보호법 제30조(개인정보 처리방침의 수립 및 공개)
-- 법무부 개인정보 처리방침 구조 및 문체 계승
+- 표준 개인정보 처리방침 작성 지침 준수
 
 # 필수 포함 조항 (Structure)
 1. 처리 목적
@@ -266,9 +266,9 @@ app.post("/api/admin/policies/generate", verifyToken, checkAccess("policy_manage
 14. 개인정보 처리방침의 변경 (이력 관리)
 
 # 작성 지침
-- 법무부의 정중하고 명확한 공공기관 문체를 사용하라.
-- 각 조항마다 관련 법적 근거를 명시하라.
-- 입력되지 않은 데이터는 '{{추가 입력 필요}}'로 표시하되, 표준 가이드를 덧붙여라.
+- 격식 있고 명확한 비즈니스 문체를 사용하라.
+- 각 조항마다 관련 법적 근거(제15조, 제29조 등)를 명시하라.
+- 입력되지 않은 데이터는 '{{추가 확인 필요}}'로 표시하되, 법령에 따른 표준 예시를 덧붙여라.
 
 # 사용자 입력 데이터
 - 목적: ${purpose}
@@ -286,7 +286,7 @@ app.post("/api/admin/policies/generate", verifyToken, checkAccess("policy_manage
 
 # 출력 형식: 마크다운(Markdown)`;
 
-    // AI 엔진 시뮬레이션 (법무부 표준 템플릿 기반 생성)
+    // AI 엔진 시뮬레이션 (표준 템플릿 기반 생성)
     const aiResponse = `# 개인정보 처리방침
 
 안티그래비티(이하 '회사')는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보 처리방침을 수립·공개합니다.
@@ -303,7 +303,7 @@ app.post("/api/admin/policies/generate", verifyToken, checkAccess("policy_manage
 ### 제3조 (처리하는 개인정보의 항목)
 회사는 다음의 개인정보 항목을 처리하고 있습니다.
 1. 필수항목: **${items}**
-2. 선택항목: {{선택항목 입력 필요}}
+2. 선택항목: {{선택항목 입력 확인 필요}}
 
 ### 제4조 (개인정보의 제3자 제공)
 회사는 정보주체의 개인정보를 제1조(개인정보의 처리 목적)에서 명시한 범위 내에서만 처리하며, 정보주체의 동의, 법률의 특별한 규정 등 「개인정보 보호법」 제17조 및 제18조에 해당하는 경우에만 개인정보를 제3자에게 제공합니다.
@@ -345,7 +345,7 @@ app.post("/api/admin/policies/generate", verifyToken, checkAccess("policy_manage
 ### 제13조 (개인정보 처리방침의 변경)
 이 개인정보 처리방침은 **${new Date().toLocaleDateString()}**부터 적용됩니다.`;
 
-    await logAction(req.user.uid, req.user.email, req.user.name, "POLICY_GENERATED_MOJ_STYLE", "POLICY_ENGINE", "법무부 표준 가이드라인 기반 정책 생성");
+    await logAction(req.user.uid, req.user.email, req.user.name, "POLICY_GENERATED_STANDARD", "POLICY_ENGINE", "표준 가이드라인 기반 정책 생성");
     res.json({ content: aiResponse });
   } catch (err) { console.error("[CERT AI ERROR]", err); res.status(500).json({ error: "AI 생성 실패" }); }
 });
