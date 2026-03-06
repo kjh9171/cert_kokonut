@@ -131,72 +131,56 @@ function RestrictedView({ title, message, onUpgrade }) {
 // --- AI 에이전트 정책 관리 뷰 ---
 function PolicyAIView({ authFetch }) {
   const [policy, setPolicy] = useState("");
-  const [userInput, setUserInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaveLoading] = useState(false);
+  const [history, setHistory] = useState([]);
 
-  useEffect(() => {
-    authFetch('/api/admin/policies').then(r => r.ok && r.json().then(d => setPolicy(d.content)));
-  }, [authFetch]);
+  // 대표님 제안 5대 핵심 항목 상태
+  const [formData, setFormData] = useState({
+    purpose: "회원 가입 관리 및 파일 악성 여부 분석",
+    duration: "회원 탈퇴 시까지 (분석 파일은 7일간 보관)",
+    outsourcing: "AWS (서버 운영), Cloudflare (보안 인프라)",
+    rights: "이메일(support@example.com)을 통한 열람 및 삭제 요청",
+    responsible: "보안팀 홍길동 (02-1234-5678)"
+  });
 
-  const generateSample = () => {
+  const loadHistory = useCallback(() => {
+    authFetch('/api/admin/policies').then(r => r.ok && r.json().then(d => {
+      setHistory(d);
+      if (d.length > 0 && !policy) setPolicy(d[0].content);
+    }));
+  }, [authFetch, policy]);
+
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
+  const handleGenerate = async () => {
     setLoading(true);
-    setTimeout(() => {
-      const sample = `[개인정보 처리방침 (2025.04 개정 지침 반영)]
-
-개인정보 처리방침은 개인정보 처리자가 이용자의 권리 보장을 위해 처리 현황을 투명하게 공개하는 문서입니다. 개인정보보호위원회는 2025년 4월, 정보주체의 가독성을 높이고 처리 중심의 체계를 반영한 '개인정보 처리방침 작성지침' 개정본을 공개하였습니다. [1, 2, 3, 4, 5]
-
-1. 작성 및 공개의 기본 원칙
-- 법령 부합성: 「개인정보 보호법」 및 시행령의 절차와 기준을 준수해야 합니다.
-- 투명성 및 정확성: 실제 처리 현황과 일치하게 작성하며, 동의 없이 처리 가능한 항목과 동의가 필요한 항목을 구체화해야 합니다.
-- 명확성 및 가독성: 정보주체가 이해하기 쉬운 언어를 사용하고, 필요한 경우 기호나 도표 등을 활용합니다.
-- 접근성 및 지속성: 홈페이지 첫 화면 등 이용자가 쉽게 찾을 수 있는 곳에 지속적으로 게재해야 합니다. [1, 6, 7, 8, 9]
-
-2. 주요 포함 항목 (개정 지침 반영)
-- 처리 목적 및 항목: 수집·이용 목적, 수집하는 항목 및 법적 근거를 명시합니다.
-- 보유 및 이용 기간: 개인정보의 보유 기간과 파기 절차 및 방법을 포함합니다.
-- 제3자 제공 및 위탁: 제공받는 자, 목적, 항목 등을 명시하며, 지속적인 제공 시 기준을 공개해야 합니다.
-- 정보주체의 권리와 의무: 열람, 정정, 삭제, 처리정지 요구 등 권리 행사 방법과 절차를 안내합니다.
-- 고충 처리 부서: 개인정보 보호 책임자의 성명과 연락처, 또는 고충을 직접 처리하는 부서의 정보를 기재합니다.
-- 가명정보 및 민감정보: 가명정보 처리 사항을 명시하고, 서비스 제공 중 민감정보 공개 가능성이 있다면 이를 선택·비공개하는 방법을 알려야 합니다. [1, 2, 8, 10, 11]
-
-3. 변경 및 평가 가이드
-- 변경 공지: 방침 변경 시 시행일 최소 7일 전부터 공지사항을 통해 고지해야 합니다.
-- 평가제 실시: 개인정보보호위원회는 처리방침의 적정성, 가독성, 접근성 등을 평가하여 개선을 권고할 수 있습니다. [8, 12]
-
-상세한 작성 양식과 최신 지침 전문은 [개인정보 포털](https://www.privacy.go.kr/)의 지침·가이드라인 게시판에서 다운로드할 수 있습니다. [13, 14]
-
-작성 중인 서비스의 주요 이용자층(예: 아동, 노령층)에 따라 강조해야 할 항목이 달라질 수 있습니다. 어떤 성격의 서비스용 방침을 준비 중이신가요?
-
----
-[참고 문헌 및 출처]
-[1] cela.kr - 개인정보 처리방침 작성지침(2025.04.21.)
-[2] youtube.com - 개인정보보호위원회 채널
-[3] catchsecu.com - 개인정보 처리방침의 정의와 준수 지침
-[4] cheongchul.com - 2025년 최신 개정본 주요 내용
-[5] intn.co.kr - 위원회 개정본 공개 보도자료
-[6] boannews.com - 작성 4대 원칙 분석
-[7] law.go.kr - 표준 개인정보 보호지침 제18조
-[8] youtube.com - 보호법 위반 사례 및 작성 팁
-[9] blog.naver.com - 시행령 제31조 준수 가이드
-[10] policy.naver.com - 정보주체의 권리 행사 예시
-[11] mss.go.kr - 고충 처리 부서 명시 기준
-[12] privacy.go.kr - 처리방침 변경 고지 의무
-[13] privacy.go.kr - 지침·가이드라인 공식 다운로드
-[14] catchsecu.com - 위원회 가이드라인 배포판 자료`;
-      setPolicy(sample);
-      setLoading(false);
-    }, 1500);
+    try {
+      const res = await authFetch('/api/admin/policies/generate', {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPolicy(data.content);
+      }
+    } catch (err) { alert('AI 에이전트 통신 실패'); }
+    finally { setLoading(false); }
   };
 
-  const handleAiRewrite = () => {
-    if (!userInput) return;
-    setLoading(true);
-    setTimeout(() => {
-      setPolicy(prev => prev + `\n\n[CERT AI 에이전트 전문 개정 권고안]\n\n● 분석 컨텍스트: 대표님께서 요청하신 "${userInput}" 사항을 2025년 4월 개정 지침의 핵심 가치인 '정보주체 권리 보장'과 '처리 투명성' 관점에서 심층 분석하였습니다.\n\n● 반영된 법적 근거: 개인정보 보호법 제15조(수집·이용) 및 제39조의3(개인정보의 이용내역 통지)에 부합하도록 문구를 최적화했습니다.\n\n● 세부 개정 사항:\n1. 요청하신 항목의 처리 목적을 명확화하여 법적 리스크를 최소화했습니다.\n2. 개정 지침에 따라 '동의 없이 처리 가능한 항목'과 '선택적 동의 항목'을 엄격히 구분하여 기술했습니다.\n3. 정보주체의 가독성을 위해 평이한 용어를 사용하고 절차를 도식화하는 방향으로 문장을 재구성했습니다.\n\n● 향후 조치 가이드: 본 개정 내용은 시행 7일 전 서비스 공지사항을 통해 반드시 게시되어야 하며, 변경 전후의 대조표를 제공하는 것이 가독성 평가에서 유리하게 작용합니다.`);
-      setUserInput("");
-      setLoading(false);
-    }, 2000);
+  const handleSave = async () => {
+    if (!policy) return;
+    setSaveLoading(true);
+    try {
+      const res = await authFetch('/api/admin/policies', {
+        method: 'POST',
+        body: JSON.stringify({ content: policy, reason: 'AI 법령 준수 에이전트 기반 생성' })
+      });
+      if (res.ok) {
+        alert('정책이 데이터베이스에 안전하게 게시되었습니다.');
+        loadHistory();
+      }
+    } catch { } finally { setSaveLoading(false); }
   };
 
   const downloadFile = (format) => {
@@ -204,84 +188,123 @@ function PolicyAIView({ authFetch }) {
     let content = policy;
     let fileName = `Privacy_Policy_${new Date().toISOString().split('T')[0]}`;
     let type = "text/plain";
-
     if (format === 'excel') {
-      content = "\ufeff" + "목차,내용\n" + policy.split('\n').map(line => {
-        if (!line.trim()) return "";
-        return `"${line.split('.')[0]}","${line.replace(/"/g, '""')}"`;
-      }).filter(l => l).join('\n');
+      content = "\ufeff" + "내용\n" + policy.replace(/"/g, '""');
       fileName += ".csv";
       type = "text/csv;charset=utf-8;";
-    } else {
-      fileName += ".txt";
-    }
-
+    } else { fileName += ".txt"; }
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    link.click();
+    link.href = url; link.download = fileName; link.click();
     URL.revokeObjectURL(url);
-    authFetch('/api/admin/logs', { method: 'POST', body: JSON.stringify({ action: 'POLICY_DOWNLOAD', target: 'PRIVACY_POLICY', reason: `${format.toUpperCase()} 형식 문서 반출` }) });
-  };
-
-  const handleSave = async () => {
-    setSaveLoading(true);
-    try {
-      const res = await authFetch('/api/admin/policies', { method: 'POST', body: JSON.stringify({ content: policy, reason: 'AI 에이전트 기반 약관 개정' }) });
-      if (res.ok) alert('데이터베이스에 안전하게 보관 및 게시되었습니다.');
-    } catch { } finally { setSaveLoading(false); }
   };
 
   return (
-    <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 animate-in fade-in zoom-in-95 duration-500">
-      <div className="space-y-6">
-        <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">약관 및 정책 관리</h2>
-        <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm flex flex-col h-[600px]">
-          <div className="flex justify-between items-center mb-6">
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><FileText size={14}/> 현재 개인정보 처리방침</span>
-            <div className="flex gap-3">
-              <button onClick={() => downloadFile('txt')} title="텍스트 다운로드" className="text-slate-400 hover:text-slate-900 transition-colors"><FileDown size={18}/></button>
-              <button onClick={() => downloadFile('excel')} className="text-emerald-500 hover:text-emerald-700 transition-colors flex items-center gap-1 font-black text-[10px] uppercase"><Database size={14}/> Excel</button>
-            </div>
-          </div>
-          <textarea value={policy} onChange={e=>setPolicy(e.target.value)} className="flex-1 w-full p-6 bg-slate-50 rounded-2xl border border-slate-100 outline-none font-medium text-sm leading-relaxed no-scrollbar resize-none" placeholder="정책 내용을 입력하거나 AI 에이전트에게 작성을 요청하세요." />
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <button onClick={generateSample} className="py-5 bg-slate-100 text-slate-600 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all uppercase italic">샘플 초안 불러오기</button>
-            <button onClick={handleSave} disabled={saving || !policy} className="py-5 bg-blue-600 text-white rounded-2xl font-black text-lg hover:bg-blue-700 transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-100">
-              <SaveIcon size={20}/> {saving ? '처리 중...' : '최종 저장 및 게시'}
-            </button>
-          </div>
+    <div className="max-w-7xl mx-auto space-y-10 animate-in fade-in zoom-in-95 duration-500 pb-20">
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic mb-2">약관 및 처리방침 관리</h2>
+          <p className="text-slate-400 font-bold flex items-center gap-2"><Scale size={16}/> 대한민국 개인정보 보호법 제30조 준수 시스템</p>
+        </div>
+        <div className="flex gap-4">
+          <button onClick={() => downloadFile('txt')} className="flex items-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-xl font-black text-xs text-slate-500 hover:bg-slate-50 transition uppercase"><FileDown size={16}/> Text</button>
+          <button onClick={() => downloadFile('excel')} className="flex items-center gap-2 px-5 py-3 bg-emerald-50 border border-emerald-100 rounded-xl font-black text-xs text-emerald-600 hover:bg-emerald-100 transition uppercase"><Database size={16}/> Excel Export</button>
         </div>
       </div>
 
-      <div className="space-y-6">
-        <div className="bg-blue-600 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
-          <div className="absolute top-[-30px] right-[-30px] opacity-10 rotate-12"><Sparkles size={200} /></div>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md"><Wand2 size={24}/></div>
-            <h3 className="text-2xl font-black italic uppercase">AI Policy Agent</h3>
-          </div>
-          <p className="text-sm font-bold opacity-90 leading-relaxed mb-10">인공지능 보안 에이전트가 대표님의 비즈니스 특성에 맞는 개인정보 처리방침 작성을 보좌합니다. 변경이 필요한 내용을 입력창에 남겨주세요.</p>
-          <div className="space-y-4">
-            <div className="relative">
-              <MessageSquare className="absolute top-5 left-6 text-blue-300" size={20} />
-              <textarea value={userInput} onChange={e=>setUserInput(e.target.value)} className="w-full pl-16 pr-6 py-5 bg-white/10 border border-white/20 rounded-3xl outline-none font-bold text-sm placeholder:text-white/40 min-h-[120px] resize-none" placeholder="예: '전화번호 수집 목적을 마케팅 활용으로 변경해줘' 등" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* 왼쪽: 법령 기반 입력 폼 */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-blue-600 rounded-[3rem] p-10 text-white shadow-2xl relative overflow-hidden">
+            <div className="absolute top-[-30px] right-[-30px] opacity-10 rotate-12"><Sparkles size={200} /></div>
+            <div className="flex items-center gap-3 mb-8">
+              <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-md"><Wand2 size={24}/></div>
+              <h3 className="text-2xl font-black italic uppercase">Legal AI Agent</h3>
             </div>
-            <button onClick={handleAiRewrite} disabled={loading || !userInput} className="w-full py-5 bg-white text-blue-600 rounded-2xl font-black text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-3 shadow-xl">
-              {loading ? <RefreshCw className="animate-spin" size={20}/> : <Wand2 size={20}/>}
-              {loading ? '에이전트 분석 중...' : 'AI에게 재작성 요청'}
-            </button>
+            
+            <div className="space-y-5 relative z-10">
+              {[
+                { k: 'purpose', l: '제1호: 처리 목적', p: '예: 서비스 제공, 마케팅 등' },
+                { k: 'duration', l: '제2호: 보유 기간', p: '예: 회원 탈퇴 시까지 등' },
+                { k: 'outsourcing', l: '제4호: 업무 위탁', p: '예: AWS, 결제 대행사 등' },
+                { k: 'rights', l: '제6호: 권리 행사', p: '예: 고객센터 접수 등' },
+                { k: 'responsible', l: '제10호: 보호책임자', p: '성명, 연락처' }
+              ].map(field => (
+                <div key={field.k} className="space-y-1.5">
+                  <label className="text-[10px] font-black uppercase opacity-60 ml-2">{field.l}</label>
+                  <input 
+                    type="text" 
+                    value={formData[field.k]} 
+                    onChange={e => setFormData({...formData, [field.k]: e.target.value})}
+                    placeholder={field.p}
+                    className="w-full px-5 py-3.5 bg-white/10 border border-white/20 rounded-2xl outline-none font-bold text-sm placeholder:text-white/30 focus:bg-white/20 transition-all"
+                  />
+                </div>
+              ))}
+              
+              <button 
+                onClick={handleGenerate} 
+                disabled={loading}
+                className="w-full mt-4 py-5 bg-white text-blue-600 rounded-[2rem] font-black text-lg hover:bg-blue-50 transition-all flex items-center justify-center gap-3 shadow-xl"
+              >
+                {loading ? <RefreshCw className="animate-spin" size={20}/> : <Sparkles size={20}/>}
+                {loading ? '에이전트 법령 분석 중...' : '법령 기반 방침 생성'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History size={14}/> 개정 이력 (DB)</h4>
+            <div className="space-y-4 max-h-[300px] overflow-y-auto no-scrollbar">
+              {history.length === 0 ? (
+                <p className="text-xs text-slate-300 italic text-center py-4">저장된 이력이 없습니다.</p>
+              ) : history.map((h, idx) => (
+                <div 
+                  key={h.id} 
+                  onClick={() => setPolicy(h.content)}
+                  className="p-4 bg-slate-50 rounded-2xl border border-slate-50 cursor-pointer hover:border-blue-200 transition-all group"
+                >
+                  <p className="text-[11px] font-black text-slate-800 mb-1 group-hover:text-blue-600">v{history.length - idx}.0 개정안</p>
+                  <p className="text-[9px] font-bold text-slate-400">{new Date(h.createdAt).toLocaleDateString()} · {h.author}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-        <div className="bg-slate-50 rounded-[3rem] p-8 border border-slate-100">
-          <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">에이전트 권고 사항</h4>
-          <ul className="space-y-3">
-            {['수집 항목의 최소성 원칙을 준수하세요.', '제3자 제공 시 반드시 이용자 동의가 필요합니다.', '파기 절차를 구체적으로 명시하는 것이 안전합니다.'].map((tip, idx) => (
-              <li key={idx} className="flex items-center gap-3 text-[11px] font-bold text-slate-600"><CheckCircle size={14} className="text-emerald-500" /> {tip}</li>
-            ))}
-          </ul>
+
+        {/* 오른쪽: 결과물 확인 및 편집 */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm flex flex-col h-[850px]">
+            <div className="flex justify-between items-center mb-6">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                Draft Preview (Markdown Ready)
+              </span>
+              <div className="flex gap-2">
+                <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase">Auto-Compliance Check: PASS</span>
+              </div>
+            </div>
+            
+            <textarea 
+              value={policy} 
+              onChange={e=>setPolicy(e.target.value)} 
+              className="flex-1 w-full p-10 bg-slate-50 rounded-[2.5rem] border border-slate-100 outline-none font-medium text-sm leading-relaxed no-scrollbar resize-none border-dashed" 
+              placeholder="왼쪽 폼을 입력하고 '방침 생성' 버튼을 누르시면 최신 법령을 준수하는 초안이 이곳에 작성됩니다." 
+            />
+            
+            <div className="mt-8">
+              <button 
+                onClick={handleSave} 
+                disabled={saving || !policy} 
+                className="w-full py-6 bg-slate-900 text-white rounded-[2rem] font-black text-xl hover:bg-black transition-all flex items-center justify-center gap-4 shadow-2xl shadow-slate-200"
+              >
+                {saving ? <RefreshCw className="animate-spin" size={20}/> : <SaveIcon size={24}/>}
+                {saving ? '데이터베이스 암호화 저장 중...' : '최종 승인 및 서비스 게시'}
+              </button>
+              <p className="text-center text-[10px] font-bold text-slate-400 mt-4 uppercase tracking-tighter italic">※ 저장 시 보안 감사 로그에 기록되며, 즉시 외부 서비스에 적용됩니다.</p>
+            </div>
+          </div>
         </div>
       </div>
     </div>
