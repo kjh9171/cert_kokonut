@@ -132,6 +132,7 @@ function RestrictedView({ title, message, onUpgrade }) {
 function PolicyAIView({ authFetch }) {
   const [policy, setPolicy] = useState("");
   const [loading, setLoading] = useState(false);
+  const [refining, setRefining] = useState({}); // 필드별 정제 상태 관리
   const [saving, setSaveLoading] = useState(false);
   const [history, setHistory] = useState([]);
   const [activeGroup, setActiveGroup] = useState('basic');
@@ -161,6 +162,22 @@ function PolicyAIView({ authFetch }) {
 
   useEffect(() => { loadHistory(); }, [loadHistory]);
 
+  // AI를 통한 개별 필드 문구 고도화 정제
+  const handleRefineField = async (key) => {
+    setRefining(prev => ({ ...prev, [key]: true }));
+    try {
+      const res = await authFetch('/api/admin/policies/refine', {
+        method: 'POST',
+        body: JSON.stringify({ fields: { [key]: formData[key] } })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setFormData(prev => ({ ...prev, [key]: data.refinedFields[key] }));
+      }
+    } catch (err) { alert('문구 정제 실패'); }
+    finally { setRefining(prev => ({ ...prev, [key]: false })); }
+  };
+
   const handleGenerate = async () => {
     setLoading(true);
     try {
@@ -182,7 +199,7 @@ function PolicyAIView({ authFetch }) {
     try {
       const res = await authFetch('/api/admin/policies', {
         method: 'POST',
-        body: JSON.stringify({ content: policy, reason: '표준 가이드라인 기반 AI 생성' })
+        body: JSON.stringify({ content: policy, reason: '표준 가이드라인 기반 AI 고도화 생성' })
       });
       if (res.ok) {
         alert('정책이 데이터베이스에 안전하게 게시되었습니다.');
@@ -245,25 +262,25 @@ function PolicyAIView({ authFetch }) {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-10">
-        {/* 왼쪽: 법령 기반 입력 폼 (UX 강화형) */}
+        {/* 왼쪽: 입력 폼 (UX 강화형 + AI 정제 기능) */}
         <div className="xl:col-span-5 space-y-6">
-          <div className="bg-white rounded-[3rem] p-1 border border-slate-100 shadow-2xl overflow-hidden flex flex-col min-h-[850px]">
+          <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-2xl overflow-hidden flex flex-col min-h-[850px]">
             <div className="bg-slate-900 p-10 text-white relative overflow-hidden shrink-0">
               <div className="absolute top-[-30px] right-[-30px] opacity-10 rotate-12"><Sparkles size={250} /></div>
               <div className="flex items-center gap-3 mb-8 relative z-10">
                 <div className="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-900/50"><Wand2 size={24}/></div>
-                <h3 className="text-2xl font-black italic uppercase tracking-tighter">Policy Builder AI</h3>
+                <h3 className="text-2xl font-black italic uppercase tracking-tighter">Policy AI Agent</h3>
               </div>
               
-              {/* 카테고리 스텝퍼 */}
-              <div className="flex justify-between relative z-10 bg-white/5 p-2 rounded-2xl backdrop-blur-sm border border-white/10">
+              {/* 그룹 탭 스텝퍼 */}
+              <div className="flex justify-between relative z-10 bg-white/5 p-2 rounded-[1.5rem] backdrop-blur-sm border border-white/10">
                 {groups.map(g => (
                   <button 
                     key={g.id} 
                     onClick={() => setActiveGroup(g.id)}
-                    className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-xl transition-all ${activeGroup === g.id ? 'bg-blue-600 text-white shadow-xl scale-105' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}`}
+                    className={`flex-1 flex flex-col items-center gap-2 py-4 rounded-2xl transition-all duration-300 ${activeGroup === g.id ? 'bg-blue-600 text-white shadow-2xl scale-105' : 'text-white/30 hover:text-white/60 hover:bg-white/5'}`}
                   >
-                    <g.icon size={18} />
+                    <g.icon size={20} />
                     <span className="text-[10px] font-black uppercase tracking-tighter">{g.label}</span>
                   </button>
                 ))}
@@ -272,55 +289,78 @@ function PolicyAIView({ authFetch }) {
 
             <div className="flex-1 p-10 space-y-8 bg-slate-50/50 overflow-y-auto no-scrollbar relative">
               <div className="animate-in slide-in-from-right-10 duration-500">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
-                  <h4 className="text-lg font-black text-slate-800 uppercase italic tracking-tight">{groups.find(g => g.id === activeGroup).label} 설정</h4>
+                <div className="flex items-center justify-between mb-8 px-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-1.5 h-6 bg-blue-600 rounded-full"></div>
+                    <h4 className="text-lg font-black text-slate-800 uppercase italic tracking-tight">{groups.find(g => g.id === activeGroup).label} 설정</h4>
+                  </div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase italic">Rough input allowed</span>
                 </div>
                 {groups.find(g => g.id === activeGroup).fields.map(field => (
                   <div key={field.k} className="mb-8 space-y-3">
                     <div className="flex justify-between items-center ml-2">
                       <label className="text-[11px] font-black uppercase text-slate-400 tracking-[0.2em]">{field.l}</label>
-                      <span className="text-[9px] font-black text-blue-500 bg-blue-50 px-2.5 py-1 rounded-md uppercase tracking-widest border border-blue-100">필수 항목</span>
+                      <button 
+                        onClick={() => handleRefineField(field.k)}
+                        disabled={refining[field.k] || !formData[field.k]}
+                        className="flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase border border-blue-100 hover:bg-blue-600 hover:text-white transition-all disabled:opacity-30 shadow-sm"
+                      >
+                        {refining[field.k] ? <RefreshCw size={10} className="animate-spin" /> : <Sparkles size={10} />}
+                        {refining[field.k] ? '정제 중...' : 'AI 문구 정제'}
+                      </button>
                     </div>
-                    <textarea 
-                      value={formData[field.k]} 
-                      onChange={e => setFormData({...formData, [field.k]: e.target.value})}
-                      placeholder={field.p}
-                      className="w-full px-8 py-6 bg-white border border-slate-200 rounded-[2.5rem] outline-none font-bold text-sm text-slate-700 placeholder:text-slate-300 focus:border-blue-500 focus:ring-[12px] focus:ring-blue-500/5 transition-all min-h-[140px] shadow-sm resize-none leading-relaxed"
-                    />
+                    <div className="relative">
+                      <textarea 
+                        value={formData[field.k]} 
+                        onChange={e => setFormData({...formData, [field.k]: e.target.value})}
+                        placeholder={field.p}
+                        className={`w-full px-8 py-6 bg-white border border-slate-200 rounded-[2.5rem] outline-none font-bold text-sm text-slate-700 placeholder:text-slate-300 focus:border-blue-500 focus:ring-[12px] focus:ring-blue-500/5 transition-all min-h-[140px] shadow-sm resize-none leading-relaxed ${refining[field.k] ? 'opacity-50 blur-[1px]' : ''}`}
+                      />
+                      {refining[field.k] && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-white/80 backdrop-blur-sm px-6 py-3 rounded-full shadow-2xl border border-blue-100 flex items-center gap-3">
+                            <RefreshCw size={16} className="text-blue-600 animate-spin" />
+                            <span className="text-[11px] font-black text-blue-600 uppercase italic">CERT AI Optimizing...</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
             
-            <div className="p-8 bg-white border-t border-slate-100">
+            <div className="p-10 bg-white border-t border-slate-50">
               <button 
                 onClick={handleGenerate} 
                 disabled={loading}
-                className="w-full py-6 bg-blue-600 text-white rounded-[2rem] font-black text-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-4 shadow-xl shadow-blue-100 active:scale-[0.98]"
+                className="w-full py-7 bg-blue-600 text-white rounded-[2.5rem] font-black text-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-5 shadow-2xl shadow-blue-100 active:scale-[0.98] group"
               >
-                {loading ? <RefreshCw className="animate-spin" size={24}/> : <Sparkles size={24}/>}
-                {loading ? 'AI 엔진 법령 분석 중...' : '개인정보처리방침 생성'}
+                {loading ? <RefreshCw className="animate-spin" size={28}/> : <Sparkles className="group-hover:rotate-12 transition-transform" size={28}/>}
+                {loading ? '데이터 분석 및 통합 중...' : '개인정보처리방침 생성'}
               </button>
             </div>
           </div>
 
-          <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History size={14}/> 최근 개정 이력</h4>
-            <div className="space-y-3 max-h-[200px] overflow-y-auto no-scrollbar">
+          <div className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-sm">
+            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2"><History size={14}/> 최근 개정 히스토리</h4>
+            <div className="space-y-3 max-h-[250px] overflow-y-auto no-scrollbar">
               {history.length === 0 ? (
-                <p className="text-xs text-slate-300 italic text-center py-4">저장된 데이터가 없습니다.</p>
+                <p className="text-xs text-slate-300 italic text-center py-6">저장된 데이터가 없습니다.</p>
               ) : history.map((h, idx) => (
                 <div 
                   key={h.id} 
                   onClick={() => setPolicy(h.content)}
-                  className="p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group flex justify-between items-center"
+                  className="p-5 bg-slate-50 rounded-[1.5rem] border border-slate-100 cursor-pointer hover:border-blue-400 hover:bg-blue-50/30 transition-all group flex justify-between items-center"
                 >
-                  <div>
-                    <p className="text-[11px] font-black text-slate-800 group-hover:text-blue-600">v{history.length - idx}.0 개정본</p>
-                    <p className="text-[9px] font-bold text-slate-400">{new Date(h.createdAt).toLocaleDateString()} · {h.author}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white p-2 rounded-xl text-slate-400 group-hover:text-blue-600 transition-colors"><FileText size={16}/></div>
+                    <div>
+                      <p className="text-[11px] font-black text-slate-800 group-hover:text-blue-600 transition-colors">Standard v{history.length - idx}.0</p>
+                      <p className="text-[9px] font-bold text-slate-400">{new Date(h.createdAt).toLocaleString()} · {h.author}</p>
+                    </div>
                   </div>
-                  <ChevronRight size={14} className="text-slate-300 group-hover:text-blue-500 transition-transform group-hover:translate-x-1" />
+                  <ChevronRight size={16} className="text-slate-300 group-hover:text-blue-500 transition-transform group-hover:translate-x-1" />
                 </div>
               ))}
             </div>
@@ -329,37 +369,40 @@ function PolicyAIView({ authFetch }) {
 
         {/* 오른쪽: 결과물 확인 및 편집 */}
         <div className="xl:col-span-7 space-y-6">
-          <div className="bg-white rounded-[3rem] p-1 border border-slate-100 shadow-sm flex flex-col h-[1150px]">
-            <header className="p-10 border-b border-slate-50 flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
-                <span className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Policy Content Preview</span>
+          <div className="bg-white rounded-[3.5rem] p-1 border border-slate-100 shadow-sm flex flex-col h-[1200px]">
+            <header className="p-12 border-b border-slate-50 flex justify-between items-center bg-slate-50/30">
+              <div className="flex items-center gap-5">
+                <div className="w-3.5 h-3.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.6)]"></div>
+                <div>
+                  <span className="text-[12px] font-black text-slate-900 uppercase tracking-[0.3em] block">Policy Draft Preview</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Generated by Secured AI Engine</span>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <span className="px-4 py-1.5 bg-slate-100 text-slate-500 rounded-full text-[9px] font-black uppercase tracking-wider">Compliance Mode: ON</span>
+              <div className="flex gap-3">
+                <span className="px-5 py-2 bg-blue-50 text-blue-600 rounded-full text-[10px] font-black uppercase tracking-wider border border-blue-100 shadow-sm">AI Legal Optimized</span>
               </div>
             </header>
             
             <textarea 
               value={policy} 
               onChange={e=>setPolicy(e.target.value)} 
-              className="flex-1 w-full p-12 bg-white outline-none font-medium text-[15px] leading-relaxed no-scrollbar resize-none text-slate-600 selection:bg-blue-100" 
-              placeholder="왼쪽 폼을 입력하고 생성 버튼을 누르면 인공지능이 표준 가이드라인에 맞춘 정책 초안을 이곳에 실시간으로 작성합니다." 
+              className="flex-1 w-full p-16 bg-white outline-none font-medium text-[16px] leading-[1.8] no-scrollbar resize-none text-slate-600 selection:bg-blue-100 placeholder:italic" 
+              placeholder="데이터를 입력하고 '개인정보처리방침 생성' 버튼을 클릭하세요." 
             />
             
-            <footer className="p-10 bg-slate-50 border-t border-slate-100 rounded-b-[3rem]">
+            <footer className="p-12 bg-slate-900 border-t border-slate-800 rounded-b-[3.5rem]">
               <button 
                 onClick={handleSave} 
                 disabled={saving || !policy} 
-                className="w-full py-7 bg-slate-900 text-white rounded-[2.5rem] font-black text-2xl hover:bg-black transition-all flex items-center justify-center gap-5 shadow-2xl shadow-slate-200 active:scale-[0.99]"
+                className="w-full py-8 bg-white text-slate-900 rounded-[2.5rem] font-black text-2xl hover:bg-slate-100 transition-all flex items-center justify-center gap-6 shadow-2xl active:scale-[0.99] group"
               >
-                {saving ? <RefreshCw className="animate-spin" size={28}/> : <ShieldCheck size={28}/>}
-                {saving ? '보안 서버 저장 중...' : '최종 검토 완료 및 게시'}
+                {saving ? <RefreshCw className="animate-spin" size={32}/> : <ShieldCheck className="text-blue-600 group-hover:scale-110 transition-transform" size={32}/>}
+                {saving ? '암호화 보안 저장 중...' : '최종 검토 완료 및 게시'}
               </button>
-              <div className="flex justify-center items-center gap-2 mt-6">
-                <Lock size={12} className="text-slate-300" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] italic">
-                  Secured by CERT Master Intelligence
+              <div className="flex justify-center items-center gap-3 mt-8">
+                <Lock size={14} className="text-slate-500" />
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.4em] italic">
+                  CERT INTELLIGENCE SECURITY PROTOCOL
                 </p>
               </div>
             </footer>

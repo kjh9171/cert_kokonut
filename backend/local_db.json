@@ -323,6 +323,16 @@
       "target": "POLICY_ENGINE",
       "reason": "법무부 표준 가이드라인 기반 정책 생성",
       "createdAt": "2026-03-06T02:01:39.336Z"
+    },
+    {
+      "id": "17727648329168g6yg",
+      "userId": "1772598746676",
+      "user": "gimjonghwan319@gmail.com",
+      "userName": "김종환",
+      "action": "POLICY_GENERATED_STANDARD",
+      "target": "POLICY_ENGINE",
+      "reason": "표준 가이드라인 기반 정책 생성",
+      "createdAt": "2026-03-06T02:40:32.916Z"
     }
   ]
 }
