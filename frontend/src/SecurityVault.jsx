@@ -47,59 +47,74 @@ export default function SecurityVault({ onProcessComplete }) {
     }
   };
 
-  // --- Web Crypto API 활용 암호화 엔진 ---
+  // --- Web Crypto API 활용 암호화 엔진 (분산형 키 조합 적용) ---
   const processEncrypt = async () => {
     if (!file || !password) return;
     setLoading(true);
     try {
+      // 1. 서버로부터 동적 Salt 발급을 요청합니다. (브라우저나 스토리지에 저장하지 않음)
+      const saltRes = await fetch('/api/crypto/salt', {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('pms_token')}` }
+      });
+      if (!saltRes.ok) throw new Error("서버 Salt 발급 실패");
+      const { salt: serverSaltArray } = await saltRes.json();
+      const salt = new Uint8Array(serverSaltArray);
+
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const data = new Uint8Array(e.target.result);
           const enc = new TextEncoder();
-          const salt = window.crypto.getRandomValues(new Uint8Array(16));
+          
+          // 2. 서버 Salt와 사용자 Password를 조합하여 암호키(PBKDF2)를 생성합니다.
           const baseKey = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
           const key = await window.crypto.subtle.deriveKey(
             { name: "PBKDF2", salt, iterations: CRYPTO_CONFIG.iterations, hash: "SHA-256" },
             baseKey, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
           );
 
+          // 3. 임의의 IV 생성
           const iv = window.crypto.getRandomValues(new Uint8Array(12));
+          // 4. 데이터 암호화
           const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
 
+          // 5. 서버에서 받은 Salt, 로컬생성 IV, 암호문 형태(Salt + IV + CipherText)로 최종 패키징합니다.
           const blob = new Blob([salt, iv, encrypted], { type: "application/octet-stream" });
           const url = URL.createObjectURL(blob);
           
+          // 확인용 엑셀 파싱
           const workbook = XLSX.read(data, { type: 'array' });
           const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
 
           setResult({ url, name: `ENC_${file.name}.pms`, count: rows.length });
-          await logSecurityAction("LOCAL_ENCRYPT", file.name, `파일 암호화 완료 (레코드: ${rows.length}건)`);
+          await logSecurityAction("LOCAL_ENCRYPT", file.name, `파일 암호화 로컬 완료 (레코드: ${rows.length}건)`);
 
           onProcessComplete?.({
             type: 'ENCRYPT',
             fileName: file.name,
             records: rows.map(r => ({
-              name: r['성명'] || r['이름'] || '미식별',
-              phone: r['연락처'] || r['전화번호'] || '',
-              email: r['이메일'] || '',
+              name: String(r['성명'] || r['이름'] || '미식별'),
+              phone: String(r['연락처'] || r['전화번호'] || ''),
+              email: String(r['이메일'] || ''),
               status: 'ENCRYPTED'
             }))
           });
         } catch (err) {
-          alert("처리 중 오류: " + err.message);
+          alert("암호화 처리 중 오류: " + err.message);
         } finally {
           setLoading(false);
+          // 민감 변수 초기화 (Closure 메모리 삭제)
+          setPassword('');
         }
       };
       reader.readAsArrayBuffer(file);
     } catch (err) {
-      alert("암호화 준비 중 오류: " + err.message);
+      alert("분산 암호화 준비 중 오류: " + err.message);
       setLoading(false);
     }
   };
 
-  // --- 복호화 엔진 ---
+  // --- 복호화 엔진 (분산형) ---
   const processDecrypt = async () => {
     if (!file || !password || !decryptReason) {
       alert("복호화 사유를 입력해야 합니다.");
@@ -111,6 +126,7 @@ export default function SecurityVault({ onProcessComplete }) {
       reader.onload = async (e) => {
         try {
           const buffer = e.target.result;
+          // 이전에 저장된 형태: [Salt(16) | IV(12) | CipherText]
           const salt = buffer.slice(0, 16);
           const iv = buffer.slice(16, 28);
           const data = buffer.slice(28);
@@ -127,11 +143,14 @@ export default function SecurityVault({ onProcessComplete }) {
           const url = URL.createObjectURL(blob);
           
           setResult({ url, name: file.name.replace('.pms', '').replace('ENC_', 'DEC_'), success: true });
-          await logSecurityAction("LOCAL_DECRYPT", file.name, `복호화 수행 (사유: ${decryptReason})`);
+          // 복호화 레코딩을 API로 전송. 이후 시스템 파이프라인에서 하드 딜리트로 연계 가능
+          await logSecurityAction("LOCAL_DECRYPT", file.name, `복호화 수행 및 사유 승인: ${decryptReason}`);
         } catch (err) {
-          alert("비밀번호가 틀렸거나 파일이 손상되었습니다.");
+          alert("비밀번호가 틀렸거나 파일이 손상되었습니다. (알맞은 키오스크가 아닐 수 있습니다.)");
         } finally {
           setLoading(false);
+          setPassword('');
+          setDecryptReason('');
         }
       };
       reader.readAsArrayBuffer(file);

@@ -419,12 +419,14 @@ function PolicyAIView({ authFetch }) {
               </div>
             </header>
             
-            <textarea 
-              value={policy} 
-              onChange={e=>setPolicy(e.target.value)} 
-              className="flex-1 w-full p-16 bg-white outline-none font-medium text-[16px] leading-[1.8] no-scrollbar resize-none text-slate-600 selection:bg-blue-100 placeholder:italic" 
-              placeholder="데이터를 입력하고 '개인정보처리방침 생성' 버튼을 클릭하세요." 
-            />
+            <div className="flex-1 w-full bg-white relative overflow-y-auto overflow-x-hidden no-scrollbar">
+              <textarea 
+                value={policy} 
+                onChange={e=>setPolicy(e.target.value)} 
+                className="w-full min-h-full p-16 outline-none font-medium text-[16px] leading-[1.8] resize-none text-slate-700 selection:bg-blue-200 placeholder:italic transition-all rounded-[1rem]" 
+                placeholder="지능형 데이터베이스에서 검색·학습된 컨텍스트를 주입합니다. 정보를 입력하고 '개인정보처리방침 생성' 버튼을 클릭하세요." 
+              />
+            </div>
             
             <footer className="p-12 bg-slate-900 border-t border-slate-800 rounded-b-[3.5rem]">
               <button 
@@ -588,22 +590,39 @@ function CompanyAdminView({
                 <div key={idx} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all"><div className="bg-slate-50 p-2.5 rounded-xl text-slate-400 w-fit mb-6"><s.i size={20} /></div><p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{s.l}</p><p className={`text-3xl font-black italic ${s.c}`}>{s.v}</p></div>
               ))}
             </div>
-            {!isSandbox && (
-              <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm">
-                <div className="flex justify-between items-center mb-8"><h3 className="text-xl font-black text-slate-800 italic uppercase flex items-center gap-3"><History size={20} className="text-blue-600" /> 전방위 보안 감사 로그</h3><span className="text-[9px] font-black bg-slate-900 text-white px-3 py-1 rounded-full uppercase italic tracking-widest">Real-time Monitoring</span></div>
-                <div className="overflow-x-auto text-xs"><table className="w-full text-left border-collapse font-bold"><thead><tr className="border-b-2 border-slate-50 text-slate-400 font-black uppercase"><th className="py-4 px-4">일시</th><th className="py-4 px-4">행위자</th><th className="py-4 px-4">작업 코드</th><th className="py-4 px-4">대상 리소스</th><th className="py-4 px-4">수행 상세</th></tr></thead><tbody className="divide-y divide-slate-50 text-slate-700">
+              <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-sm mt-8">
+                <div className="flex justify-between items-center mb-8"><h3 className="text-xl font-black text-slate-800 italic uppercase flex items-center gap-3"><Activity size={20} className="text-blue-600" /> 실시간 보안 모니터링 현황</h3><span className="text-[9px] font-black bg-blue-50 text-blue-600 px-3 py-1 rounded-full uppercase italic tracking-widest">Live Updates</span></div>
+                <div className="h-48 w-full mb-8">
+                   {/* Recharts AreaChart for visual appeal */}
+                   <ResponsiveContainer width="100%" height="100%">
+                     <AreaChart data={auditLogs.slice(0, 15).reverse().map((l, i) => ({ name: i, value: l.action.includes('ENCRYPT') ? 3 : l.action.includes('DECRYPT') ? 1 : 2 }))}>
+                       <defs>
+                         <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                           <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                           <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                         </linearGradient>
+                       </defs>
+                       <XAxis dataKey="name" hide />
+                       <YAxis hide domain={[0, 4]} />
+                       <Tooltip cursor={{stroke: '#e2e8f0', strokeWidth: 2}} contentStyle={{borderRadius: '12px', borderColor: '#e2e8f0', fontSize: '10px', fontWeight: 800}} />
+                       <Area type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                     </AreaChart>
+                   </ResponsiveContainer>
+                </div>
+                
+                <div className="flex justify-between items-center mb-6"><h3 className="text-xl font-black text-slate-800 italic uppercase flex items-center gap-3"><History size={20} className="text-blue-600" /> 전방위 보안 감사 로그</h3><span className="text-[9px] font-black bg-slate-900 text-white px-3 py-1 rounded-full uppercase italic tracking-widest animate-pulse">Monitoring Active</span></div>
+                <div className="overflow-x-auto text-xs"><table className="w-full text-left border-collapse font-bold"><thead><tr className="border-b-2 border-slate-50 text-slate-400 font-black uppercase"><th className="py-4 px-4">일시</th><th className="py-4 px-4">행위자</th><th className="py-4 px-4">작업 코드</th><th className="py-4 px-4">대상 (마스킹 적용)</th><th className="py-4 px-4">수행 상세</th></tr></thead><tbody className="divide-y divide-slate-50 text-slate-700">
                   {auditLogs.length === 0 ? <tr><td colSpan={5} className="py-10 text-center text-slate-400 italic font-medium">기록된 보안 활동이 없습니다.</td></tr> : auditLogs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-4 px-4 text-slate-400 tabular-nums">{new Date(log.createdAt).toLocaleString('ko-KR')}</td>
                       <td className="py-4 px-4">{log.userName}</td>
-                      <td className="py-4 px-4"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase ${log.action.includes('FAILED') || log.action.includes('DENIED') ? 'bg-rose-50 text-rose-600' : 'bg-blue-50 text-blue-600'}`}>{log.action}</span></td>
+                      <td className="py-4 px-4"><span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase shadow-sm ${log.action.includes('DELETE') || log.action.includes('FAILED') ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>{log.action}</span></td>
                       <td className="py-4 px-4 italic font-medium text-slate-400">{log.target}</td>
                       <td className="py-4 px-4 font-medium truncate max-w-xs">{log.reason}</td>
                     </tr>
                   ))}
                 </tbody></table></div>
               </div>
-            )}
           </div>
         );
       case 'user_manage':
@@ -765,8 +784,9 @@ function CompanyAdminView({
                 {memberLoading ? <tr><td colSpan={5} className="py-10 text-center">로드 중...</td></tr> : memberRecords.length === 0 ? <tr><td colSpan={5} className="py-10 text-center italic text-slate-400">데이터가 없습니다.</td></tr> : memberRecords.map((row) => {
                   const isRevealed = revealedIds.includes(row.id);
                   const isEncrypted = row.status === 'ENCRYPTED';
+                  const isDeleting = row.isDeleting;
                   return (
-                    <tr key={row.id} className="hover:bg-slate-50 transition-colors">
+                    <tr key={row.id} className={`hover:bg-slate-50 transition-colors ${isDeleting ? 'animate-burn-out' : ''}`}>
                       <td className="py-5 px-6 italic font-black text-slate-900">{row.name}</td>
                       <td className={`py-5 px-6 tabular-nums transition-all duration-300 ${isRevealed ? 'text-blue-600 font-black italic scale-105 origin-left' : 'text-slate-500 font-medium'}`}>
                         {isRevealed || !isEncrypted ? row.phone : (row.phone ? `${row.phone.slice(0, 3)}-****-${row.phone.slice(-4)}` : '***-****-****')}
@@ -777,10 +797,10 @@ function CompanyAdminView({
                       <td className="py-5 px-6"><span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${isEncrypted ? 'bg-blue-50 text-blue-600' : 'bg-rose-50 text-rose-600'}`}>{isEncrypted ? '보안 암호화' : '평문 노출'}</span></td>
                       <td className="py-5 px-6 text-right">
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => toggleRecordView(row)} title={isRevealed ? "마스킹 처리" : "상세 정보 해독"} className={`p-2 rounded-xl transition-all ${isRevealed ? 'bg-blue-50 text-blue-600 ring-2 ring-blue-200' : 'text-slate-300 hover:bg-slate-50 hover:text-blue-600'}`}>
+                          <button disabled={isDeleting} onClick={() => toggleRecordView(row)} title={isRevealed ? "마스킹 처리" : "상세 정보 해독"} className={`p-2 rounded-xl transition-all ${isRevealed ? 'bg-blue-50 text-blue-600 ring-2 ring-blue-200' : 'text-slate-300 hover:bg-slate-50 hover:text-blue-600'}`}>
                             {isRevealed ? <EyeOff size={18} /> : <Eye size={18} />}
                           </button>
-                          <button onClick={() => handleDeleteRecord(row.id)} title="데이터 파기" className="p-2 rounded-xl text-slate-300 hover:bg-rose-50 hover:text-rose-600 transition-all">
+                          <button disabled={isDeleting} onClick={() => handleDeleteRecord(row.id)} title="데이터 영구 소각" className="p-2 rounded-xl text-slate-300 hover:bg-rose-50 hover:text-rose-600 transition-all">
                             <Trash2 size={18} />
                           </button>
                         </div>
@@ -987,7 +1007,25 @@ export default function App() {
           )}
 
           {(currentScreen === 'company_admin' || currentScreen === 'sandbox') && (
-            <CompanyAdminView activeTab={activeTab} setActiveTab={setActiveTab} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} onLogout={()=>{localStorage.removeItem('pms_token'); setAuthToken(''); setCurrentUser(null); setCurrentScreen('login');}} onRefresh={handleRefreshSession} onNavigate={setCurrentScreen} dashStats={dashStats} memberRecords={memberRecords} memberLoading={memberLoading} handleDeleteRecord={(id)=>{if(confirm('파기하시겠습니까?')) authFetch(`/api/admin/records/${id}`, {method:'DELETE'}).then(()=>loadData());}} onVaultComplete={async (data)=>{if(currentScreen === 'sandbox') return; try{const r = await authFetch('/api/admin/records/batch', {method:'POST', body:JSON.stringify({records: data.records})}); if(r.ok) loadData();}catch{}}} isSandbox={currentScreen === 'sandbox'} user={currentUser} timerKey={timerKey} />
+            <CompanyAdminView activeTab={activeTab} setActiveTab={setActiveTab} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} 
+              onLogout={()=>{localStorage.removeItem('pms_token'); setAuthToken(''); setCurrentUser(null); setCurrentScreen('login');}} 
+              onRefresh={handleRefreshSession} onNavigate={setCurrentScreen} dashStats={dashStats} memberRecords={memberRecords} memberLoading={memberLoading} 
+              handleDeleteRecord={(id) => {
+                if(confirm('데이터를 영구 소각(Hard Delete)하시겠습니까? 복구할 수 없습니다.')) {
+                  setMemberRecords(prev => prev.map(r => r.id === id ? { ...r, isDeleting: true } : r));
+                  // Trigger animation
+                  setTimeout(() => {
+                    authFetch(`/api/admin/records/${id}`, {method:'DELETE'}).then(()=>loadData());
+                  }, 800);
+                }
+              }} 
+              onVaultComplete={async (data) => {
+                if(currentScreen === 'sandbox') return; 
+                try {
+                  const r = await authFetch('/api/admin/records/batch', {method:'POST', body:JSON.stringify({records: data.records})}); 
+                  if(r.ok) loadData();
+                } catch { }
+              }} isSandbox={currentScreen === 'sandbox'} user={currentUser} timerKey={timerKey} />
           )}
         </div>
         <style>{`
