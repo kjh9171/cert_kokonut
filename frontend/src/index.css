@@ -9,8 +9,46 @@
 }
 
 .dark {
-  --bg-primary: #020617; /* Slate 950 */
+  --bg-primary: #020617; /* 깊고 세련된 Slate 950 */
   --text-primary: #f8fafc;
+}
+
+.dark body {
+  background-color: #020617;
+  color: #f1f5f9;
+}
+
+.dark .bg-white {
+  background-color: #0f172a; /* Slate 900 */
+  border-color: #1e293b;
+}
+
+.dark .text-slate-900 {
+  color: #f8fafc;
+}
+
+.dark .text-slate-800 {
+  color: #f1f5f9;
+}
+
+.dark .text-slate-700 {
+  color: #e2e8f0;
+}
+
+.dark .bg-slate-50 {
+  background-color: #1e293b;
+}
+
+.dark .border-slate-100 {
+  border-color: #334155;
+}
+
+.dark .shadow-sm {
+  shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.dark .backdrop-blur-md {
+    background-color: rgba(15, 23, 42, 0.8) !important;
 }
 
 body {

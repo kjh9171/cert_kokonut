@@ -103,8 +103,10 @@ export default function SecurityVault({ onProcessComplete }) {
           alert("암호화 처리 중 오류: " + err.message);
         } finally {
           setLoading(false);
-          // 민감 변수 초기화 (Closure 메모리 삭제)
+          // 민감 변수 초기화 (Closure 메모리 삭제 및 명시적 null 대입)
           setPassword('');
+          // @ts-ignore
+          salt = null; iv = null; key = null; baseKey = null; data = null;
         }
       };
       reader.readAsArrayBuffer(file);
@@ -122,6 +124,7 @@ export default function SecurityVault({ onProcessComplete }) {
     }
     setLoading(true);
     try {
+      let salt, iv, key, baseKey, buffer;
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
@@ -151,6 +154,8 @@ export default function SecurityVault({ onProcessComplete }) {
           setLoading(false);
           setPassword('');
           setDecryptReason('');
+          // @ts-ignore
+          salt = null; iv = null; key = null; baseKey = null; buffer = null;
         }
       };
       reader.readAsArrayBuffer(file);
@@ -207,13 +212,13 @@ export default function SecurityVault({ onProcessComplete }) {
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-[2.5rem] p-10 border border-slate-100 shadow-sm space-y-8 animate-in zoom-in-95">
+            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-10 border border-slate-100 dark:border-slate-800 shadow-sm space-y-8 animate-in zoom-in-95">
               <div className="space-y-4">
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">보안 대상 파일 ({activeMode === 'encrypt' ? '.xlsx, .csv' : '.pms'})</label>
                 <div className="relative group">
                   <input type="file" onChange={handleFileChange} accept={activeMode === 'encrypt' ? ".xlsx, .csv" : ".pms"} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
-                  <div className={`w-full py-12 border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center gap-4 transition-all ${file ? 'border-blue-500 bg-blue-50/30' : 'border-slate-100 bg-slate-50/50 group-hover:border-blue-200'}`}>
-                    <div className={`p-4 rounded-2xl shadow-sm transition-colors ${file ? 'bg-blue-600 text-white' : 'bg-white text-slate-300'}`}><FileUp size={32} /></div>
+                  <div className={`w-full py-12 border-2 border-dashed rounded-[2rem] flex flex-col items-center justify-center gap-4 transition-all ${file ? 'border-blue-500 bg-blue-50/30' : 'border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900 group-hover:border-blue-200'}`}>
+                    <div className={`p-4 rounded-2xl shadow-sm transition-colors ${file ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-800 text-slate-300'}`}><FileUp size={32} /></div>
                     <p className={`text-sm font-black ${file ? 'text-blue-600' : 'text-slate-400'}`}>{file ? file.name : '파일을 선택하거나 드래그하세요'}</p>
                   </div>
                 </div>
@@ -222,19 +227,19 @@ export default function SecurityVault({ onProcessComplete }) {
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">금고 비밀번호</label>
                 <div className="relative">
                   <Key className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-300" size={20} />
-                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8자 이상의 암호" className="w-full pl-16 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-blue-500 shadow-inner" />
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8자 이상의 암호" className="w-full pl-16 pr-6 py-5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl outline-none font-bold text-sm focus:border-blue-500 shadow-inner dark:text-white" />
                 </div>
               </div>
               {activeMode === 'decrypt' && (
                 <div className="space-y-4 animate-in slide-in-from-top-2">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">복호화 사유 (필수)</label>
-                  <textarea value={decryptReason} onChange={e => setDecryptReason(e.target.value)} placeholder="수행 사유를 입력하세요" className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl outline-none font-bold text-sm focus:border-blue-500 min-h-[100px] resize-none shadow-inner" />
+                  <textarea value={decryptReason} onChange={e => setDecryptReason(e.target.value)} placeholder="수행 사유를 입력하세요" className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl outline-none font-bold text-sm focus:border-blue-500 min-h-[100px] resize-none shadow-inner dark:text-white" />
                 </div>
               )}
               <button 
                 onClick={activeMode === 'encrypt' ? processEncrypt : processDecrypt}
                 disabled={loading || !file || !password || (activeMode === 'decrypt' && !decryptReason)}
-                className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-3 transition-all shadow-xl uppercase italic ${loading ? 'bg-slate-100 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
+                className={`w-full py-6 rounded-[2rem] font-black text-xl flex items-center justify-center gap-3 transition-all shadow-xl uppercase italic ${loading ? 'bg-slate-100 dark:bg-slate-800 text-slate-400' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200'}`}
               >
                 {loading ? <RefreshCw className="animate-spin" size={24} /> : (activeMode === 'encrypt' ? <Lock size={24} /> : <Unlock size={24} />)}
                 {loading ? 'Processing...' : (activeMode === 'encrypt' ? 'Secure Encryption' : 'Secure Decryption')}

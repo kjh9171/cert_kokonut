@@ -3,7 +3,7 @@
     {
       "id": "1772598746676",
       "email": "gimjonghwan319@gmail.com",
-      "password": "$2b$10$Q88e2GsSXhaFjmTCegTLduiAazUWSCqlA1GJRQqdY6BcALuNIxd1m",
+      "password": "$2a$10$XWRKOiImU729W72GpQzxfOayv05Grk0yueMU6tlkr39WkQFxKwKU6",
       "name": "김종환",
       "role": "admin",
       "otpSecret": "243fa058f153a159baa516ca0493d3fb:7416c1f86821a2d5d2f0f2509cbfdcf9d1102744401b301acce84d748d7dded825d0406f004cdf4366cfa2df9873dbf7",
