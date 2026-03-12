@@ -12,7 +12,7 @@ const CRYPTO_CONFIG = {
     { id: 'AES-GCM', name: 'AES-256-GCM (권장)', keyLen: 256 },
     { id: 'AES-CBC', name: 'AES-128-CBC (호환)', keyLen: 128 },
   ],
-  iterations: 100000, // PBKDF2 반복 횟수
+  getIterations: (level) => level === 'high' ? 200000 : 50000, 
 };
 
 export default function SecurityVault({ onProcessComplete }) {
@@ -22,6 +22,8 @@ export default function SecurityVault({ onProcessComplete }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [decryptReason, setDecryptReason] = useState('');
+  const [selectedAlgo, setSelectedAlgo] = useState(CRYPTO_CONFIG.algorithms[0].id);
+  const [securityLevel, setSecurityLevel] = useState('high'); // std | high
 
   // 통합 로깅 함수
   const logSecurityAction = async (action, target, reason) => {
@@ -68,9 +70,10 @@ export default function SecurityVault({ onProcessComplete }) {
           const enc = new TextEncoder();
           
           // 2. PBKDF2 마운트 및 키 추출
+          const iterations = CRYPTO_CONFIG.getIterations(securityLevel);
           baseKey = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
           key = await window.crypto.subtle.deriveKey(
-            { name: "PBKDF2", salt, iterations: CRYPTO_CONFIG.iterations, hash: "SHA-256" },
+            { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
             baseKey, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
           );
 
@@ -137,8 +140,11 @@ export default function SecurityVault({ onProcessComplete }) {
 
           const enc = new TextEncoder();
           baseKey = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+          
+          // 복호화 시에도 현재 설정된 강도를 우선 시도 (향후 헤더에 저장 가능)
+          const iterations = CRYPTO_CONFIG.getIterations(securityLevel);
           key = await window.crypto.subtle.deriveKey(
-            { name: "PBKDF2", salt, iterations: CRYPTO_CONFIG.iterations, hash: "SHA-256" },
+            { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
             baseKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
           );
 
@@ -231,6 +237,25 @@ export default function SecurityVault({ onProcessComplete }) {
                   <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="8자 이상의 암호" className="w-full pl-16 pr-6 py-5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl outline-none font-bold text-sm focus:border-blue-500 shadow-inner dark:text-white" />
                 </div>
               </div>
+
+              {activeMode === 'encrypt' && (
+                <div className="grid grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-2">
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">알고리즘 선택</label>
+                    <select value={selectedAlgo} onChange={e => setSelectedAlgo(e.target.value)} className="w-full px-4 py-4 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl outline-none font-bold text-xs dark:text-white">
+                      {CRYPTO_CONFIG.algorithms.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">보안 강도</label>
+                    <div className="flex gap-2 p-1.5 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700">
+                      <button type="button" onClick={() => setSecurityLevel('std')} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${securityLevel === 'std' ? 'bg-white dark:bg-slate-700 text-blue-600 shadow-sm' : 'text-slate-400'}`}>표준</button>
+                      <button type="button" onClick={() => setSecurityLevel('high')} className={`flex-1 py-2 rounded-xl text-[10px] font-black transition-all ${securityLevel === 'high' ? 'bg-blue-600 text-white shadow-lg shadow-blue-200' : 'text-slate-400'}`}>군사급</button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeMode === 'decrypt' && (
                 <div className="space-y-4 animate-in slide-in-from-top-2">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">복호화 사유 (필수)</label>

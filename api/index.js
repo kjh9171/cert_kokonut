@@ -102,6 +102,15 @@ const logAction = async (uid, email, name, action, target, reason) => {
   try { await SecurityLog.create({ userId: uid, user: email, userName: name, action, target, reason }); } catch (e) { }
 };
 
+// ────── [분산형 암호화 API] ──────
+app.get("/api/crypto/salt", verifyToken, async (req, res) => {
+  try {
+    const crypto = await import('node:crypto');
+    const salt = crypto.randomBytes(16);
+    res.json({ salt: Array.from(salt) });
+  } catch (err) { res.status(500).json({ error: "Salt 생성 실패" }); }
+});
+
 // ────── [API 엔드포인트] ──────
 
 app.get("/api/health", (req, res) => res.json({ status: "ok", time: new Date() }));
