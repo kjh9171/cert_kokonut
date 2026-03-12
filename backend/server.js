@@ -244,24 +244,83 @@ app.post("/api/admin/records/batch", verifyToken, checkAccess("security_vault"),
   }
 });
 
-app.get("/api/admin/records", verifyToken, checkAccess("member_db"), async (req, res) => {
+// ────── [관리자 전용 이용자 관리 API] ──────
+
+// 이용자 목록 조회
+app.get("/api/admin/admins", verifyToken, checkAccess("user_manage"), async (req, res) => {
   try {
-    const records = await PrivacyRecord.find().sort({ createdAt: -1 });
-    res.json(records);
-  } catch (error) {
-    res.status(500).json({ error: "데이터 조회 실패" });
-  }
+    const admins = await Admin.find().select("-password").sort({ createdAt: -1 });
+    res.json(admins);
+  } catch (err) { res.status(500).json({ error: "이용자 조회 실패" }); }
+});
+
+// 신규 이용자 추가
+app.post("/api/admin/admins", verifyToken, checkAccess("user_manage"), async (req, res) => {
+  try {
+    const { email, password, name, role, permissions, licenseExpiry } = req.body;
+    if (await Admin.findOne({ email })) return res.status(400).json({ error: "이미 존재하는 이메일입니다." });
+    
+    const hashedPass = await bcrypt.hash(password, 10);
+    const newAdmin = await Admin.create({
+      email,
+      password: hashedPass,
+      name,
+      role: role || "user",
+      permissions: permissions || ["dashboard"],
+      licenseExpiry: licenseExpiry || new Date(Date.now() + 30*24*60*60*1000)
+    });
+    
+    await logAction(req.user.uid, req.user.email, req.user.name, "USER_CREATED", `USER:${newAdmin._id}`, `이용자 ${email} 계정 생성 완료`);
+    res.json({ success: true, id: newAdmin._id });
+  } catch (err) { res.status(500).json({ error: "이용자 생성 실패" }); }
+});
+
+// 이용자 정보 수정
+app.put("/api/admin/admins/:id", verifyToken, checkAccess("user_manage"), async (req, res) => {
+  try {
+    const { password, ...updateData } = req.body;
+    if (password) {
+      updateData.password = await bcrypt.hash(password, 10);
+    }
+    
+    const updated = await Admin.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (!updated) return res.status(404).json({ error: "해당 이용자를 찾을 수 없습니다." });
+    
+    await logAction(req.user.uid, req.user.email, req.user.name, "USER_UPDATED", `USER:${req.params.id}`, `이용자 ${updated.email} 정보 수정 완료`);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "정보 수정 실패" }); }
+});
+
+// 이용자 삭제
+app.delete("/api/admin/admins/:id", verifyToken, checkAccess("user_manage"), async (req, res) => {
+  try {
+    const target = await Admin.findById(req.params.id);
+    if (!target) return res.status(404).json({ error: "해당 이용자를 찾을 수 없습니다." });
+    
+    await Admin.findByIdAndDelete(req.params.id);
+    await logAction(req.user.uid, req.user.email, req.user.name, "USER_DELETED", `USER:${req.params.id}`, `이용자 ${target.email} 계정 삭제 완료`);
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "계정 삭제 실패" }); }
+});
+
+app.get("/api/admin/records", verifyToken, checkAccess("member_db"), async (req, res) => {
+   try {
+     const records = await PrivacyRecord.find().sort({ createdAt: -1 });
+     res.json(records);
+   } catch (error) {
+     res.status(500).json({ error: "데이터 조회 실패" });
+   }
 });
 
 app.delete("/api/admin/records/:id", verifyToken, checkAccess("member_db"), async (req, res) => {
-   try {
-     // Hard Delete 정책 적용: 실제 DB에서 즉시 완전 삭제
-     await PrivacyRecord.findByIdAndDelete(req.params.id);
-     await logAction(req.user.uid, req.user.email, req.user.name, "HARD_DELETE_SUCCESS", `RECORD:${req.params.id}`, "요청에 의한 데이터 영구 소각 완료");
-     res.json({ success: true, message: "데이터가 물리적으로 소각되었습니다." });
-   } catch(err) {
-      res.status(500).json({ error: "소각 작업 중 엔진 오류 발생" });
-   }
+    try {
+      // Hard Delete 정책 적용: 실제 DB에서 즉시 완전 삭제
+      await PrivacyRecord.findByIdAndDelete(req.params.id);
+      await logAction(req.user.uid, req.user.email, req.user.name, "HARD_DELETE_SUCCESS", `RECORD:${req.params.id}`, "요청에 의한 데이터 영구 소각 완료");
+      res.json({ success: true, message: "데이터가 물리적으로 소각되었습니다." });
+    } catch(err) {
+       res.status(500).json({ error: "소각 작업 중 엔진 오류 발생" });
+    }
 });
 
 

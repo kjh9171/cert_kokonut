@@ -158,11 +158,32 @@ app.delete("/api/admin/admins/:id", verifyToken, checkAccess("user_manage"), asy
   res.json({ success: true });
 });
 
+app.post("/api/admin/admins", verifyToken, checkAccess("user_manage"), async (req, res) => {
+  try {
+    const { email, password, name, role, permissions, licenseExpiry } = req.body;
+    if (await Admin.findOne({ email })) return res.status(400).json({ error: "이미 존재하는 계정" });
+    const hashedPass = await bcrypt.hash(password, 10);
+    const user = await Admin.create({ 
+      email, 
+      password: hashedPass, 
+      name, 
+      role: role || "user", 
+      permissions: permissions || ["dashboard"],
+      licenseExpiry: licenseExpiry || new Date(Date.now() + 30*24*60*60*1000)
+    });
+    await logAction(req.user.uid, req.user.email, req.user.name, "USER_CREATED", `USER:${user._id}`, `이용자 ${email} 생성`);
+    res.json({ success: true, id: user._id });
+  } catch (err) { res.status(500).json({ error: "이용자 생성 실패" }); }
+});
+
 app.put("/api/admin/admins/:id", verifyToken, checkAccess("user_manage"), async (req, res) => {
-  const { password, ...updateData } = req.body;
-  if (password) updateData.password = await bcrypt.hash(password, 10);
-  await Admin.findByIdAndUpdate(req.params.id, updateData);
-  res.json({ success: true });
+  try {
+    const { password, ...updateData } = req.body;
+    if (password) updateData.password = await bcrypt.hash(password, 10);
+    await Admin.findByIdAndUpdate(req.params.id, updateData);
+    await logAction(req.user.uid, req.user.email, req.user.name, "USER_UPDATED", `USER:${req.params.id}`, "이용자 정보 수정");
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: "정보 수정 실패" }); }
 });
 
 app.get("/api/admin/db/stats", verifyToken, async (req, res) => {

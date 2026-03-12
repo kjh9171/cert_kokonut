@@ -58,23 +58,24 @@ export default function SecurityVault({ onProcessComplete }) {
       });
       if (!saltRes.ok) throw new Error("서버 Salt 발급 실패");
       const { salt: serverSaltArray } = await saltRes.json();
-      const salt = new Uint8Array(serverSaltArray);
+      let salt = new Uint8Array(serverSaltArray);
+      let data, baseKey, key, iv;
 
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const data = new Uint8Array(e.target.result);
+          data = new Uint8Array(e.target.result);
           const enc = new TextEncoder();
           
-          // 2. 서버 Salt와 사용자 Password를 조합하여 암호키(PBKDF2)를 생성합니다.
-          const baseKey = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-          const key = await window.crypto.subtle.deriveKey(
+          // 2. PBKDF2 마운트 및 키 추출
+          baseKey = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+          key = await window.crypto.subtle.deriveKey(
             { name: "PBKDF2", salt, iterations: CRYPTO_CONFIG.iterations, hash: "SHA-256" },
             baseKey, { name: "AES-GCM", length: 256 }, false, ["encrypt"]
           );
 
           // 3. 임의의 IV 생성
-          const iv = window.crypto.getRandomValues(new Uint8Array(12));
+          iv = window.crypto.getRandomValues(new Uint8Array(12));
           // 4. 데이터 암호화
           const encrypted = await window.crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, data);
 
@@ -128,20 +129,20 @@ export default function SecurityVault({ onProcessComplete }) {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const buffer = e.target.result;
+          buffer = e.target.result;
           // 이전에 저장된 형태: [Salt(16) | IV(12) | CipherText]
-          const salt = buffer.slice(0, 16);
-          const iv = buffer.slice(16, 28);
-          const data = buffer.slice(28);
+          salt = buffer.slice(0, 16);
+          iv = buffer.slice(16, 28);
+          let ciphertext = buffer.slice(28);
 
           const enc = new TextEncoder();
-          const baseKey = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
-          const key = await window.crypto.subtle.deriveKey(
+          baseKey = await window.crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+          key = await window.crypto.subtle.deriveKey(
             { name: "PBKDF2", salt, iterations: CRYPTO_CONFIG.iterations, hash: "SHA-256" },
             baseKey, { name: "AES-GCM", length: 256 }, false, ["decrypt"]
           );
 
-          const decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, data);
+          let decrypted = await window.crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
           const blob = new Blob([decrypted], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
           const url = URL.createObjectURL(blob);
           
